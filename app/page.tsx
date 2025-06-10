@@ -4,9 +4,12 @@ import { useState } from 'react'
 import VileadSidebar from './components/VileadSidebar'
 import Header from './components/Header'
 import Dashboard from './components/Dashboard'
-import LeadsManagement from './components/LeadsManagementWithMetrics'
+import SalesManagement from './components/SalesManagement'
 import CustomersManagement from './components/CustomersManagement'
-import DealsManagement from './components/DealsManagement'
+import OrderManagement from './components/OrderManagement'
+import TaskManagement from './components/TaskManagement'
+import CompanyManagement from './components/CompanyManagement'
+import ReportsManagement from './components/ReportsManagement'
 
 export default function Home() {
   const [currentView, setCurrentView] = useState('dashboard')
@@ -19,28 +22,28 @@ export default function Home() {
     switch (currentView) {
       case 'dashboard':
         return <Dashboard />
-      case 'leads':
-        return <LeadsManagement />
+      case 'sales':
+        return <SalesManagement />
       case 'customers':
         return <CustomersManagement />
-      case 'deals':
-        return <DealsManagement />
+      case 'leads': // Redirect cũ để backward compatibility
+        return <SalesManagement />
+      case 'deals': // Redirect cũ để backward compatibility
+        return <SalesManagement />
       case 'orders':
-        return <div className="p-6"><h2 className="text-2xl font-bold">Quản lý Đơn hàng</h2><p className="text-gray-600 mt-2">Tính năng đang phát triển...</p></div>
-      case 'products':
-        return <div className="p-6"><h2 className="text-2xl font-bold">Quản lý Sản phẩm</h2><p className="text-gray-600 mt-2">Tính năng đang phát triển...</p></div>
+        return <OrderManagement />
       case 'tasks':
-        return <div className="p-6"><h2 className="text-2xl font-bold">Quản lý Công việc</h2><p className="text-gray-600 mt-2">Tính năng đang phát triển...</p></div>
-      case 'calendar':
-        return <div className="p-6"><h2 className="text-2xl font-bold">Lịch</h2><p className="text-gray-600 mt-2">Tính năng đang phát triển...</p></div>
-      case 'employees':
-        return <div className="p-6"><h2 className="text-2xl font-bold">Quản lý Nhân viên</h2><p className="text-gray-600 mt-2">Tính năng đang phát triển...</p></div>
-      case 'kpis':
-        return <div className="p-6"><h2 className="text-2xl font-bold">KPIs</h2><p className="text-gray-600 mt-2">Tính năng đang phát triển...</p></div>
+        return <TaskManagement />
+      case 'products':  // Redirect to company for backward compatibility
+        return <CompanyManagement />
+      case 'employees': // Redirect to company for backward compatibility
+        return <CompanyManagement />
+      case 'kpis':      // Redirect to company for backward compatibility
+        return <CompanyManagement />
       case 'reports':
-        return <div className="p-6"><h2 className="text-2xl font-bold">Báo cáo</h2><p className="text-gray-600 mt-2">Tính năng đang phát triển...</p></div>
+        return <ReportsManagement />
       case 'company':
-        return <div className="p-6"><h2 className="text-2xl font-bold">Công ty</h2><p className="text-gray-600 mt-2">Tính năng đang phát triển...</p></div>
+        return <CompanyManagement />
       case 'settings':
         return <div className="p-6"><h2 className="text-2xl font-bold">Cài đặt</h2><p className="text-gray-600 mt-2">Tính năng đang phát triển...</p></div>
       default:

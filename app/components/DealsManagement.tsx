@@ -227,7 +227,7 @@ export default function DealsManagement() {
                 <th className="table-header">Dự kiến đóng</th>
                 <th className="table-header">Người phụ trách</th>
                 <th className="table-header">Hoạt động cuối</th>
-                <th className="table-header">Thao tác</th>
+                <th className="table-header sticky right-0 bg-gray-50 shadow-[-2px_0_4px_rgba(0,0,0,0.1)] z-10">Thao tác</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -285,7 +285,7 @@ export default function DealsManagement() {
                   <td className="table-cell">
                     <div className="text-sm text-gray-900">{deal.lastActivity}</div>
                   </td>
-                  <td className="table-cell">
+                  <td className="table-cell sticky right-0 bg-white shadow-[-2px_0_4px_rgba(0,0,0,0.1)] z-10">
                     <div className="flex items-center space-x-2">
                       <button className="p-1 text-gray-400 hover:text-gray-600">
                         <Calendar className="w-4 h-4" />

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { 
   LayoutDashboard, 
-  Users, 
   UserPlus, 
   Target, 
   BarChart3, 
@@ -11,11 +10,8 @@ import {
   Building2,
   UserCheck,
   ShoppingCart,
-  Package,
   CheckSquare,
-  Calendar,
   FileText,
-  TrendingUp,
   ChevronLeft,
   ChevronRight,
   X
@@ -61,11 +57,11 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       roles: ["admin", "ceo", "leader", "sale"]
     },
     {
-      id: 'leads',
-      icon: UserPlus,
-      label: "Quản lý Leads",
-      iconText: "👥",
-      tooltip: "Quản lý Leads: Xem và quản lý leads theo quyền",
+      id: 'sales',
+      icon: Target,
+      label: "Sales Management",
+      iconText: "🚀",
+      tooltip: "Sales Management: Quản lý tổng thể Lead và Deal",
       roles: ["admin", "ceo", "leader", "sale"]
     },
     {
@@ -77,27 +73,11 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       roles: ["admin", "ceo", "leader", "sale"]
     },
     {
-      id: 'deals',
-      icon: Target,
-      label: "Quản lý Deals",
-      iconText: "🎯",
-      tooltip: "Quản lý Deals: Cơ hội bán hàng",
-      roles: ["admin", "ceo", "leader", "sale"]
-    },
-    {
       id: 'orders',
       icon: ShoppingCart,
       label: "Quản lý Đơn hàng",
       iconText: "🛒",
       tooltip: "Quản lý Đơn hàng: Trạng thái và hóa đơn",
-      roles: ["admin", "ceo", "leader", "sale"]
-    },
-    {
-      id: 'products',
-      icon: Package,
-      label: "Quản lý Sản phẩm",
-      iconText: "📦",
-      tooltip: "Quản lý Sản phẩm: Danh mục và biến thể",
       roles: ["admin", "ceo", "leader", "sale"]
     },
     {
@@ -107,30 +87,6 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       iconText: "✅",
       tooltip: "Quản lý Công việc: Task và tiến độ",
       roles: ["admin", "ceo", "leader", "sale"]
-    },
-    {
-      id: 'calendar',
-      icon: Calendar,
-      label: "Lịch",
-      iconText: "📅",
-      tooltip: "Lịch: Lịch công việc và nhắc nhở",
-      roles: ["admin", "ceo", "leader", "sale"]
-    },
-    {
-      id: 'employees',
-      icon: Users,
-      label: "Quản lý Nhân viên",
-      iconText: "👨‍💼",
-      tooltip: "Quản lý Nhân viên: Hiệu suất và hoạt động",
-      roles: ["admin", "ceo", "leader"]
-    },
-    {
-      id: 'kpis',
-      icon: TrendingUp,
-      label: "KPIs",
-      iconText: "🎯",
-      tooltip: "KPIs: Chỉ số hiệu suất và xếp hạng",
-      roles: ["admin", "ceo", "leader"]
     },
     {
       id: 'reports',
@@ -145,7 +101,7 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       icon: Building2,
       label: "Công ty",
       iconText: "🏢",
-      tooltip: "Thông tin công ty",
+      tooltip: "Công ty: Quản lý nhân viên, sản phẩm và KPIs",
       roles: ["admin", "ceo", "leader", "sale"]
     },
     {

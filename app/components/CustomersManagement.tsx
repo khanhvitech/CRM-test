@@ -202,7 +202,7 @@ export default function CustomersManagement() {
                 <th className="table-header">Tổng giá trị</th>
                 <th className="table-header">Mua cuối</th>
                 <th className="table-header">Số deals</th>
-                <th className="table-header">Thao tác</th>
+                <th className="table-header sticky right-0 bg-gray-50 shadow-[-2px_0_4px_rgba(0,0,0,0.1)] z-10">Thao tác</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -240,7 +240,7 @@ export default function CustomersManagement() {
                   <td className="table-cell">
                     <div className="font-medium text-center text-primary-600">{customer.deals}</div>
                   </td>
-                  <td className="table-cell">
+                  <td className="table-cell sticky right-0 bg-white shadow-[-2px_0_4px_rgba(0,0,0,0.1)] z-10">
                     <div className="flex items-center space-x-2">
                       <button className="p-1 text-gray-400 hover:text-gray-600">
                         <Phone className="w-4 h-4" />
