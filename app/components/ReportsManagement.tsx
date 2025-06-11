@@ -24,6 +24,8 @@ import {
   Zap,
   RefreshCw,
   ChevronDown,
+  ChevronRight,
+  Brain,
   X,
   CheckCircle,
   AlertTriangle,
@@ -370,6 +372,9 @@ export default function ReportsManagement() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  
+  // Collapsible sections state
+  const [showAIAnalysis, setShowAIAnalysis] = useState(false)
   
   // Filters
   const [productFilter, setProductFilter] = useState('')
@@ -1797,6 +1802,157 @@ export default function ReportsManagement() {
 
         <TabsContent value="comparison" className="mt-6">
           <ComparisonReportComponent />
+          
+          {/* AI Analysis Section - Collapsible */}
+          <div className="mt-6 bg-white rounded-lg shadow p-6 border border-gray-200">
+            <div 
+              className="flex items-center justify-between cursor-pointer"
+              onClick={() => setShowAIAnalysis(!showAIAnalysis)}
+            >
+              <div className="flex items-center space-x-3">
+                <Brain className="w-6 h-6 text-purple-600" />
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">AI Phân tích so sánh</h3>
+                  <p className="text-sm text-gray-600">Insights thông minh từ dữ liệu so sánh</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-500">
+                  {showAIAnalysis ? 'Thu gọn' : 'Xem phân tích'}
+                </span>
+                {showAIAnalysis ? (
+                  <ChevronDown className="w-5 h-5 text-gray-400" />
+                ) : (
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                )}
+              </div>
+            </div>
+            
+            {showAIAnalysis && (
+              <div className="mt-6 space-y-6">
+                {/* AI Comparative Insights */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-900 flex items-center">
+                      <Brain className="w-4 h-4 mr-2 text-purple-600" />
+                      Phân tích xu hướng
+                    </h4>
+                    
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                        <div>
+                          <p className="text-sm font-medium text-blue-900">Tăng trưởng doanh thu</p>
+                          <p className="text-sm text-blue-700">Doanh thu tháng này tăng 15.3% so với tháng trước, chủ yếu từ segment khách hàng doanh nghiệp (+22%).</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
+                        <div>
+                          <p className="text-sm font-medium text-yellow-900">Thay đổi hành vi khách hàng</p>
+                          <p className="text-sm text-yellow-700">Tỷ lệ hủy đơn tăng 3.2%, tập trung ở nhóm đơn hàng &lt; 5 triệu. Nguyên nhân chính: thời gian giao hàng.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                        <div>
+                          <p className="text-sm font-medium text-green-900">Hiệu quả marketing</p>
+                          <p className="text-sm text-green-700">ROI Facebook Ads tăng 28%, với CPA giảm từ 850k xuống 650k nhờ tối ưu targeting.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-900 flex items-center">
+                      <Target className="w-4 h-4 mr-2 text-green-600" />
+                      Khuyến nghị hành động
+                    </h4>
+                    
+                    <div className="space-y-3">
+                      <div className="bg-white border-l-4 border-purple-500 p-4 rounded-r-lg">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-6 h-6 bg-purple-100 rounded flex items-center justify-center">
+                            <span className="text-purple-600 text-sm font-bold">1</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Tăng ngân sách Facebook Ads</p>
+                            <p className="text-sm text-gray-600">Tăng 25% ngân sách để tận dụng hiệu quả cao. Dự báo tăng 40% leads chất lượng.</p>
+                            <p className="text-xs text-purple-600 mt-1">Ưu tiên: Cao • ROI dự kiến: +35%</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-white border-l-4 border-orange-500 p-4 rounded-r-lg">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-6 h-6 bg-orange-100 rounded flex items-center justify-center">
+                            <span className="text-orange-600 text-sm font-bold">2</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Cải thiện quy trình giao hàng</p>
+                            <p className="text-sm text-gray-600">Tối ưu logistics để giảm thời gian giao xuống 2-3 ngày, giảm tỷ lệ hủy đơn.</p>
+                            <p className="text-xs text-orange-600 mt-1">Ưu tiên: Trung bình • Tiết kiệm: 8% đơn hủy</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-white border-l-4 border-green-500 p-4 rounded-r-lg">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-6 h-6 bg-green-100 rounded flex items-center justify-center">
+                            <span className="text-green-600 text-sm font-bold">3</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Phát triển segment doanh nghiệp</p>
+                            <p className="text-sm text-gray-600">Tạo gói sản phẩm riêng cho DN, tăng AOV từ 12tr lên 18tr.</p>
+                            <p className="text-xs text-green-600 mt-1">Ưu tiên: Cao • Tăng trưởng: +50% AOV</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Predictive Analytics */}
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Brain className="w-5 h-5 text-purple-600" />
+                    <span className="font-medium text-purple-900">Dự báo thông minh</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <p className="text-sm text-purple-700">Doanh thu tháng tới</p>
+                      <p className="text-2xl font-bold text-purple-900">4.8 tỷ</p>
+                      <p className="text-xs text-purple-600">+14.3% vs tháng này</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-purple-700">Số đơn hàng mới</p>
+                      <p className="text-2xl font-bold text-purple-900">156</p>
+                      <p className="text-xs text-purple-600">+8.7% vs tháng này</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-purple-700">Tỷ lệ chuyển đổi</p>
+                      <p className="text-2xl font-bold text-purple-900">18.2%</p>
+                      <p className="text-xs text-purple-600">+1.7% vs tháng này</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 p-3 bg-white/50 rounded-lg">
+                    <p className="text-sm text-purple-800">
+                      <strong>AI Summary:</strong> Xu hướng tích cực đang duy trì với sự cải thiện đáng kể ở hiệu quả marketing. 
+                      Nếu thực hiện các khuyến nghị, dự báo tăng trưởng tháng tới có thể đạt 18-20% thay vì 14.3%.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="custom" className="mt-6">

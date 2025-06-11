@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { 
   TrendingUp, 
   Users, 
@@ -7,13 +8,23 @@ import {
   Percent,
   ArrowUpRight,
   ArrowDownRight,
-  MoreVertical
+  MoreVertical,
+  ChevronDown,
+  ChevronRight,
+  Brain,
+  BarChart3,
+  Plus,
+  Minus
 } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts'
 import EnhancedDashboardFilters from './EnhancedDashboardFilters'
 // import VileadRevenueChart from './VileadRevenueChart'
 
 export default function Dashboard() {
+  // State for collapsible sections
+  const [showComparison, setShowComparison] = useState(false)
+  const [showAIAnalysis, setShowAIAnalysis] = useState(false)
+  
   // Sample data
   const revenueData = [
     { month: 'T1', revenue: 2.8, target: 3.0 },
@@ -629,6 +640,232 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Comparison Section - Collapsible */}
+        <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+          <div 
+            className="flex items-center justify-between cursor-pointer"
+            onClick={() => setShowComparison(!showComparison)}
+          >
+            <div className="flex items-center space-x-3">
+              <BarChart3 className="w-6 h-6 text-blue-600" />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">So sánh thời gian</h3>
+                <p className="text-sm text-gray-600">So sánh hiệu suất giữa các kỳ</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-500">
+                {showComparison ? 'Thu gọn' : 'Mở rộng'}
+              </span>
+              {showComparison ? (
+                <ChevronDown className="w-5 h-5 text-gray-400" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              )}
+            </div>
+          </div>
+          
+          {showComparison && (
+            <div className="mt-6 space-y-6">
+              {/* Comparison Period Selector */}
+              <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium">Kỳ 1:</span>
+                  <select className="border border-gray-300 rounded px-3 py-1 text-sm">
+                    <option value="this_month">Tháng này</option>
+                    <option value="last_month">Tháng trước</option>
+                    <option value="this_quarter">Quý này</option>
+                    <option value="last_quarter">Quý trước</option>
+                  </select>
+                </div>
+                <div className="text-gray-400">vs</div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium">Kỳ 2:</span>
+                  <select className="border border-gray-300 rounded px-3 py-1 text-sm">
+                    <option value="last_month">Tháng trước</option>
+                    <option value="this_month">Tháng này</option>
+                    <option value="last_quarter">Quý trước</option>
+                    <option value="this_quarter">Quý này</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Comparison Results */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Doanh thu</p>
+                      <p className="text-xl font-bold text-gray-900">4.2 tỷ</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-green-600 flex items-center">
+                        <ArrowUpRight className="w-4 h-4 mr-1" />
+                        +15.3%
+                      </p>
+                      <p className="text-xs text-gray-500">vs tháng trước</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Leads mới</p>
+                      <p className="text-xl font-bold text-gray-900">254</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-red-600 flex items-center">
+                        <ArrowDownRight className="w-4 h-4 mr-1" />
+                        -8.2%
+                      </p>
+                      <p className="text-xs text-gray-500">vs tháng trước</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Tỷ lệ chuyển đổi</p>
+                      <p className="text-xl font-bold text-gray-900">16.5%</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-green-600 flex items-center">
+                        <ArrowUpRight className="w-4 h-4 mr-1" />
+                        +2.1%
+                      </p>
+                      <p className="text-xs text-gray-500">vs tháng trước</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* AI Analysis Section - Collapsible */}
+        <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+          <div 
+            className="flex items-center justify-between cursor-pointer"
+            onClick={() => setShowAIAnalysis(!showAIAnalysis)}
+          >
+            <div className="flex items-center space-x-3">
+              <Brain className="w-6 h-6 text-purple-600" />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">AI Phân tích thông minh</h3>
+                <p className="text-sm text-gray-600">Insights và khuyến nghị từ AI</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-500">
+                {showAIAnalysis ? 'Thu gọn' : 'Mở rộng'}
+              </span>
+              {showAIAnalysis ? (
+                <ChevronDown className="w-5 h-5 text-gray-400" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              )}
+            </div>
+          </div>
+          
+          {showAIAnalysis && (
+            <div className="mt-6 space-y-6">
+              {/* AI Insights */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900">📊 Insights quan trọng</h4>
+                  
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                      <div>
+                        <p className="text-sm font-medium text-green-900">Hiệu suất tốt</p>
+                        <p className="text-sm text-green-700">Tỷ lệ chuyển đổi tăng 12% so với tháng trước, đặc biệt từ nguồn Facebook Ads.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
+                      <div>
+                        <p className="text-sm font-medium text-yellow-900">Cảnh báo</p>
+                        <p className="text-sm text-yellow-700">Thời gian phản hồi lead tăng 25%, có thể ảnh hưởng đến tỷ lệ chuyển đổi.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                      <div>
+                        <p className="text-sm font-medium text-blue-900">Cơ hội</p>
+                        <p className="text-sm text-blue-700">Khách hàng từ Zalo có giá trị trung bình cao hơn 30% so với các kênh khác.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900">💡 Khuyến nghị</h4>
+                  
+                  <div className="space-y-3">
+                    <div className="bg-gray-50 border rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-6 h-6 bg-purple-100 rounded flex items-center justify-center">
+                          <span className="text-purple-600 text-sm font-bold">1</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Tối ưu hóa thời gian phản hồi</p>
+                          <p className="text-sm text-gray-600">Thiết lập tự động phân phối lead để giảm thời gian phản hồi xuống dưới 2 giờ.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 border rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-6 h-6 bg-purple-100 rounded flex items-center justify-center">
+                          <span className="text-purple-600 text-sm font-bold">2</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Tăng ngân sách Zalo Ads</p>
+                          <p className="text-sm text-gray-600">Xem xét tăng 20% ngân sách cho Zalo để tận dụng ROI cao hơn.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 border rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-6 h-6 bg-purple-100 rounded flex items-center justify-center">
+                          <span className="text-purple-600 text-sm font-bold">3</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Training team sales</p>
+                          <p className="text-sm text-gray-600">Đào tạo kỹ năng closing cho team để cải thiện tỷ lệ chốt deal giai đoạn cuối.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* AI Summary */}
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Brain className="w-5 h-5 text-purple-600" />
+                  <span className="font-medium text-purple-900">AI Tổng quan</span>
+                </div>
+                <p className="text-sm text-purple-800">
+                  Dựa trên dữ liệu 30 ngày qua, doanh nghiệp đang có xu hướng tích cực với doanh thu tăng trưởng mạnh. 
+                  Tuy nhiên, cần chú ý tối ưu hóa quy trình phản hồi và tận dụng hiệu quả các kênh có ROI cao như Zalo. 
+                  Dự báo tháng tới có thể đạt 4.8 tỷ doanh thu nếu thực hiện các khuyến nghị trên.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -10,6 +10,9 @@ import OrderManagement from './components/OrderManagement'
 import TaskManagement from './components/TaskManagement'
 import CompanyManagement from './components/CompanyManagement'
 import ReportsManagement from './components/ReportsManagement'
+import SettingsManagement from './components/SettingsManagement'
+import ChatbotAssistant from './components/ChatbotAssistantNew'
+// import VileadsChatbot from './components/VileadsChatbot'
 
 export default function Home() {
   const [currentView, setCurrentView] = useState('dashboard')
@@ -45,7 +48,7 @@ export default function Home() {
       case 'company':
         return <CompanyManagement />
       case 'settings':
-        return <div className="p-6"><h2 className="text-2xl font-bold">Cài đặt</h2><p className="text-gray-600 mt-2">Tính năng đang phát triển...</p></div>
+        return <SettingsManagement />
       default:
         return <Dashboard />
     }
@@ -60,6 +63,9 @@ export default function Home() {
           {renderContent()}
         </main>
       </div>
+      {/* Vileads Chatbot - Available on all pages */}
+      <ChatbotAssistant />
+      {/* <VileadsChatbot /> */}
     </div>
   )
 }

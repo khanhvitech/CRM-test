@@ -170,7 +170,17 @@ export default function OrderManagement() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [selectedOrders, setSelectedOrders] = useState<number[]>([])
+  const [showBulkActions, setShowBulkActions] = useState(false)
+  const [filters, setFilters] = useState({
+    status: '',
+    paymentStatus: '',
+    timeRange: '',
+    search: '',
+    tags: [] as string[]
+  })
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   // Sample data
   const [customers] = useState<Customer[]>([
@@ -279,6 +289,44 @@ export default function OrderManagement() {
       crosssellSuggestions: [products[1]] // ERP
     }
   ])
+
+  // Keyboard shortcuts and effects
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+          case 'a':
+            e.preventDefault()
+            const filteredOrders = orders.filter(order => {
+              if (filters.status && order.status !== filters.status) return false
+              if (filters.paymentStatus && order.paymentStatus !== filters.paymentStatus) return false
+              if (filters.search) {
+                const searchLower = filters.search.toLowerCase()
+                if (!order.orderNumber.toLowerCase().includes(searchLower) &&
+                    !order.customer.name.toLowerCase().includes(searchLower) &&
+                    !order.customer.phone.includes(searchLower)) return false
+              }
+              return true
+            })
+            if (filteredOrders.length > 0) {
+              setSelectedOrders(filteredOrders.map(order => order.id))
+            }
+            break
+          case 'Escape':
+            setSelectedOrders([])
+            break
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyPress)
+    return () => document.removeEventListener('keydown', handleKeyPress)
+  }, [orders, filters])
+
+  // Clear selection when filters change
+  useEffect(() => {
+    setSelectedOrders([])
+  }, [filters])
 
   // Helper functions
   const formatCurrency = (amount: number) => {
@@ -418,19 +466,132 @@ export default function OrderManagement() {
     setTimeout(() => setNotification(null), 3000)
   }
 
-  // Handle update order
-  const handleUpdateOrder = (orderId: number, updates: any) => {
-    setOrders(prev => prev.map(order => 
-      order.id === orderId 
-        ? { ...order, ...updates }
-        : order
-    ))
+  // Handle bulk operations
+  const handleBulkOperation = async (operation: string) => {
+    if (selectedOrders.length === 0) return
+    
+    setIsLoading(true)
+    
+    try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      switch (operation) {
+        case 'mark_paid':
+          setOrders(prev => prev.map(order => 
+            selectedOrders.includes(order.id) 
+              ? { ...order, paymentStatus: 'paid' as const }
+              : order
+          ))
+          setNotification({
+            message: `Đã đánh dấu ${selectedOrders.length} đơn hàng là đã thanh toán`,
+            type: 'success'
+          })
+          break
+        case 'mark_completed':
+          setOrders(prev => prev.map(order => 
+            selectedOrders.includes(order.id) 
+              ? { ...order, status: 'completed' as const }
+              : order
+          ))
+          setNotification({
+            message: `Đã hoàn thành ${selectedOrders.length} đơn hàng`,
+            type: 'success'
+          })
+          break
+        case 'send_reminder':
+          setOrders(prev => prev.map(order => 
+            selectedOrders.includes(order.id) 
+              ? { ...order, remindersSent: order.remindersSent + 1 }
+              : order
+          ))
+          setNotification({
+            message: `Đã gửi nhắc nhở thanh toán cho ${selectedOrders.length} đơn hàng`,
+            type: 'success'
+          })
+          break
+        case 'export':
+          exportOrdersToCSV(orders.filter(order => selectedOrders.includes(order.id)))
+          break
+      }
+      setSelectedOrders([])
+      setShowBulkActions(false)
+    } catch (error) {
+      setNotification({
+        message: 'Có lỗi xảy ra khi thực hiện thao tác',
+        type: 'error'
+      })
+    } finally {
+      setIsLoading(false)
+      setTimeout(() => setNotification(null), 3000)
+    }
+  }
+
+  // Export to CSV
+  const exportOrdersToCSV = (ordersToExport: Order[]) => {
+    const headers = ['Mã đơn', 'Khách hàng', 'Tổng tiền', 'Trạng thái', 'Thanh toán', 'Ngày tạo']
+    const rows = ordersToExport.map(order => [
+      order.orderNumber,
+      order.customer.name,
+      order.total.toString(),
+      getStatusText(order.status),
+      getPaymentStatusText(order.paymentStatus),
+      new Date(order.createdAt).toLocaleDateString('vi-VN')
+    ])
+    
+    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `don-hang-${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
     
     setNotification({
-      message: 'Đơn hàng đã được cập nhật thành công!',
+      message: `Đã xuất ${ordersToExport.length} đơn hàng`,
       type: 'success'
     })
     setTimeout(() => setNotification(null), 3000)
+  }
+
+  // Filter orders
+  const getFilteredOrders = () => {
+    return orders.filter(order => {
+      if (filters.status && order.status !== filters.status) return false
+      if (filters.paymentStatus && order.paymentStatus !== filters.paymentStatus) return false
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase()
+        if (!order.orderNumber.toLowerCase().includes(searchLower) &&
+            !order.customer.name.toLowerCase().includes(searchLower) &&
+            !order.customer.phone.includes(searchLower)) return false
+      }
+      if (filters.tags.length > 0) {
+        if (!filters.tags.some(tag => order.tags.includes(tag))) return false
+      }
+      if (filters.timeRange) {
+        const orderDate = new Date(order.createdAt)
+        const today = new Date()
+        const yesterday = new Date(today)
+        yesterday.setDate(yesterday.getDate() - 1)
+        
+        switch (filters.timeRange) {
+          case 'today':
+            if (orderDate.toDateString() !== today.toDateString()) return false
+            break
+          case 'yesterday':
+            if (orderDate.toDateString() !== yesterday.toDateString()) return false
+            break
+          case 'thisWeek':
+            const weekStart = new Date(today)
+            weekStart.setDate(today.getDate() - today.getDay())
+            if (orderDate < weekStart) return false
+            break
+          case 'thisMonth':
+            if (orderDate.getMonth() !== today.getMonth() || orderDate.getFullYear() !== today.getFullYear()) return false
+            break
+        }
+      }
+      return true
+    })
   }
 
   const metrics = getOverviewMetrics()
@@ -537,67 +698,45 @@ export default function OrderManagement() {
     </div>
   )
 
-  const renderProductOrders = () => {
-    // Group orders by product
-    const productOrdersMap = new Map()
-    
-    orders.forEach(order => {
-      order.items.forEach(item => {
-        const productKey = `${item.product.id}-${item.variantId || 'base'}`
-        if (!productOrdersMap.has(productKey)) {
-          productOrdersMap.set(productKey, {
-            product: item.product,
-            variant: item.variant,
-            orders: [],
-            totalQuantity: 0,
-            totalRevenue: 0,
-            orderCount: 0
-          })
-        }
-        
-        const productData = productOrdersMap.get(productKey)
-        if (!productData.orders.some((o: Order) => o.id === order.id)) {
-          productData.orders.push(order)
-          productData.orderCount++
-        }
-        productData.totalQuantity += item.quantity
-        productData.totalRevenue += item.totalPrice
-      })
-    })
+  // Render Products Management
+  const renderProductsManagement = () => {
+    // Calculate product performance
+    const productPerformance = products.map(product => {
+      const productOrders = orders.filter(order => 
+        order.items.some(item => item.productId === product.id)
+      )
+      
+      const totalQuantity = productOrders.reduce((sum, order) => 
+        sum + order.items.filter(item => item.productId === product.id)
+          .reduce((itemSum, item) => itemSum + item.quantity, 0), 0
+      )
+      
+      const totalRevenue = productOrders.reduce((sum, order) => 
+        sum + order.items.filter(item => item.productId === product.id)
+          .reduce((itemSum, item) => itemSum + item.totalPrice, 0), 0
+      )
 
-    const productOrders = Array.from(productOrdersMap.values())
+      const avgOrderValue = productOrders.length > 0 ? totalRevenue / productOrders.length : 0
+      
+      return {
+        ...product,
+        orderCount: productOrders.length,
+        totalQuantity,
+        totalRevenue,
+        avgOrderValue,
+        conversionRate: Math.random() * 100 // Mock data
+      }
+    })
 
     return (
       <div className="space-y-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Đơn hàng theo Sản phẩm</h2>
-          
-          <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
-            <div className="relative flex-1 lg:w-80">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm sản phẩm..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              />
-            </div>
-            
-            <select className="border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
-              <option value="">Tất cả danh mục</option>
-              <option value="Tư vấn">Tư vấn</option>
-              <option value="Phần mềm">Phần mềm</option>
-              <option value="Dịch vụ">Dịch vụ</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Product Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Product Performance Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-gradient-to-br from-blue-50 to-white p-6 border border-blue-100 rounded-lg">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm text-gray-600">Tổng sản phẩm</div>
-                <div className="text-2xl font-bold text-blue-600">{productOrders.length}</div>
+                <div className="text-2xl font-bold text-blue-600">{products.length}</div>
               </div>
               <Package className="w-8 h-8 text-blue-600" />
             </div>
@@ -606,96 +745,98 @@ export default function OrderManagement() {
           <div className="bg-gradient-to-br from-green-50 to-white p-6 border border-green-100 rounded-lg">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm text-gray-600">Sản phẩm bán chạy nhất</div>
-                <div className="text-lg font-bold text-green-600">
-                  {productOrders.length > 0 ? 
-                    productOrders.reduce((best, current) => 
-                      current.totalQuantity > best.totalQuantity ? current : best
-                    ).product.name.substring(0, 15) + '...'
-                    : 'N/A'
-                  }
+                <div className="text-sm text-gray-600">Doanh thu sản phẩm</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {formatCurrency(productPerformance.reduce((sum, p) => sum + p.totalRevenue, 0))}
                 </div>
               </div>
-              <TrendingUp className="w-8 h-8 text-green-600" />
+              <DollarSign className="w-8 h-8 text-green-600" />
             </div>
           </div>
 
           <div className="bg-gradient-to-br from-purple-50 to-white p-6 border border-purple-100 rounded-lg">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm text-gray-600">Doanh thu cao nhất</div>
+                <div className="text-sm text-gray-600">Sản phẩm bán chạy</div>
                 <div className="text-lg font-bold text-purple-600">
-                  {productOrders.length > 0 ? 
-                    formatCurrency(productOrders.reduce((max, current) => 
-                      current.totalRevenue > max ? current.totalRevenue : max
-                    , 0))
-                    : '0 đ'
-                  }
+                  {productPerformance.sort((a, b) => b.totalQuantity - a.totalQuantity)[0]?.name || 'N/A'}
                 </div>
               </div>
-              <DollarSign className="w-8 h-8 text-purple-600" />
+              <TrendingUp className="w-8 h-8 text-purple-600" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-orange-50 to-white p-6 border border-orange-100 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm text-gray-600">Tỷ lệ chuyển đổi TB</div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {(productPerformance.reduce((sum, p) => sum + p.conversionRate, 0) / productPerformance.length).toFixed(1)}%
+                </div>
+              </div>
+              <Target className="w-8 h-8 text-orange-600" />
             </div>
           </div>
         </div>
 
-        {/* Product Orders Table */}
+        {/* Product Performance Table */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Hiệu suất Sản phẩm</h3>
+              <div className="flex items-center space-x-2">
+                <button className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  <Download className="w-4 h-4 inline mr-2" />
+                  Xuất báo cáo
+                </button>
+              </div>
+            </div>
+          </div>
+          
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sản phẩm</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số đơn hàng</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng số lượng</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng doanh thu</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Giá trung bình</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sản phẩm</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Đơn hàng</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Đã bán</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Doanh thu</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">GT TB/Đơn</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tỷ lệ chuyển đổi</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {productOrders.map((productData, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-4 py-4">
+                {productPerformance.map((product) => (
+                  <tr key={product.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
                       <div>
-                        <div className="font-medium text-gray-900">{productData.product.name}</div>
-                        <div className="text-sm text-gray-500">
-                          {productData.variant ? productData.variant.name : 'Cơ bản'} • {productData.product.code}
+                        <div className="font-medium text-gray-900">{product.name}</div>
+                        <div className="text-sm text-gray-500">{product.code} • {product.category}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{product.orderCount}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{product.totalQuantity}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{formatCurrency(product.totalRevenue)}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{formatCurrency(product.avgOrderValue)}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
+                          <div 
+                            className="bg-green-500 h-2 rounded-full" 
+                            style={{ width: `${Math.min(product.conversionRate, 100)}%` }}
+                          ></div>
                         </div>
-                        <div className="text-xs text-gray-400">{productData.product.category}</div>
+                        <span className="text-sm text-gray-900">{product.conversionRate.toFixed(1)}%</span>
                       </div>
                     </td>
-                    
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{productData.orderCount}</div>
-                    </td>
-                    
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{productData.totalQuantity}</div>
-                    </td>
-                    
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{formatCurrency(productData.totalRevenue)}</div>
-                    </td>
-                    
-                    <td className="px-4 py-4 whitespace-nowrap hidden lg:table-cell">
-                      <div className="text-gray-900">
-                        {formatCurrency(Math.round(productData.totalRevenue / productData.totalQuantity))}
-                      </div>
-                    </td>
-                    
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-1">
-                        <button 
-                          className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-                          title="Xem đơn hàng"
-                        >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-2">
+                        <button className="p-1 text-gray-400 hover:text-blue-600" title="Xem chi tiết">
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button className="p-1 text-gray-400 hover:text-green-600 transition-colors" title="Xuất báo cáo">
-                          <Download className="w-4 h-4" />
-                        </button>
-                        <button className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
-                          <MoreVertical className="w-4 h-4" />
+                        <button className="p-1 text-gray-400 hover:text-green-600" title="Chỉnh sửa">
+                          <Edit className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -706,74 +847,309 @@ export default function OrderManagement() {
           </div>
         </div>
 
-        {/* Product Details - Expandable Rows */}
-        <div className="space-y-4">
-          {productOrders.slice(0, 3).map((productData, index) => (
-            <div key={index} className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Đơn hàng cho: {productData.product.name} 
-                  {productData.variant && ` - ${productData.variant.name}`}
-                </h3>
-                <span className="text-sm text-gray-500">{productData.orderCount} đơn hàng</span>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-sm text-gray-600">Số lượng bán</div>
-                  <div className="text-xl font-bold text-blue-600">{productData.totalQuantity}</div>
-                </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-sm text-gray-600">Doanh thu</div>
-                  <div className="text-xl font-bold text-green-600">{formatCurrency(productData.totalRevenue)}</div>
-                </div>
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <div className="text-sm text-gray-600">Giá trung bình</div>
-                  <div className="text-xl font-bold text-purple-600">
-                    {formatCurrency(Math.round(productData.totalRevenue / productData.totalQuantity))}
-                  </div>
-                </div>
-                <div className="text-center p-3 bg-orange-50 rounded-lg">
-                  <div className="text-sm text-gray-600">Khách hàng</div>
-                  <div className="text-xl font-bold text-orange-600">
-                    {Array.from(new Set(productData.orders.map((o: Order) => o.customerId))).length}
-                  </div>
-                </div>
-              </div>
-
-              {/* Recent Orders for this Product */}
-              <div>
-                <h4 className="text-md font-medium text-gray-900 mb-2">Đơn hàng gần đây</h4>
-                <div className="space-y-2">
-                  {productData.orders.slice(0, 3).map((order: Order) => {
-                    const item = order.items.find((i: OrderItem) => i.product.id === productData.product.id && 
-                      (i.variantId || 'base') === (productData.variant?.id || 'base'))
-                    return (
-                      <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <div className="font-medium text-gray-900">{order.orderNumber}</div>
-                          <div className="text-sm text-gray-500">
-                            {order.customer.name} • {item?.quantity} x {formatCurrency(item?.unitPrice || 0)}
+        {/* Product Variants Performance */}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Hiệu suất theo Phiên bản</h3>
+          </div>
+          
+          <div className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {products.map(product => (
+                <div key={product.id} className="border border-gray-200 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-3">{product.name}</h4>
+                  <div className="space-y-2">
+                    {product.variants.map(variant => {
+                      const variantOrders = orders.filter(order => 
+                        order.items.some(item => item.variantId === variant.id)
+                      )
+                      const variantRevenue = variantOrders.reduce((sum, order) => 
+                        sum + order.items.filter(item => item.variantId === variant.id)
+                          .reduce((itemSum, item) => itemSum + item.totalPrice, 0), 0
+                      )
+                      
+                      return (
+                        <div key={variant.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <div>
+                            <div className="font-medium text-sm">{variant.name}</div>
+                            <div className="text-xs text-gray-500">{formatCurrency(variant.price)}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium">{variantOrders.length} đơn</div>
+                            <div className="text-xs text-gray-500">{formatCurrency(variantRevenue)}</div>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(order.status)}`}>
-                            {getStatusText(order.status)}
-                          </span>
-                          <button 
-                            onClick={() => setSelectedOrder(order)}
-                            className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-                          >
-                            <ArrowRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Render Reminders Management  
+  const renderRemindersManagement = () => {
+    // Get overdue orders
+    const overdueOrders = orders.filter(order => 
+      order.paymentStatus === 'unpaid' && 
+      order.deadline && 
+      new Date(order.deadline) < new Date()
+    )
+
+    // Get upcoming payment reminders (next 7 days)
+    const upcomingReminders = orders.filter(order => 
+      order.paymentStatus === 'unpaid' && 
+      order.deadline && 
+      new Date(order.deadline) > new Date() &&
+      new Date(order.deadline) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    )
+
+    // Get orders that have been reminded multiple times
+    const multipleReminders = orders.filter(order => order.remindersSent >= 2)
+
+    return (
+      <div className="space-y-6">
+        {/* Reminder Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-gradient-to-br from-red-50 to-white p-6 border border-red-100 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm text-gray-600">Đơn quá hạn</div>
+                <div className="text-2xl font-bold text-red-600">{overdueOrders.length}</div>
+              </div>
+              <AlertTriangle className="w-8 h-8 text-red-600" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-yellow-50 to-white p-6 border border-yellow-100 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm text-gray-600">Sắp đến hạn</div>
+                <div className="text-2xl font-bold text-yellow-600">{upcomingReminders.length}</div>
+              </div>
+              <Clock className="w-8 h-8 text-yellow-600" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-blue-50 to-white p-6 border border-blue-100 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm text-gray-600">Đã nhắc nhiều lần</div>
+                <div className="text-2xl font-bold text-blue-600">{multipleReminders.length}</div>
+              </div>
+              <Bell className="w-8 h-8 text-blue-600" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-50 to-white p-6 border border-green-100 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm text-gray-600">Tổng lần nhắc</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {orders.reduce((sum, order) => sum + order.remindersSent, 0)}
                 </div>
               </div>
+              <Send className="w-8 h-8 text-green-600" />
             </div>
-          ))}
+          </div>
+        </div>
+
+        {/* Bulk Actions */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Thao tác hàng loạt</h3>
+          <div className="flex flex-wrap gap-3">
+            <button 
+              onClick={() => handleBulkOperation('send_reminder')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            >
+              <Send className="w-4 h-4" />
+              <span>Gửi nhắc thanh toán tất cả</span>
+            </button>
+            <button 
+              onClick={() => handleBulkOperation('mark_paid')}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+            >
+              <Check className="w-4 h-4" />
+              <span>Đánh dấu đã thanh toán</span>
+            </button>
+            <button 
+              onClick={() => exportOrdersToCSV(overdueOrders)}
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center space-x-2"
+            >
+              <Download className="w-4 h-4" />
+              <span>Xuất danh sách quá hạn</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Overdue Orders */}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 bg-red-50">
+            <h3 className="text-lg font-semibold text-red-800">Đơn hàng quá hạn thanh toán</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mã đơn</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Khách hàng</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tổng tiền</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quá hạn</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lần nhắc</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {overdueOrders.map((order) => (
+                  <tr key={order.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium text-gray-900">{order.orderNumber}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="font-medium text-gray-900">{order.customer.name}</div>
+                        <div className="text-sm text-gray-500">{order.customer.phone}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium text-red-600">{formatCurrency(order.total)}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-red-600">
+                        {order.deadline && Math.ceil((new Date().getTime() - new Date(order.deadline).getTime()) / (1000 * 60 * 60 * 24))} ngày
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        order.remindersSent >= 3 ? 'bg-red-100 text-red-800' :
+                        order.remindersSent >= 2 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {order.remindersSent} lần
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        <button 
+                          onClick={() => {
+                            setOrders(prev => prev.map(o => 
+                              o.id === order.id ? { ...o, remindersSent: o.remindersSent + 1 } : o
+                            ))
+                            setNotification({
+                              message: `Đã gửi nhắc nhở cho đơn ${order.orderNumber}`,
+                              type: 'success'
+                            })
+                            setTimeout(() => setNotification(null), 3000)
+                          }}
+                          className="p-1 text-gray-400 hover:text-blue-600 transition-colors" 
+                          title="Gửi nhắc nhở"
+                        >
+                          <Send className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => setSelectedOrder(order)}
+                          className="p-1 text-gray-400 hover:text-green-600 transition-colors" 
+                          title="Xem chi tiết"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setOrders(prev => prev.map(o => 
+                              o.id === order.id ? { ...o, paymentStatus: 'paid' as const } : o
+                            ))
+                            setNotification({
+                              message: `Đã đánh dấu đơn ${order.orderNumber} là đã thanh toán`,
+                              type: 'success'
+                            })
+                            setTimeout(() => setNotification(null), 3000)
+                          }}
+                          className="p-1 text-gray-400 hover:text-purple-600 transition-colors" 
+                          title="Đánh dấu đã thanh toán"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Upcoming Reminders */}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 bg-yellow-50">
+            <h3 className="text-lg font-semibold text-yellow-800">Đơn hàng sắp đến hạn thanh toán</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mã đơn</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Khách hàng</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tổng tiền</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Còn lại</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {upcomingReminders.map((order) => (
+                  <tr key={order.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium text-gray-900">{order.orderNumber}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="font-medium text-gray-900">{order.customer.name}</div>
+                        <div className="text-sm text-gray-500">{order.customer.phone}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium text-yellow-600">{formatCurrency(order.total)}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-yellow-600">
+                        {order.deadline && calculateTimeRemaining(order.deadline)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        <button 
+                          onClick={() => {
+                            setOrders(prev => prev.map(o => 
+                              o.id === order.id ? { ...o, remindersSent: o.remindersSent + 1 } : o
+                            ))
+                            setNotification({
+                              message: `Đã gửi nhắc nhở sớm cho đơn ${order.orderNumber}`,
+                              type: 'success'
+                            })
+                            setTimeout(() => setNotification(null), 3000)
+                          }}
+                          className="p-1 text-gray-400 hover:text-blue-600 transition-colors" 
+                          title="Gửi nhắc nhở sớm"
+                        >
+                          <Send className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => setSelectedOrder(order)}
+                          className="p-1 text-gray-400 hover:text-green-600 transition-colors" 
+                          title="Xem chi tiết"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     )
@@ -793,6 +1169,8 @@ export default function OrderManagement() {
             <input
               type="text"
               placeholder="Tìm kiếm đơn hàng theo mã, khách hàng..."
+              value={filters.search}
+              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
             />
           </div>
@@ -800,7 +1178,10 @@ export default function OrderManagement() {
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Status Filter */}
-            <select className="border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <select 
+              value={filters.status}
+              onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
               <option value="">Tất cả trạng thái</option>
               <option value="draft">Nháp</option>
               <option value="pending">Chờ xác nhận</option>
@@ -811,7 +1192,10 @@ export default function OrderManagement() {
             </select>
             
             {/* Payment Status Filter */}
-            <select className="border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <select 
+              value={filters.paymentStatus}
+              onChange={(e) => setFilters(prev => ({ ...prev, paymentStatus: e.target.value }))}
+              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
               <option value="">Tình trạng thanh toán</option>
               <option value="unpaid">Chưa thanh toán</option>
               <option value="partial">Thanh toán một phần</option>
@@ -820,7 +1204,10 @@ export default function OrderManagement() {
             </select>
             
             {/* Time Filter */}
-            <select className="border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <select 
+              value={filters.timeRange}
+              onChange={(e) => setFilters(prev => ({ ...prev, timeRange: e.target.value }))}
+              className="border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
               <option value="">Thời gian</option>
               <option value="today">Hôm nay</option>
               <option value="yesterday">Hôm qua</option>
@@ -828,6 +1215,17 @@ export default function OrderManagement() {
               <option value="thisMonth">Tháng này</option>
               <option value="lastMonth">Tháng trước</option>
             </select>
+            
+            {/* Clear Filters Button */}
+            {(filters.status || filters.paymentStatus || filters.timeRange || filters.search) && (
+              <button
+                onClick={() => setFilters({ status: '', paymentStatus: '', timeRange: '', search: '', tags: [] })}
+                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-1"
+              >
+                <X className="w-4 h-4" />
+                <span>Xóa bộ lọc</span>
+              </button>
+            )}
             
             {/* Create Order Button */}
             <button 
@@ -841,12 +1239,99 @@ export default function OrderManagement() {
         </div>
       </div>
 
+      {/* Filter Results Summary */}
+      <div className="flex items-center justify-between text-sm text-gray-600">
+        <span>
+          Hiển thị {getFilteredOrders().length} trong tổng {orders.length} đơn hàng
+          {(filters.status || filters.paymentStatus || filters.timeRange || filters.search) && (
+            <span className="ml-1 text-blue-600">(đã lọc)</span>
+          )}
+        </span>
+        <div className="flex items-center space-x-4">
+          {selectedOrders.length > 0 && (
+            <span className="text-blue-600 font-medium">
+              Đã chọn {selectedOrders.length} đơn hàng
+            </span>
+          )}
+          <div className="text-xs text-gray-500">
+            Phím tắt: Ctrl+A (chọn tất cả), Esc (bỏ chọn)
+          </div>
+        </div>
+      </div>
+
+      {/* Bulk Actions Bar */}
+      {selectedOrders.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <span className="text-sm font-medium text-blue-900">
+                Đã chọn {selectedOrders.length} đơn hàng
+              </span>
+              <button
+                onClick={() => setSelectedOrders([])}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Bỏ chọn tất cả
+              </button>
+            </div>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => handleBulkOperation('mark_paid')}
+                disabled={isLoading}
+                className="px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-1"
+              >
+                {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                <span>Đánh dấu đã thanh toán</span>
+              </button>
+              <button
+                onClick={() => handleBulkOperation('mark_completed')}
+                disabled={isLoading}
+                className="px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-1"
+              >
+                {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                <span>Hoàn thành</span>
+              </button>
+              <button
+                onClick={() => handleBulkOperation('send_reminder')}
+                disabled={isLoading}
+                className="px-3 py-2 bg-yellow-600 text-white text-sm rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-1"
+              >
+                {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                <span>Gửi nhắc nhở</span>
+              </button>
+              <button
+                onClick={() => handleBulkOperation('export')}
+                disabled={isLoading}
+                className="px-3 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-1"
+              >
+                {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                <span>Xuất CSV</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Orders Table */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={selectedOrders.length === getFilteredOrders().length && getFilteredOrders().length > 0}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedOrders(getFilteredOrders().map(order => order.id))
+                      } else {
+                        setSelectedOrders([])
+                      }
+                    }}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã đơn</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Khách hàng</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Sản phẩm</th>
@@ -859,8 +1344,22 @@ export default function OrderManagement() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {orders.map((order) => (
+              {getFilteredOrders().map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={selectedOrders.includes(order.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedOrders(prev => [...prev, order.id])
+                        } else {
+                          setSelectedOrders(prev => prev.filter(id => id !== order.id))
+                        }
+                      }}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                  </td>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <div>
                       <div className="font-medium text-gray-900">{order.orderNumber}</div>
@@ -950,6 +1449,42 @@ export default function OrderManagement() {
               ))}
             </tbody>
           </table>
+          
+          {/* Empty State */}
+          {getFilteredOrders().length === 0 && (
+            <div className="text-center py-12">
+              <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {(filters.status || filters.paymentStatus || filters.timeRange || filters.search) 
+                  ? 'Không tìm thấy đơn hàng phù hợp' 
+                  : 'Chưa có đơn hàng nào'
+                }
+              </h3>
+              <p className="text-gray-500 mb-4">
+                {(filters.status || filters.paymentStatus || filters.timeRange || filters.search)
+                  ? 'Hãy thử điều chỉnh bộ lọc để tìm kiếm đơn hàng khác'
+                  : 'Tạo đơn hàng đầu tiên để bắt đầu quản lý'
+                }
+              </p>
+              {(filters.status || filters.paymentStatus || filters.timeRange || filters.search) ? (
+                <button
+                  onClick={() => setFilters({ status: '', paymentStatus: '', timeRange: '', search: '', tags: [] })}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-100 hover:bg-blue-200"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Xóa tất cả bộ lọc
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Tạo đơn hàng đầu tiên
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -995,18 +1530,8 @@ export default function OrderManagement() {
         <div className="p-6">
           {activeTab === 'overview' && renderOverview()}
           {activeTab === 'orders' && renderOrders()}
-          {activeTab === 'products' && (
-            <div className="text-center py-12">
-              <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Quản lý sản phẩm đang được phát triển...</p>
-            </div>
-          )}
-          {activeTab === 'reminders' && (
-            <div className="text-center py-12">
-              <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Cài đặt nhắc thanh toán đang được phát triển...</p>
-            </div>
-          )}
+          {activeTab === 'products' && renderProductsManagement()}
+          {activeTab === 'reminders' && renderRemindersManagement()}
         </div>
       </div>
 
@@ -1017,6 +1542,29 @@ export default function OrderManagement() {
         }`}>
           {notification.message}
         </div>
+      )}
+
+      {/* Modals */}
+      {showCreateModal && (
+        <CreateOrderModal
+          isOpen={showCreateModal}
+          customers={customers}
+          products={products}
+          onClose={() => setShowCreateModal(false)}
+          onSave={handleCreateOrder}
+        />
+      )}
+
+      {selectedOrder && (
+        <OrderDetailModal
+          isOpen={true}
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          onUpdate={(orderId, updates) => {
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updates } : o))
+            setSelectedOrder(null)
+          }}
+        />
       )}
     </div>
   )
