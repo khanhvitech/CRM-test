@@ -61,9 +61,9 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       id: 'dashboard',
       icon: LayoutDashboard,
       label: "Tổng quan",
-      iconText: "�",
+      iconText: "📊",
       tooltip: "Tổng quan: Dashboard theo vai trò",
-      roles: ["admin", "ceo", "leader", "sale"]
+      roles: ["admin", "ceo"]
     },
     {
       id: 'sales',
@@ -103,7 +103,7 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       label: "Báo cáo",
       iconText: "📊",
       tooltip: "Báo cáo: Doanh số, hiệu suất và KPIs",
-      roles: ["admin", "ceo", "leader", "sale"]
+      roles: ["admin", "ceo", "leader"]
     },
     {
       id: 'settings',
@@ -111,7 +111,7 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       label: "Cài đặt",
       iconText: "⚙️",
       tooltip: "Cài đặt: Hệ thống, tích hợp và quản lý công ty",
-      roles: ["admin", "ceo"]
+      roles: ["admin"]
     },
   ];
 

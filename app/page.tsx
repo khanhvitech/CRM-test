@@ -15,7 +15,7 @@ import ChatbotAssistant from './components/ChatbotAssistantNew'
 // import VileadsChatbot from './components/VileadsChatbot'
 
 export default function Home() {
-  const [currentView, setCurrentView] = useState('dashboard')
+  const [currentView, setCurrentView] = useState('workspace') // Đổi mặc định từ 'dashboard' thành 'workspace'
 
   const handleViewChange = (view: string) => {
     setCurrentView(view)

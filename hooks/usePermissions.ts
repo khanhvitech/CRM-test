@@ -157,10 +157,10 @@ const getPermissionsByRole = (role: UserRole): Permissions => {
 
     case 'ceo':
       return {
-        // Dashboard - CEO: xem toàn bộ
-        canViewAllDashboard: true,
-        canViewTeamDashboard: true,
-        canViewPersonalDashboard: true,
+        // Dashboard - CEO: KHÔNG truy cập (loại bỏ Tổng quan)
+        canViewAllDashboard: false,
+        canViewTeamDashboard: false,
+        canViewPersonalDashboard: false,
         
         // Leads - CEO: xem toàn bộ, không phân bổ/nhập xuất
         canViewAllLeads: true,
@@ -224,19 +224,19 @@ const getPermissionsByRole = (role: UserRole): Permissions => {
         canCustomizeReports: true,
         canExportReports: false,
         
-        // Settings - CEO: xem công ty, không chỉnh sửa
+        // Settings - CEO: KHÔNG truy cập (loại bỏ Cài đặt)
         canViewAllSettings: false,
-        canViewCompanySettings: true,
+        canViewCompanySettings: false,
         canEditSettings: false,
         canManageIntegrations: false,
       };
 
     case 'leader':
       return {
-        // Dashboard - Leader: xem đội
+        // Dashboard - Leader: KHÔNG truy cập (loại bỏ Tổng quan)
         canViewAllDashboard: false,
-        canViewTeamDashboard: true,
-        canViewPersonalDashboard: true,
+        canViewTeamDashboard: false,
+        canViewPersonalDashboard: false,
         
         // Leads - Leader: quản lý đội
         canViewAllLeads: false,
@@ -309,10 +309,10 @@ const getPermissionsByRole = (role: UserRole): Permissions => {
 
     case 'sale':
       return {
-        // Dashboard - Sale: chỉ cá nhân
+        // Dashboard - Sale: KHÔNG truy cập (loại bỏ Tổng quan)
         canViewAllDashboard: false,
         canViewTeamDashboard: false,
-        canViewPersonalDashboard: true,
+        canViewPersonalDashboard: false,
         
         // Leads - Sale: chỉ cá nhân
         canViewAllLeads: false,
@@ -369,10 +369,10 @@ const getPermissionsByRole = (role: UserRole): Permissions => {
         canEditMarketing: false,
         canManageAutomation: false,
         
-        // Reports - Sale: chỉ cá nhân, không xuất/tùy chỉnh
+        // Reports - Sale: KHÔNG truy cập (loại bỏ Báo cáo)
         canViewAllReports: false,
         canViewTeamReports: false,
-        canViewPersonalReports: true,
+        canViewPersonalReports: false,
         canCustomizeReports: false,
         canExportReports: false,
         
