@@ -123,7 +123,7 @@ interface NextBestAction {
 export default function WorkspaceManagement() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [searchQuery, setSearchQuery] = useState('')
-  const [aiChatOpen, setAiChatOpen] = useState(false)
+  const [aiChatOpen, setAiChatOpen] = useState(true) // Chat AI luôn hiển thị
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -429,6 +429,31 @@ export default function WorkspaceManagement() {
     }
   ]
 
+  // Handle quick message send
+  const handleQuickSend = (message: string) => {
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: message,
+      timestamp: new Date().toISOString()
+    }
+
+    setChatMessages(prev => [...prev, userMessage])
+    setIsTyping(true)
+
+    // Simulate AI response
+    setTimeout(() => {
+      const aiResponse: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: generateAIResponse(message),
+        timestamp: new Date().toISOString()
+      }
+      setChatMessages(prev => [...prev, aiResponse])
+      setIsTyping(false)
+    }, 1500)
+  }
+
   // Handle chat
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return
@@ -534,10 +559,10 @@ export default function WorkspaceManagement() {
         </div>
       </div>
 
-      <div className="flex h-[calc(100vh-80px)]">
-        {/* Left Panel - Menu & Quick Actions - Tăng kích thước */}
+      <div className="flex h-[calc(100vh-40px)]">
+        {/* Left Panel - Menu & Quick Actions */}
         <div className="w-[420px] bg-white border-r border-gray-200 overflow-y-auto">
-          <div className="p-6 space-y-6">
+          <div className="p-4 space-y-4">
             {/* Quick Actions */}
             <div>
               <h3 className="text-sm font-medium text-gray-900 mb-4 flex items-center">
@@ -608,156 +633,165 @@ export default function WorkspaceManagement() {
 
               {/* Thêm Quick Actions khác */}
               <div className="mt-4 space-y-3">
-                {/* AI Assistant nhanh */}
-                <div className="group cursor-pointer">
-                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border border-indigo-200 rounded-lg p-3 transition-all duration-200 hover:shadow-sm">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
-                        <Bot className="w-4 h-4 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">AI Gợi ý</div>
-                        <div className="text-xs text-gray-500">Nhận tư vấn thông minh</div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tìm kiếm nhanh */}
-                <div className="group cursor-pointer">
-                  <div className="bg-gradient-to-r from-gray-50 to-slate-50 hover:from-gray-100 hover:to-slate-100 border border-gray-200 rounded-lg p-3 transition-all duration-200 hover:shadow-sm">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-gray-500 to-slate-500 rounded-full flex items-center justify-center">
-                        <Search className="w-4 h-4 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">Tìm kiếm</div>
-                        <div className="text-xs text-gray-500">Khách hàng, deal, task...</div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
-            {/* Next Best Actions - Layout cải thiện */}
+            {/* Quick Stats Dashboard */}
             <div className="mt-8">
               <h3 className="text-sm font-medium text-gray-900 mb-4 flex items-center">
-                <Sparkles className="w-5 h-5 mr-2 text-yellow-500 animate-pulse" />
-                Hành động tiếp theo
-                <Badge variant="outline" className="ml-2 text-xs bg-yellow-50 text-yellow-700 border-yellow-300">
-                  AI Powered
+                <BarChart3 className="w-5 h-5 mr-2 text-blue-500" />
+                Thống kê nhanh
+                <Badge variant="outline" className="ml-2 text-xs bg-blue-50 text-blue-700 border-blue-300">
+                  Cập nhật
                 </Badge>
               </h3>
               
-              <div className="space-y-4">
-                {nextBestActions.map((action, index) => (
-                  <div key={action.id} className="group cursor-pointer">
-                    <div className="bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl p-4 transition-all duration-200 hover:shadow-lg transform hover:-translate-y-1 relative overflow-hidden">
-                      <div className="flex flex-col space-y-3">
-                        {/* Header với icon và title */}
-                        <div className="flex items-start gap-3">
-                          <div className="flex flex-col items-center space-y-1 flex-shrink-0">
-                            <div className={`w-10 h-10 ${action.color} rounded-full flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-200`}>
-                              <action.icon className="w-5 h-5 text-white" />
-                            </div>
-                            {/* Priority badge */}
-                            {action.priority === 'urgent' && (
-                              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                            )}
-                            {action.priority === 'high' && (
-                              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                            )}
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center flex-wrap gap-2 mb-2">
-                              <h4 className="text-sm font-bold text-gray-900">{action.title}</h4>
-                              {index === 0 && (
-                                <Badge variant="destructive" className="text-xs px-2 py-1 animate-pulse">
-                                  🔥 HOT
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-gray-600 mb-3 leading-relaxed">{action.description}</p>
-                          </div>
-                        </div>
-                        
-                        {/* Action details và badges */}
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                          <div className="flex items-center space-x-1 bg-gray-100 rounded-full px-2 py-1">
-                            <Clock className="w-3 h-3 text-gray-500" />
-                            <span className="text-xs text-gray-600 font-medium">{action.time}</span>
-                          </div>
-                          <div className="flex items-center space-x-1 bg-purple-100 rounded-full px-2 py-1">
-                            <Brain className="w-3 h-3 text-purple-600" />
-                            <span className="text-xs text-purple-700 font-bold">{action.aiScore}%</span>
-                          </div>
-                          <Badge 
-                            variant={action.priority === 'urgent' ? 'destructive' : 
-                                    action.priority === 'high' ? 'default' : 'secondary'} 
-                            className="text-xs font-medium"
-                          >
-                            {action.priority === 'urgent' ? '🚨 Khẩn cấp' : 
-                             action.priority === 'high' ? '⚡ Ưu tiên cao' : '📝 Bình thường'}
-                          </Badge>
-                        </div>
-                        
-                        {/* Progress bar và action button */}
-                        <div className="flex items-center gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                              <span className="font-medium">AI Confidence</span>
-                              <span className="font-bold">{action.aiScore}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className={`h-2 rounded-full transition-all duration-500 ${
-                                  action.aiScore >= 90 ? 'bg-gradient-to-r from-green-400 to-green-600' :
-                                  action.aiScore >= 80 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
-                                  'bg-gradient-to-r from-gray-400 to-gray-500'
-                                }`}
-                                style={{ width: `${action.aiScore}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center space-x-2">
-                            <Button 
-                              size="sm"
-                              className={`${action.priority === 'urgent' ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700' : 
-                                         action.priority === 'high' ? 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700' : 
-                                         'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'} text-white shadow-lg hover:shadow-xl transition-all duration-200 font-semibold px-4 py-2`}
-                            >
-                              {action.action}
-                              <ChevronRight className="w-4 h-4 ml-1" />
-                            </Button>
-                            
-                            {/* Quick actions */}
-                            <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              <Button size="sm" variant="outline" className="w-7 h-7 p-0 hover:bg-gray-100 border-gray-300">
-                                <MoreHorizontal className="w-3 h-3" />
-                              </Button>
-                              <Button size="sm" variant="outline" className="w-7 h-7 p-0 hover:bg-yellow-100 border-yellow-300">
-                                <Star className="w-3 h-3 text-yellow-600" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
+              {/* Main Stats - Redesigned as Action Blocks */}
+              <div className="space-y-4 mb-6">
+                {/* Leads cần chăm sóc */}
+                <div className="bg-white border border-red-200 hover:border-red-300 rounded-xl p-4 hover:shadow-lg transition-all duration-200 group">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-md">
+                        <Target className="w-6 h-6 text-white" />
                       </div>
                     </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-lg font-bold text-red-700">23</h4>
+                        <Badge className="bg-red-100 text-red-700 border-red-300 text-xs">
+                          Cần chăm sóc
+                        </Badge>
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                      </div>
+                      <p className="text-sm text-gray-700 font-medium mb-1">Leads hot chưa liên hệ</p>
+                      <div className="flex items-center text-xs text-red-600">
+                        <ArrowUpRight className="w-3 h-3 mr-1" />
+                        <span>+15% từ tuần trước</span>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <Button size="sm" className="bg-red-500 hover:bg-red-600 text-white">
+                        Xem chi tiết
+                      </Button>
+                    </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Khách hàng cần follow-up */}
+                <div className="bg-white border border-orange-200 hover:border-orange-300 rounded-xl p-4 hover:shadow-lg transition-all duration-200 group">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-md">
+                        <Users className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-lg font-bold text-orange-700">12</h4>
+                        <Badge className="bg-orange-100 text-orange-700 border-orange-300 text-xs">
+                          Follow-up
+                        </Badge>
+                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                      </div>
+                      <p className="text-sm text-gray-700 font-medium mb-1">Khách hàng cần liên hệ lại</p>
+                      <div className="flex items-center text-xs text-orange-600">
+                        <Clock className="w-3 h-3 mr-1" />
+                        <span>3 khách quá hạn</span>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white">
+                        Liên hệ ngay
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tỷ lệ chuyển đổi */}
+                <div className="bg-white border border-green-200 hover:border-green-300 rounded-xl p-4 hover:shadow-lg transition-all duration-200 group">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-md">
+                        <TrendingUp className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-lg font-bold text-green-700">18.5%</h4>
+                        <Badge className="bg-green-100 text-green-700 border-green-300 text-xs">
+                          Conversion
+                        </Badge>
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      </div>
+                      <p className="text-sm text-gray-700 font-medium mb-1">Tỷ lệ chuyển đổi tháng này</p>
+                      <div className="flex items-center text-xs text-green-600">
+                        <ArrowUpRight className="w-3 h-3 mr-1" />
+                        <span>+2.3% so với tháng trước</span>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <Button size="sm" variant="outline" className="border-green-300 text-green-600 hover:bg-green-50">
+                        Phân tích
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Doanh thu dự kiến */}
+                <div className="bg-white border border-blue-200 hover:border-blue-300 rounded-xl p-4 hover:shadow-lg transition-all duration-200 group">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-md">
+                        <DollarSign className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-lg font-bold text-blue-700">2.4M</h4>
+                        <Badge className="bg-blue-100 text-blue-700 border-blue-300 text-xs">
+                          Revenue
+                        </Badge>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      </div>
+                      <p className="text-sm text-gray-700 font-medium mb-1">Doanh thu dự kiến tháng này</p>
+                      <div className="flex items-center text-xs text-blue-600">
+                        <ArrowUpRight className="w-3 h-3 mr-1" />
+                        <span>85% hoàn thành mục tiêu</span>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <Button size="sm" variant="outline" className="border-blue-300 text-blue-600 hover:bg-blue-50">
+                        Xem báo cáo
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
-              
-              {/* Show more actions */}
-              <div className="mt-4 text-center">
-                <Button variant="ghost" size="sm" className="text-xs text-gray-500 hover:text-gray-700">
-                  <Plus className="w-3 h-3 mr-1" />
-                  Xem thêm hành động AI
-                </Button>
+
+              {/* Quick Insights */}
+              <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-4">
+                  <div className="flex items-center mb-2">
+                    <Lightbulb className="w-5 h-5 text-purple-600 mr-2" />
+                    <h5 className="text-sm font-semibold text-purple-900">Insight thông minh</h5>
+                  </div>
+                  <p className="text-sm text-purple-700">
+                    Leads từ Facebook Ads có tỷ lệ chuyển đổi cao nhất (24.3%). 
+                    Nên tăng ngân sách cho kênh này.
+                  </p>
+                </div>
+
+                <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 rounded-xl p-4">
+                  <div className="flex items-center mb-2">
+                    <Activity className="w-5 h-5 text-cyan-600 mr-2" />
+                    <h5 className="text-sm font-semibold text-cyan-900">Hiệu suất team</h5>
+                  </div>
+                  <p className="text-sm text-cyan-700">
+                    Team đang hoạt động tốt với 92% leads được liên hệ trong 24h. 
+                    Duy trì nhịp độ này.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -786,14 +820,14 @@ export default function WorkspaceManagement() {
         </div>
 
         {/* Central Panel - KPI Metrics, Tasks, Calendar */}
-        <div className="flex-1 p-6 overflow-y-auto">
-          <div className="space-y-6">            {/* KPI Metrics */}
+        <div className="flex-1 p-4 overflow-y-auto">
+          <div className="space-y-4">            {/* KPI Metrics */}
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Chỉ số hiệu suất</h2>
-              <div className="grid grid-cols-4 gap-4">
+              <h2 className="text-lg font-semibold text-gray-900 mb-3">Chỉ số hiệu suất</h2>
+              <div className="grid grid-cols-4 gap-3">
                 {kpiMetrics.map((metric, index) => (
                   <Card key={index} className="relative overflow-hidden">
-                    <CardContent className="p-4">
+                    <CardContent className="p-3">
                       <div className="flex items-center justify-between">
                         <div className={`w-10 h-10 ${metric.bgColor} rounded-lg flex items-center justify-center`}>
                           <metric.icon className={`w-5 h-5 ${metric.color}`} />
@@ -819,230 +853,271 @@ export default function WorkspaceManagement() {
               </div>
             </div>
 
-            {/* AI Daily Work Suggestions */}
+            {/* Work Suggestions Based on Statistics */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center">
                   <Sparkles className="w-5 h-5 mr-2 text-yellow-500 animate-pulse" />
-                  AI Gợi ý công việc hôm nay
+                  Gợi ý công việc dựa trên thống kê
                 </h2>
                 <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
                   <Bot className="w-3 h-3 mr-1" />
-                  AI Powered
+                  Data Driven
                 </Badge>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                {aiDailySuggestions.map((suggestion, index) => (
-                  <Card key={suggestion.id} className={`relative overflow-hidden border-l-4 ${
-                    suggestion.priority === 'urgent' ? 'border-l-red-500 hover:shadow-red-100' :
-                    suggestion.priority === 'high' ? 'border-l-blue-500 hover:shadow-blue-100' :
-                    'border-l-orange-500 hover:shadow-orange-100'
-                  } group hover:shadow-lg transition-all duration-200 cursor-pointer`}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <div className={`w-10 h-10 ${suggestion.bgColor} rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-200`}>
-                          <suggestion.icon className={`w-5 h-5 ${suggestion.color}`} />
+              {/* Primary Suggestions Based on Stats */}
+              <div className="space-y-3 mb-6">
+                {/* Urgent: Handle Hot Leads */}
+                <div className="bg-white border border-red-200 hover:border-red-300 rounded-xl p-4 hover:shadow-lg transition-all duration-200 group">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-md">
+                        <Phone className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex justify-center mt-1">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-sm font-bold text-gray-900">Ưu tiên gọi 23 leads hot</h3>
+                        <Badge variant="destructive" className="text-xs animate-pulse">
+                          🔥 KHẨN CẤP
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Dựa trên thống kê: 23 leads hot chưa liên hệ (+15% từ tuần trước). 
+                        Bắt đầu với 5 leads có điểm số cao nhất.
+                      </p>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="flex items-center space-x-1 bg-red-100 rounded-full px-2 py-1">
+                          <Target className="w-3 h-3 text-red-600" />
+                          <span className="text-xs text-red-700 font-bold">23 leads</span>
                         </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-sm font-semibold text-gray-900">{suggestion.title}</h3>
-                            <Badge 
-                              variant={suggestion.priority === 'urgent' ? 'destructive' : 
-                                      suggestion.priority === 'high' ? 'default' : 'secondary'} 
-                              className="text-xs"
-                            >
-                              {suggestion.priority === 'urgent' ? '🚨 Khẩn cấp' : 
-                               suggestion.priority === 'high' ? '⚡ Ưu tiên cao' : '📝 Bình thường'}
-                            </Badge>
-                          </div>
-                          
-                          <p className="text-xs text-gray-600 mb-3 leading-relaxed">{suggestion.description}</p>
-                          
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center space-x-1 bg-purple-100 rounded-full px-2 py-1">
-                                <Brain className="w-3 h-3 text-purple-600" />
-                                <span className="text-xs text-purple-700 font-bold">{suggestion.confidence}%</span>
-                              </div>
-                              <span className="text-xs text-green-600 font-medium">{suggestion.impact}</span>
-                            </div>
-                            
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs px-3 py-1 h-7"
-                            >
-                              Áp dụng
-                              <ChevronRight className="w-3 h-3 ml-1" />
-                            </Button>
-                          </div>
-                          
-                          {/* AI Confidence Progress Bar */}
-                          <div className="mt-3">
-                            <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                              <span className="font-medium">AI Confidence</span>
-                              <span className="font-bold">{suggestion.confidence}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-1.5">
-                              <div 
-                                className={`h-1.5 rounded-full transition-all duration-700 ${
-                                  suggestion.confidence >= 95 ? 'bg-gradient-to-r from-green-400 to-green-600' :
-                                  suggestion.confidence >= 90 ? 'bg-gradient-to-r from-blue-400 to-blue-600' :
-                                  suggestion.confidence >= 85 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
-                                  'bg-gradient-to-r from-gray-400 to-gray-500'
-                                }`}
-                                style={{ width: `${suggestion.confidence}%` }}
-                              ></div>
-                            </div>
-                          </div>
+                        <div className="flex items-center space-x-1 bg-purple-100 rounded-full px-2 py-1">
+                          <Brain className="w-3 h-3 text-purple-600" />
+                          <span className="text-xs text-purple-700 font-bold">98% tin cậy</span>
+                        </div>
+                        <div className="flex items-center space-x-1 bg-green-100 rounded-full px-2 py-1">
+                          <TrendingUp className="w-3 h-3 text-green-600" />
+                          <span className="text-xs text-green-700 font-bold">Impact cao</span>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              
-              {/* Quick Stats */}
-              <div className="mt-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">4</div>
-                      <div className="text-xs text-gray-600">Gợi ý hôm nay</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">91%</div>
-                      <div className="text-xs text-gray-600">Độ tin cậy TB</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-purple-600">+45%</div>
-                      <div className="text-xs text-gray-600">Hiệu suất dự kiến</div>
-                    </div>
-                  </div>
-                  
-                  <Button size="sm" className="bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700">
-                    <Rocket className="w-4 h-4 mr-2" />
-                    Áp dụng tất cả
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* AI Insights */}
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Brain className="w-5 h-5 mr-2 text-purple-600" />
-                AI Insights
-              </h2>
-              <div className="grid grid-cols-3 gap-4">
-                {aiInsights.map((insight) => (
-                  <Card key={insight.id} className="border-l-4 border-l-purple-500">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start space-x-3">
-                          <insight.icon className={`w-5 h-5 ${insight.color} mt-0.5`} />
-                          <div>
-                            <h3 className="text-sm font-medium text-gray-900">{insight.title}</h3>
-                            <p className="text-xs text-gray-500 mt-1">{insight.description}</p>
-                            <div className="flex items-center space-x-2 mt-2">
-                              <Badge variant="outline" className="text-xs">
-                                AI: {insight.confidence}%
-                              </Badge>
-                              <Badge variant={insight.priority === 'urgent' ? 'destructive' : 'secondary'} className="text-xs">
-                                {insight.priority}
-                              </Badge>
-                            </div>
-                            <div className="text-xs text-gray-600 mt-2 font-medium">
-                              {insight.impact}
-                            </div>
-                          </div>
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-gray-500">
+                          Thời gian dự kiến: <span className="font-medium">2-3 giờ</span>
                         </div>
-                        <Button size="sm" variant="outline">
-                          {insight.action}
+                        <Button size="sm" className="bg-red-500 hover:bg-red-600 text-white">
+                          Bắt đầu gọi
+                          <ChevronRight className="w-4 h-4 ml-1" />
                         </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* High Priority: Follow-up Overdue Customers */}
+                <div className="bg-white border border-orange-200 hover:border-orange-300 rounded-xl p-4 hover:shadow-lg transition-all duration-200 group">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-md">
+                        <Mail className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex justify-center mt-1">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-sm font-bold text-gray-900">Follow-up 3 khách hàng quá hạn</h3>
+                        <Badge className="bg-orange-100 text-orange-700 border-orange-300 text-xs">
+                          ⚡ ƯU TIÊN CAO
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Trong 12 khách hàng cần follow-up, có 3 khách đã quá hạn liên hệ. 
+                        Gửi email cá nhân hóa để duy trì mối quan hệ.
+                      </p>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="flex items-center space-x-1 bg-orange-100 rounded-full px-2 py-1">
+                          <Clock className="w-3 h-3 text-orange-600" />
+                          <span className="text-xs text-orange-700 font-bold">3 quá hạn</span>
+                        </div>
+                        <div className="flex items-center space-x-1 bg-purple-100 rounded-full px-2 py-1">
+                          <Brain className="w-3 h-3 text-purple-600" />
+                          <span className="text-xs text-purple-700 font-bold">92% tin cậy</span>
+                        </div>
+                        <div className="flex items-center space-x-1 bg-blue-100 rounded-full px-2 py-1">
+                          <Users className="w-3 h-3 text-blue-600" />
+                          <span className="text-xs text-blue-700 font-bold">Giữ chân KH</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-gray-500">
+                          Thời gian dự kiến: <span className="font-medium">1 giờ</span>
+                        </div>
+                        <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white">
+                          Soạn email
+                          <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Tasks & Calendar */}
-            <div className="grid grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Nhiệm vụ ưu tiên</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {sampleAITasks.slice(0, 4).map((task) => (
-                      <div key={task.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded">
-                        <CheckCircle className="w-5 h-5 text-gray-400 mt-0.5" />
-                        <div className="flex-1">
-                          <h4 className="text-sm font-medium text-gray-900">{task.title}</h4>
-                          <p className="text-xs text-gray-500">{task.description}</p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Badge variant="outline" className="text-xs">
-                              {task.estimatedTime}p
-                            </Badge>
-                            <Badge variant={task.priority === 'high' ? 'destructive' : 'secondary'} className="text-xs">
-                              {task.priority}
-                            </Badge>
-                          </div>
+              {/* Other Important Tasks */}
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+                  <CheckCircle className="w-4 h-4 mr-2 text-blue-500" />
+                  Công việc quan trọng khác
+                </h3>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  {/* Revenue Analysis */}
+                  <div className="bg-white border border-blue-200 hover:border-blue-300 rounded-lg p-3 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                        <BarChart3 className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-900 mb-1">Phân tích xu hướng conversion</h4>
+                        <p className="text-xs text-gray-600 mb-2">
+                          Conversion rate tăng 2.3% - tìm hiểu yếu tố thành công để nhân rộng
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-green-600 font-medium">Conversion: 18.5%</span>
+                          <Button size="sm" variant="outline" className="text-xs h-6">
+                            Phân tích
+                          </Button>
                         </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Hoạt động gần đây</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {recentActivities.map((activity) => (
-                      <div key={activity.id} className="flex items-start space-x-3">
-                        <activity.icon className={`w-4 h-4 ${activity.color} mt-0.5`} />
-                        <div className="flex-1">
-                          <h4 className="text-sm font-medium text-gray-900">{activity.title}</h4>
-                          <p className="text-xs text-gray-500">{activity.description}</p>
-                          <p className="text-xs text-gray-400">{activity.time}</p>
+                  {/* Team Coordination */}
+                  <div className="bg-white border border-purple-200 hover:border-purple-300 rounded-lg p-3 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
+                        <Users className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-900 mb-1">Họp team review tuần</h4>
+                        <p className="text-xs text-gray-600 mb-2">
+                          Chia sẻ best practices để duy trì performance cao của team
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-purple-600 font-medium">10:00 AM</span>
+                          <Button size="sm" variant="outline" className="text-xs h-6">
+                            Lên lịch
+                          </Button>
                         </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
+
+                  {/* CRM Update */}
+                  <div className="bg-white border border-green-200 hover:border-green-300 rounded-lg p-3 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-900 mb-1">Cập nhật data CRM</h4>
+                        <p className="text-xs text-gray-600 mb-2">
+                          Đồng bộ thông tin khách hàng và leads mới để có dữ liệu chính xác
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-green-600 font-medium">Hàng tuần</span>
+                          <Button size="sm" variant="outline" className="text-xs h-6">
+                            Cập nhật
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Training */}
+                  <div className="bg-white border border-yellow-200 hover:border-yellow-300 rounded-lg p-3 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-full flex items-center justify-center">
+                        <Lightbulb className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-900 mb-1">Học kỹ năng sales mới</h4>
+                        <p className="text-xs text-gray-600 mb-2">
+                          Cải thiện kỹ năng closing để tăng conversion rate lên 20%
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-yellow-600 font-medium">30 phút/ngày</span>
+                          <Button size="sm" variant="outline" className="text-xs h-6">
+                            Bắt đầu
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Summary Insight */}
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <Brain className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-2">💡 Insight thông minh</h4>
+                    <p className="text-sm text-gray-700 mb-2">
+                      Dựa trên dữ liệu hiện tại, nếu hoàn thành các công việc ưu tiên trên, 
+                      bạn có thể tăng conversion rate lên <span className="font-bold text-blue-600">22%</span> 
+                      và đạt <span className="font-bold text-green-600">3.2M doanh thu</span> trong tháng này.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-300">
+                        Dự đoán AI
+                      </Badge>
+                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
+                        95% độ tin cậy
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Right Panel - AI Chat */}
         {aiChatOpen && (
-          <div className="w-96 bg-white border-l border-gray-200 flex flex-col">
-            <div className="p-4 border-b border-gray-200">
+          <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
+            <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-900">AI Assistant</h3>
-                <Button variant="ghost" size="sm" onClick={() => setAiChatOpen(false)}>
-                  <X className="w-4 h-4" />
-                </Button>
+                <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+                  <Bot className="w-4 h-4 mr-2 text-blue-500" />
+                  AI Assistant
+                </h3>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-gray-500 font-medium">Online</span>
+                  <Button variant="ghost" size="sm" onClick={() => setAiChatOpen(false)} className="ml-2 h-6 w-6 p-0">
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
               </div>
             </div>
             
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
+            <ScrollArea className="h-[768px] px-4 py-3">
+              <div className="space-y-3">
                 {chatMessages.map((message) => (
                   <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] p-3 rounded-lg ${
+                    <div className={`max-w-[85%] p-2.5 rounded-lg text-sm ${
                       message.type === 'user' 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-gray-100 text-gray-900'
+                        ? 'bg-blue-500 text-white rounded-br-sm' 
+                        : 'bg-gray-100 text-gray-900 rounded-bl-sm'
                     }`}>
-                      <p className="text-sm">{message.content}</p>
+                      <p>{message.content}</p>
                       <p className="text-xs opacity-70 mt-1">
                         {new Date(message.timestamp).toLocaleTimeString('vi-VN', { 
                           hour: '2-digit', 
@@ -1054,11 +1129,11 @@ export default function WorkspaceManagement() {
                 ))}
                 {isTyping && (
                   <div className="flex justify-start">
-                    <div className="bg-gray-100 p-3 rounded-lg">
+                    <div className="bg-gray-100 p-2.5 rounded-lg rounded-bl-sm">
                       <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       </div>
                     </div>
                   </div>
@@ -1066,25 +1141,142 @@ export default function WorkspaceManagement() {
               </div>
             </ScrollArea>
             
-            <div className="p-4 border-t border-gray-200">
+            <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
               <div className="flex space-x-2">
                 <Input
                   placeholder="Nhập tin nhắn..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  className="flex-1"
+                  className="flex-1 h-9 text-sm"
                 />
                 <Button 
                   size="sm" 
                   onClick={() => setVoiceRecording(!voiceRecording)}
                   variant={voiceRecording ? "default" : "outline"}
+                  className="h-9 w-9 p-0"
                 >
-                  {voiceRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  {voiceRecording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
                 </Button>
-                <Button size="sm" onClick={handleSendMessage} disabled={!newMessage.trim()}>
-                  <Send className="w-4 h-4" />
+                <Button 
+                  size="sm" 
+                  onClick={handleSendMessage} 
+                  disabled={!newMessage.trim()}
+                  className="h-9 w-9 p-0"
+                >
+                  <Send className="w-3.5 h-3.5" />
                 </Button>
+              </div>
+              
+              {/* AI Quick Actions & Suggestions */}
+              <div className="mt-3 space-y-3">
+                {/* Quick AI Actions */}
+                <div>
+                  <h4 className="text-xs font-medium text-gray-700 mb-2 flex items-center">
+                    <Zap className="w-3 h-3 mr-1 text-blue-500" />
+                    Hành động nhanh
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleQuickSend("Phân tích leads hôm nay")}
+                      className="text-xs h-7 px-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+                    >
+                      <Target className="w-3 h-3 mr-1" />
+                      Phân tích leads
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleQuickSend("Gợi ý kế hoạch bán hàng")}
+                      className="text-xs h-7 px-2 border-green-200 text-green-700 hover:bg-green-50"
+                    >
+                      <Calendar className="w-3 h-3 mr-1" />
+                      Kế hoạch bán hàng
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleQuickSend("Tóm tắt hiệu suất tuần này")}
+                      className="text-xs h-7 px-2 border-purple-200 text-purple-700 hover:bg-purple-50"
+                    >
+                      <BarChart3 className="w-3 h-3 mr-1" />
+                      Tóm tắt hiệu suất
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Smart Suggestions */}
+                <div>
+                  <h4 className="text-xs font-medium text-gray-700 mb-2 flex items-center">
+                    <Sparkles className="w-3 h-3 mr-1 text-yellow-500" />
+                    Gợi ý thông minh
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleQuickSend("Viết email follow-up cho client ABC Corp")}
+                      className="text-xs h-7 px-2 border-orange-200 text-orange-700 hover:bg-orange-50"
+                    >
+                      <Mail className="w-3 h-3 mr-1" />
+                      Viết email follow-up
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleQuickSend("Tạo script call cho lead mới")}
+                      className="text-xs h-7 px-2 border-red-200 text-red-700 hover:bg-red-50"
+                    >
+                      <Phone className="w-3 h-3 mr-1" />
+                      Tạo script call
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleQuickSend("Đề xuất chiến lược tăng conversion rate")}
+                      className="text-xs h-7 px-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                    >
+                      <TrendingUp className="w-3 h-3 mr-1" />
+                      Tăng conversion
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Quick Questions */}
+                <div>
+                  <h4 className="text-xs font-medium text-gray-700 mb-2 flex items-center">
+                    <MessageCircle className="w-3 h-3 mr-1 text-gray-500" />
+                    Câu hỏi thường gặp
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleQuickSend("Làm thế nào để tăng chất lượng leads?")}
+                      className="text-xs h-7 px-2 border-gray-200 text-gray-600 hover:bg-gray-50"
+                    >
+                      💡 Tăng chất lượng leads?
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleQuickSend("Best practices cho việc nurture leads")}
+                      className="text-xs h-7 px-2 border-gray-200 text-gray-600 hover:bg-gray-50"
+                    >
+                      🎯 Best practices nurture?
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleQuickSend("Cách theo dõi ROI marketing hiệu quả")}
+                      className="text-xs h-7 px-2 border-gray-200 text-gray-600 hover:bg-gray-50"
+                    >
+                      📊 Theo dõi ROI?
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1092,17 +1284,17 @@ export default function WorkspaceManagement() {
       </div>
 
       {/* Bottom Panel - Suggestions */}
-      <div className="bg-white border-t border-gray-200 p-4">
+      <div className="bg-white border-t border-gray-200 px-4 py-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-3">
             <h3 className="text-sm font-medium text-gray-900 flex items-center">
               <Lightbulb className="w-4 h-4 mr-2 text-yellow-500" />
               Đề xuất AI
             </h3>
-            <div className="flex space-x-4">
-              {aiSuggestions.map((suggestion) => (
-                <div key={suggestion.id} className="flex items-center space-x-2 bg-gray-50 px-3 py-1 rounded-full">
-                  <suggestion.icon className="w-4 h-4 text-gray-600" />
+            <div className="flex space-x-2">
+              {aiSuggestions.slice(0, 2).map((suggestion) => (
+                <div key={suggestion.id} className="flex items-center space-x-1 bg-gray-50 px-2 py-1 rounded-full">
+                  <suggestion.icon className="w-3 h-3 text-gray-600" />
                   <span className="text-xs text-gray-700">{suggestion.title}</span>
                   <Button size="sm" variant="link" className="text-xs p-0 h-auto">
                     {suggestion.action}
@@ -1112,7 +1304,7 @@ export default function WorkspaceManagement() {
             </div>
           </div>
           <div className="text-xs text-gray-500">
-            Cập nhật: {currentTime.toLocaleTimeString('vi-VN')}
+            {currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
           </div>
         </div>
       </div>
