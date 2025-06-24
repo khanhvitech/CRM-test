@@ -81,23 +81,19 @@ interface Order {
 }
 
 interface MetricData {
-  id: string
   title: string
   value: number
   previousValue: number
-  percentageChange: number
   icon: React.ReactNode
   color: string
   bgColor: string
   trend?: 'up' | 'down' | 'neutral'
-  clickAction: () => void
 }
 
 export default function SalesManagement() {
   const [activeTab, setActiveTab] = useState<'leads' | 'deals' | 'orders' | 'pipeline'>('leads')
   const [showFilters, setShowFilters] = useState(false)
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null)
-  const [selectedMetric, setSelectedMetric] = useState<string | null>(null)
   
   // Search and filter states for leads
   const [leadSearchTerm, setLeadSearchTerm] = useState('')
@@ -289,118 +285,46 @@ export default function SalesManagement() {
       leadId: 1
     }
   ])
-  // Calculate metrics with realistic previous month data
-  const calculateMetrics = () => {
-    const currentMonth = new Date().getMonth()
-    const currentYear = new Date().getFullYear()
-    
-    // Simulate previous month data (in real app, this would come from API)
-    const previousMonthData = {
-      totalLeads: 4, // Tháng trước có 4 leads
-      openDeals: 1,  // Tháng trước có 1 deal đang mở
-      totalOrders: 0, // Tháng trước chưa có đơn hàng nào
-      conversionRate: 25 // Tỷ lệ chuyển đổi tháng trước 25%
+
+  // Metrics calculation
+  const metrics: MetricData[] = [
+    {
+      title: 'Tổng Leads',
+      value: leads.length,
+      previousValue: leads.length - 2,
+      icon: <Users className="w-5 h-5" />,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-100',
+      trend: 'up'
+    },
+    {
+      title: 'Deals Đang Mở',
+      value: deals.filter(d => !d.stage.includes('closed')).length,
+      previousValue: deals.filter(d => !d.stage.includes('closed')).length - 1,
+      icon: <Target className="w-5 h-5" />,
+      color: 'text-green-600',
+      bgColor: 'bg-green-100',
+      trend: 'up'
+    },
+    {
+      title: 'Đơn Hàng',
+      value: orders.length,
+      previousValue: orders.length - 1,
+      icon: <ShoppingCart className="w-5 h-5" />,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-100',
+      trend: 'up'
+    },
+    {
+      title: 'Tỷ Lệ Chuyển Đổi',
+      value: Math.round((deals.length / leads.length) * 100),
+      previousValue: 65,
+      icon: <TrendingUp className="w-5 h-5" />,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-100',
+      trend: 'up'
     }
-    
-    const currentData = {
-      totalLeads: leads.length,
-      openDeals: deals.filter(d => !d.stage.includes('closed')).length,
-      totalOrders: orders.length,
-      conversionRate: leads.length > 0 ? Math.round((deals.length / leads.length) * 100) : 0
-    }
-    
-    const calculateTrend = (current: number, previous: number): 'up' | 'down' | 'neutral' => {
-      if (current > previous) return 'up'
-      if (current < previous) return 'down'
-      return 'neutral'
-    }
-    
-    const calculatePercentageChange = (current: number, previous: number): number => {
-      if (previous === 0) return current > 0 ? 100 : 0
-      return Math.round(((current - previous) / previous) * 100)
-    }
-    
-    return [
-      {
-        id: 'leads',
-        title: 'Tổng Leads',
-        value: currentData.totalLeads,
-        previousValue: previousMonthData.totalLeads,
-        percentageChange: calculatePercentageChange(currentData.totalLeads, previousMonthData.totalLeads),
-        icon: <Users className="w-5 h-5" />,
-        color: 'text-blue-600',
-        bgColor: 'bg-blue-100',
-        trend: calculateTrend(currentData.totalLeads, previousMonthData.totalLeads),        clickAction: () => {
-          setActiveTab('leads')
-          setSelectedMetric('leads')
-          setNotification({
-            message: `Đang hiển thị chi tiết ${currentData.totalLeads} leads`,
-            type: 'success'
-          })
-          setTimeout(() => setNotification(null), 3000)
-        }
-      },
-      {
-        id: 'deals',
-        title: 'Deals Đang Mở',
-        value: currentData.openDeals,
-        previousValue: previousMonthData.openDeals,
-        percentageChange: calculatePercentageChange(currentData.openDeals, previousMonthData.openDeals),
-        icon: <Target className="w-5 h-5" />,
-        color: 'text-green-600',
-        bgColor: 'bg-green-100',
-        trend: calculateTrend(currentData.openDeals, previousMonthData.openDeals),        clickAction: () => {
-          setActiveTab('deals')
-          setSelectedMetric('deals')
-          setNotification({
-            message: `Đang hiển thị ${currentData.openDeals} deals đang mở`,
-            type: 'success'
-          })
-          setTimeout(() => setNotification(null), 3000)
-        }
-      },
-      {
-        id: 'orders',
-        title: 'Đơn Hàng',
-        value: currentData.totalOrders,
-        previousValue: previousMonthData.totalOrders,
-        percentageChange: calculatePercentageChange(currentData.totalOrders, previousMonthData.totalOrders),
-        icon: <ShoppingCart className="w-5 h-5" />,
-        color: 'text-purple-600',
-        bgColor: 'bg-purple-100',
-        trend: calculateTrend(currentData.totalOrders, previousMonthData.totalOrders),        clickAction: () => {
-          setActiveTab('orders')
-          setSelectedMetric('orders')
-          setNotification({
-            message: `Đang hiển thị ${currentData.totalOrders} đơn hàng`,
-            type: 'success'
-          })
-          setTimeout(() => setNotification(null), 3000)
-        }
-      },
-      {
-        id: 'conversion',
-        title: 'Tỷ Lệ Chuyển Đổi',
-        value: currentData.conversionRate,
-        previousValue: previousMonthData.conversionRate,
-        percentageChange: calculatePercentageChange(currentData.conversionRate, previousMonthData.conversionRate),
-        icon: <TrendingUp className="w-5 h-5" />,
-        color: 'text-orange-600',
-        bgColor: 'bg-orange-100',
-        trend: calculateTrend(currentData.conversionRate, previousMonthData.conversionRate),        clickAction: () => {
-          setActiveTab('pipeline')
-          setSelectedMetric('conversion')
-          setNotification({
-            message: `Tỷ lệ chuyển đổi hiện tại: ${currentData.conversionRate}%`,
-            type: 'success'
-          })
-          setTimeout(() => setNotification(null), 3000)
-        }
-      }
-    ]
-  }
-  
-  const metrics = calculateMetrics()
+  ]
 
   // Convert deal to order function
   const convertDealToOrder = (dealId: number) => {
@@ -430,7 +354,6 @@ export default function SalesManagement() {
 
     setTimeout(() => setNotification(null), 5000)
   }
-
   const renderLeads = () => {
     // Filter leads based on search and filters
     const filteredLeads = leads.filter(lead => {
@@ -527,7 +450,7 @@ export default function SalesManagement() {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Danh sách Leads</h3>
               <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
@@ -535,196 +458,194 @@ export default function SalesManagement() {
                 Thêm Lead
               </button>
             </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    STT
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Khách hàng
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Điện thoại
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Khu vực
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Sản phẩm
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nguồn
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Giá trị
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Trạng thái
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Giai đoạn
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Phụ trách
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tags
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Liên hệ cuối
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Hành động
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredLeads.map((lead, index) => (
-                  <tr key={lead.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{index + 1}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                            <User className="h-5 w-5 text-gray-600" />
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{lead.name}</div>
-                          <div className="text-sm text-gray-500">{lead.email}</div>
-                          <div className="text-xs text-gray-400">{lead.company}</div>
+          </div><div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  STT
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Khách hàng
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Điện thoại
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Khu vực
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Sản phẩm
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Nguồn
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Giá trị
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Trạng thái
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Giai đoạn
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Phụ trách
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tags
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Liên hệ cuối
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Hành động
+                </th>
+              </tr>
+            </thead>            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredLeads.map((lead, index) => (
+                <tr key={lead.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{index + 1}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                          <User className="h-5 w-5 text-gray-600" />
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{lead.phone}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {lead.region === 'ha_noi' ? 'Hà Nội' : 
-                         lead.region === 'ho_chi_minh' ? 'Hồ Chí Minh' : 
-                         lead.region === 'da_nang' ? 'Đà Nẵng' : 
-                         lead.region === 'can_tho' ? 'Cần Thơ' : 
-                         lead.region === 'hai_phong' ? 'Hải Phòng' : lead.region}
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{lead.name}</div>
+                        <div className="text-sm text-gray-500">{lead.email}</div>
+                        <div className="text-xs text-gray-400">{lead.company}</div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{lead.product}</div>
-                      <div className="text-xs text-gray-500 mt-1 max-w-xs">
-                        {lead.content.length > 50 ? `${lead.content.substring(0, 50)}...` : lead.content}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className={`w-2 h-2 rounded-full mr-2 ${
-                          lead.source === 'facebook' ? 'bg-blue-500' :
-                          lead.source === 'google' ? 'bg-red-500' :
-                          lead.source === 'website' ? 'bg-green-500' :
-                          lead.source === 'zalo' ? 'bg-blue-600' :
-                          lead.source === 'referral' ? 'bg-purple-500' : 'bg-gray-500'
-                        }`}></div>
-                        <span className="text-sm text-gray-900 capitalize">
-                          {lead.source === 'facebook' ? 'Facebook' :
-                           lead.source === 'google' ? 'Google' :
-                           lead.source === 'website' ? 'Website' :
-                           lead.source === 'zalo' ? 'Zalo' :
-                           lead.source === 'referral' ? 'Referral' : lead.source}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{lead.phone}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {lead.region === 'ha_noi' ? 'Hà Nội' : 
+                       lead.region === 'ho_chi_minh' ? 'Hồ Chí Minh' : 
+                       lead.region === 'da_nang' ? 'Đà Nẵng' : 
+                       lead.region === 'can_tho' ? 'Cần Thơ' : 
+                       lead.region === 'hai_phong' ? 'Hải Phòng' : lead.region}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{lead.product}</div>
+                    <div className="text-xs text-gray-500 mt-1 max-w-xs">
+                      {lead.content.length > 50 ? `${lead.content.substring(0, 50)}...` : lead.content}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className={`w-2 h-2 rounded-full mr-2 ${
+                        lead.source === 'facebook' ? 'bg-blue-500' :
+                        lead.source === 'google' ? 'bg-red-500' :
+                        lead.source === 'website' ? 'bg-green-500' :
+                        lead.source === 'zalo' ? 'bg-blue-600' :
+                        lead.source === 'referral' ? 'bg-purple-500' : 'bg-gray-500'
+                      }`}></div>
+                      <span className="text-sm text-gray-900 capitalize">
+                        {lead.source === 'facebook' ? 'Facebook' :
+                         lead.source === 'google' ? 'Google' :
+                         lead.source === 'website' ? 'Website' :
+                         lead.source === 'zalo' ? 'Zalo' :
+                         lead.source === 'referral' ? 'Referral' : lead.source}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {new Intl.NumberFormat('vi-VN', {
+                        style: 'currency',
+                        currency: 'VND'
+                      }).format(lead.value)}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      lead.status === 'converted' ? 'bg-green-100 text-green-800' :
+                      lead.status === 'qualified' ? 'bg-blue-100 text-blue-800' :
+                      lead.status === 'contacted' ? 'bg-yellow-100 text-yellow-800' :
+                      lead.status === 'negotiation' ? 'bg-orange-100 text-orange-800' :
+                      lead.status === 'proposal' ? 'bg-purple-100 text-purple-800' :
+                      lead.status === 'lost' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {lead.status === 'converted' ? 'Đã chuyển đổi' :
+                       lead.status === 'qualified' ? 'Đã xác định' :
+                       lead.status === 'contacted' ? 'Đã liên hệ' :
+                       lead.status === 'negotiation' ? 'Đàm phán' :
+                       lead.status === 'proposal' ? 'Báo giá' :
+                       lead.status === 'lost' ? 'Thất bại' : 'Mới'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                      lead.stage === 'deal_created' ? 'bg-green-100 text-green-800' :
+                      lead.stage === 'proposal_sent' ? 'bg-purple-100 text-purple-800' :
+                      lead.stage === 'follow_up' ? 'bg-yellow-100 text-yellow-800' :
+                      lead.stage === 'demo_scheduled' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {lead.stage === 'deal_created' ? 'Đã tạo deal' :
+                       lead.stage === 'proposal_sent' ? 'Đã gửi báo giá' :
+                       lead.stage === 'follow_up' ? 'Theo dõi' :
+                       lead.stage === 'demo_scheduled' ? 'Đã lên lịch demo' : lead.stage}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{lead.assignedTo}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-wrap gap-1">
+                      {lead.tags.map((tag, tagIndex) => (
+                        <span key={tagIndex} className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
+                          tag === 'hot' ? 'bg-red-100 text-red-800' :
+                          tag === 'warm' ? 'bg-orange-100 text-orange-800' :
+                          tag === 'cold' ? 'bg-blue-100 text-blue-800' :
+                          tag === 'enterprise' ? 'bg-purple-100 text-purple-800' :
+                          tag === 'sme' ? 'bg-green-100 text-green-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {tag}
                         </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {new Intl.NumberFormat('vi-VN', {
-                          style: 'currency',
-                          currency: 'VND'
-                        }).format(lead.value)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        lead.status === 'converted' ? 'bg-green-100 text-green-800' :
-                        lead.status === 'qualified' ? 'bg-blue-100 text-blue-800' :
-                        lead.status === 'contacted' ? 'bg-yellow-100 text-yellow-800' :
-                        lead.status === 'negotiation' ? 'bg-orange-100 text-orange-800' :
-                        lead.status === 'proposal' ? 'bg-purple-100 text-purple-800' :
-                        lead.status === 'lost' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {lead.status === 'converted' ? 'Đã chuyển đổi' :
-                         lead.status === 'qualified' ? 'Đã xác định' :
-                         lead.status === 'contacted' ? 'Đã liên hệ' :
-                         lead.status === 'negotiation' ? 'Đàm phán' :
-                         lead.status === 'proposal' ? 'Báo giá' :
-                         lead.status === 'lost' ? 'Thất bại' : 'Mới'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        lead.stage === 'deal_created' ? 'bg-green-100 text-green-800' :
-                        lead.stage === 'proposal_sent' ? 'bg-purple-100 text-purple-800' :
-                        lead.stage === 'follow_up' ? 'bg-yellow-100 text-yellow-800' :
-                        lead.stage === 'demo_scheduled' ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {lead.stage === 'deal_created' ? 'Đã tạo deal' :
-                         lead.stage === 'proposal_sent' ? 'Đã gửi báo giá' :
-                         lead.stage === 'follow_up' ? 'Theo dõi' :
-                         lead.stage === 'demo_scheduled' ? 'Đã lên lịch demo' : lead.stage}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{lead.assignedTo}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-wrap gap-1">
-                        {lead.tags.map((tag, tagIndex) => (
-                          <span key={tagIndex} className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
-                            tag === 'hot' ? 'bg-red-100 text-red-800' :
-                            tag === 'warm' ? 'bg-orange-100 text-orange-800' :
-                            tag === 'cold' ? 'bg-blue-100 text-blue-800' :
-                            tag === 'enterprise' ? 'bg-purple-100 text-purple-800' :
-                            tag === 'sme' ? 'bg-green-100 text-green-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {lead.lastContactedAt ? new Date(lead.lastContactedAt).toLocaleDateString('vi-VN') : 'Chưa liên hệ'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900" title="Gọi điện">
-                          <Phone className="w-4 h-4" />
-                        </button>
-                        <button className="text-blue-600 hover:text-blue-900" title="Gửi email">
-                          <Mail className="w-4 h-4" />
-                        </button>
-                        <button className="text-blue-600 hover:text-blue-900" title="Xem chi tiết">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="text-green-600 hover:text-green-900" title="Chuyển đổi">
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {lead.lastContactedAt ? new Date(lead.lastContactedAt).toLocaleDateString('vi-VN') : 'Chưa liên hệ'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex items-center space-x-2">
+                      <button className="text-blue-600 hover:text-blue-900" title="Gọi điện">
+                        <Phone className="w-4 h-4" />
+                      </button>
+                      <button className="text-blue-600 hover:text-blue-900" title="Gửi email">
+                        <Mail className="w-4 h-4" />
+                      </button>
+                      <button className="text-blue-600 hover:text-blue-900" title="Xem chi tiết">
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button className="text-green-600 hover:text-green-900" title="Chuyển đổi">
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-    )
-  }
+    </div>
+  )
 
   const renderDeals = () => (
     <div className="space-y-4">
@@ -806,10 +727,10 @@ export default function SalesManagement() {
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
+          </table>        </div>
       </div>
-    </div>  )
+    </div>
+  )
 
   const renderPipeline = () => {
     // Kanban columns for lead conversion process
@@ -868,47 +789,17 @@ export default function SalesManagement() {
         icon: <Target className="w-5 h-5" />,
         leads: leads.filter(lead => lead.status === 'converted')
       }
-    ]    // Calculate total value for each column
+    ]
+
+    // Calculate total value for each column
     const getColumnValue = (columnLeads: Lead[]) => {
       return columnLeads.reduce((sum, lead) => sum + lead.value, 0)
     }
 
     return (
-      <div className="space-y-6">        {/* Pipeline Analytics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
-            <h4 className="text-sm font-medium mb-2">Tỷ lệ chuyển đổi</h4>
-            <div className="text-2xl font-bold">
-              {leads.length > 0 ? Math.round((leads.filter(l => l.status === 'converted').length / leads.length) * 100) : 0}%
-            </div>
-            <p className="text-xs opacity-75">Lead → Deal</p>
-          </div>
-          
-          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
-            <h4 className="text-sm font-medium mb-2">Giá trị Pipeline</h4>
-            <div className="text-lg font-bold">
-              {leads.reduce((sum, lead) => sum + lead.value, 0).toLocaleString('vi-VN')}
-            </div>
-            <p className="text-xs opacity-75">VND</p>
-          </div>
-          
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-4 text-white">
-            <h4 className="text-sm font-medium mb-2">Thời gian TB</h4>
-            <div className="text-2xl font-bold">
-              {Math.round(Math.random() * 15 + 5)}
-            </div>
-            <p className="text-xs opacity-75">ngày/giai đoạn</p>
-          </div>
-          
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-4 text-white">
-            <h4 className="text-sm font-medium mb-2">Doanh thu thực</h4>
-            <div className="text-lg font-bold">
-              {orders.reduce((sum, order) => sum + order.totalValue, 0).toLocaleString('vi-VN')}
-            </div>
-            <p className="text-xs opacity-75">VND</p>
-          </div>
-        </div>        {/* Pipeline Summary */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="space-y-6">
+        {/* Pipeline Summary */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Sales Pipeline - Kanban Board</h3>
             <div className="flex items-center space-x-4 text-sm">
@@ -1043,13 +934,48 @@ export default function SalesManagement() {
                 </div>
               </div>
             ))}
-          </div>        </div>
+          </div>
+        </div>
+
+        {/* Pipeline Analytics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
+            <h4 className="text-sm font-medium mb-2">Tỷ lệ chuyển đổi</h4>
+            <div className="text-2xl font-bold">
+              {leads.length > 0 ? Math.round((leads.filter(l => l.status === 'converted').length / leads.length) * 100) : 0}%
+            </div>
+            <p className="text-xs opacity-75">Lead → Deal</p>
+          </div>
+          
+          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
+            <h4 className="text-sm font-medium mb-2">Giá trị Pipeline</h4>
+            <div className="text-lg font-bold">
+              {leads.reduce((sum, lead) => sum + lead.value, 0).toLocaleString('vi-VN')}
+            </div>
+            <p className="text-xs opacity-75">VND</p>
+          </div>
+          
+          <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-4 text-white">
+            <h4 className="text-sm font-medium mb-2">Thời gian TB</h4>
+            <div className="text-2xl font-bold">
+              {Math.round(Math.random() * 15 + 5)}
+            </div>
+            <p className="text-xs opacity-75">ngày/giai đoạn</p>
+          </div>
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-4 text-white">
+            <h4 className="text-sm font-medium mb-2">Doanh thu thực</h4>
+            <div className="text-lg font-bold">
+              {orders.reduce((sum, order) => sum + order.totalValue, 0).toLocaleString('vi-VN')}
+            </div>
+            <p className="text-xs opacity-75">VND</p>
+          </div>
+        </div>
       </div>
     )
   }
+
   return (
-    <div className="p-4 space-y-4">
-      {/* Notification */}
+    <div className="p-6 space-y-6">      {/* Notification */}
       {notification && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${
           notification?.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -1067,22 +993,16 @@ export default function SalesManagement() {
           <h1 className="text-2xl font-bold text-gray-900">Hoạt động Bán hàng</h1>
           <p className="text-gray-600">Quản lý toàn bộ quy trình từ Lead đến Đơn hàng</p>
         </div>
-      </div>      {/* Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{metrics.map((metric) => (
-          <div 
-            key={metric.id} 
-            className={`bg-white rounded-lg shadow-sm border-2 p-4 cursor-pointer hover:shadow-md transition-all duration-200 ${
-              selectedMetric === metric.id 
-                ? 'border-blue-500 shadow-md ring-2 ring-blue-200' 
-                : 'border-gray-200 hover:border-blue-300'
-            }`}
-            onClick={metric.clickAction}
-            title={`Click để xem chi tiết ${metric.title.toLowerCase()}`}
-          >
+      </div>
+
+      {/* Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {metrics.map((metric, index) => (
+          <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">{metric.title}</p>
-                <p className="text-2xl font-bold text-gray-900">{metric.value}{metric.id === 'conversion' ? '%' : ''}</p>
+                <p className="text-2xl font-bold text-gray-900">{metric.value}</p>
               </div>
               <div className={`p-3 rounded-lg ${metric.bgColor}`}>
                 <div className={metric.color}>
@@ -1090,30 +1010,18 @@ export default function SalesManagement() {
                 </div>
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-between">
-              <div className="flex items-center">
-                {metric.trend === 'up' ? (
-                  <ArrowUpRight className="w-4 h-4 text-green-500" />
-                ) : metric.trend === 'down' ? (
-                  <ArrowDownRight className="w-4 h-4 text-red-500" />
-                ) : (
-                  <div className="w-4 h-4 rounded-full bg-gray-400"></div>
-                )}
-                <span className={`text-sm ml-1 font-medium ${
-                  metric.trend === 'up' ? 'text-green-600' : 
-                  metric.trend === 'down' ? 'text-red-600' : 'text-gray-600'
-                }`}>
-                  {metric.trend === 'neutral' ? '0%' : 
-                   metric.trend === 'up' ? `+${metric.percentageChange}%` : 
-                   `${metric.percentageChange}%`}
-                </span>
-              </div>
-              <div className="text-xs text-gray-500">
-                vs tháng trước
-              </div>
-            </div>
-            <div className="mt-2 text-xs text-gray-400">
-              Tháng trước: {metric.previousValue}{metric.id === 'conversion' ? '%' : ''}
+            <div className="mt-4 flex items-center">
+              {metric.trend === 'up' ? (
+                <ArrowUpRight className="w-4 h-4 text-green-500" />
+              ) : metric.trend === 'down' ? (
+                <ArrowDownRight className="w-4 h-4 text-red-500" />
+              ) : null}
+              <span className={`text-sm ml-1 ${
+                metric.trend === 'up' ? 'text-green-600' : 
+                metric.trend === 'down' ? 'text-red-600' : 'text-gray-600'
+              }`}>
+                So với tháng trước
+              </span>
             </div>
           </div>
         ))}
@@ -1122,17 +1030,16 @@ export default function SalesManagement() {
       {/* Navigation Tabs */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="border-b border-gray-200">
-          <nav className="flex space-x-6 px-4">            {[
+          <nav className="flex space-x-8 px-6">
+            {[
               { id: 'leads', name: 'Leads', count: leads.length, icon: <Users className="w-4 h-4" /> },
               { id: 'deals', name: 'Deals', count: deals.filter(d => !d.stage.includes('closed')).length, icon: <Target className="w-4 h-4" /> },
               { id: 'orders', name: 'Đơn hàng', count: orders.length, icon: <ShoppingCart className="w-4 h-4" /> },
-              { id: 'pipeline', name: 'Pipeline', count: leads.length + deals.length + orders.length, icon: <Activity className="w-4 h-4" /> }].map((tab) => (
+              { id: 'pipeline', name: 'Pipeline', count: leads.length + deals.length + orders.length, icon: <Activity className="w-4 h-4" /> }
+            ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id as any)
-                  setSelectedMetric(null) // Reset selected metric when manually changing tabs
-                }}
+                onClick={() => setActiveTab(tab.id as any)}
                 className={`group inline-flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
@@ -1153,8 +1060,11 @@ export default function SalesManagement() {
               </button>
             ))}
           </nav>
-        </div>        {/* Tab Content */}
-        <div className="p-4">          {activeTab === 'leads' && renderLeads()}
+        </div>
+
+        {/* Tab Content */}
+        <div className="p-6">
+          {activeTab === 'leads' && renderLeads()}
           {activeTab === 'deals' && renderDeals()}
           {activeTab === 'orders' && (
             <div className="space-y-6">

@@ -7,7 +7,8 @@ import {
   Star, Heart, DollarSign, MessageCircle, Activity, Target, Gift,
   MapPin, Briefcase, CreditCard, UserCheck, UserX, Users, ChevronDown,
   Bell, RefreshCw, Zap, BarChart3, PieChart, CheckCircle, XCircle,
-  FileText, History, Send, Settings, Download
+  FileText, History, Send, Settings, Download, Crown, Award, UserPlus,
+  Info, ArrowUpRight, ArrowDownRight, X
 } from 'lucide-react'
 import CustomerFilters, { CustomerFilters as FilterType } from './CustomerFilters'
 import CustomerEventsManager from './CustomerEventsManager'
@@ -44,271 +45,787 @@ interface CustomerEvent {
 
 interface Customer {
   id: number
-  // Basic Info
   name: string
+  firstName: string
+  lastName: string
   contact: string
   email: string
-  phone: string
-  gender: 'male' | 'female' | 'other'
-  address: string
-  
-  // Extended Info
-  idNumber: string
-  profession: string
+  secondaryEmail?: string
   company: string
-  region: string
+  companySize: 'small' | 'medium' | 'large' | 'enterprise'
   industry: string
-  
-  // Status & Scores
-  status: 'active' | 'inactive' | 'at-risk' | 'vip'
+  position: string
+  department: string
+  status: 'active' | 'inactive' | 'at-risk' | 'vip' | 'prospect' | 'lead'
+  customerType: 'diamond' | 'gold' | 'silver' | 'bronze' | 'new' | 'returning' | 'inactive'
+  tags: CustomerTag[]
+  totalValue: string
+  lifetimeValue: string
+  averageOrderValue: string
+  lastOrderDate: string
+  lastInteraction: string
+  daysSinceLastInteraction: number
   engagementScore: number
   churnRisk: number
-  upsellScore: number
-  
-  // Financial
-  totalValue: string
-  lastPurchase: string
-  joinDate: string
-  deals: number
-  avgOrderValue: number
-  
-  // Behavioral Data
-  lastInteraction: string
-  responseTime: number // hours
-  emailOpenRate: number
-  clickRate: number
-  
-  // Tags & Events
-  tags: CustomerTag[]
-  events: CustomerEvent[]
+  loyaltyPoints: number
+  preferredChannel: 'email' | 'phone' | 'chat' | 'in-person' | 'social'
   interactions: CustomerInteraction[]
+  events: CustomerEvent[]
   
-  // Remarketing
-  daysSinceLastInteraction: number
+  // Personal Information
+  dateOfBirth?: string
+  gender?: 'male' | 'female' | 'other'
+  maritalStatus?: 'single' | 'married' | 'divorced' | 'widowed'
+  
+  // Contact Information
+  address: string
+  city: string
+  state: string
+  country: string
+  postalCode: string
+  phone2?: string
+  fax?: string
+  website?: string
+  
+  // Social Media
+  socialMedia?: {
+    facebook?: string
+    linkedin?: string
+    twitter?: string
+    instagram?: string
+  }
+  
+  // Business Information
+  taxId?: string
+  registrationNumber?: string
+  businessLicense?: string
+  
+  // Financial Information
+  creditLimit: number
+  paymentTerms: string
+  currency: string
+  taxExempt: boolean
+  
+  // Preferences
+  preferences: {
+    communicationFrequency: 'daily' | 'weekly' | 'monthly' | 'quarterly'
+    marketingConsent: boolean
+    newsletter: boolean
+    smsConsent: boolean
+    language: string
+    timezone: string
+    communicationHours: {
+      start: string
+      end: string
+    }
+  }
+  
+  // Relationship Information
+  assignedSalesRep?: string
+  accountManager?: string
+  customerSince: string
+  referredBy?: string
+  referralCode?: string
+  
+  // Purchase History
+  firstPurchaseDate?: string
+  lastPurchaseDate?: string
+  totalOrders: number
+  totalSpent: number
+  averageOrderFrequency: number
+  
+  // Support Information
+  supportTickets: number
+  supportPriority: 'low' | 'medium' | 'high' | 'critical'
+  customFields?: Record<string, any>
+  
+  // Metadata
+  notes: string
+  internalNotes?: string
+  createdAt: string
+  updatedAt: string
+  createdBy: string
+  updatedBy: string
+  isDeleted: boolean
+  deletedAt?: string
+  
+  // Marketing & Campaigns
   remarketing: {
-    priority: 'high' | 'medium' | 'low'
-    suggestedActions: string[]
-    campaigns: string[]
+    eligible: boolean
+    priority: 'low' | 'medium' | 'high'
+    lastCampaign: string
+    campaigns: Array<{
+      id: string
+      name: string
+      type: string
+      status: string
+      sentAt: string
+      openRate?: number
+      clickRate?: number
+    }>
   }
 }
 
-const customerTags: CustomerTag[] = [
-  { id: 'vip', name: 'VIP', color: 'bg-purple-100 text-purple-800 border-purple-200', category: 'value' },
-  { id: 'loyal', name: 'Khách thân thiết', color: 'bg-blue-100 text-blue-800 border-blue-200', category: 'value' },
-  { id: 'price-sensitive', name: 'Nhạy cảm giá', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', category: 'behavior' },
-  { id: 'slow-response', name: 'Phản hồi chậm', color: 'bg-orange-100 text-orange-800 border-orange-200', category: 'behavior' },
-  { id: 'high-engagement', name: 'Tương tác cao', color: 'bg-green-100 text-green-800 border-green-200', category: 'engagement' },
-  { id: 'at-risk', name: 'Có nguy cơ rời bỏ', color: 'bg-red-100 text-red-800 border-red-200', category: 'risk' },
-  { id: 'new-customer', name: 'Khách hàng mới', color: 'bg-indigo-100 text-indigo-800 border-indigo-200', category: 'engagement' },
-]
-
 export default function CustomersManagement() {
-  const [selectedView, setSelectedView] = useState<'list' | 'cards' | 'analytics' | 'events' | 'insights'>('list')
+  const [selectedView, setSelectedView] = useState<'list' | 'analytics' | 'events' | 'insights'>('list')
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
-  const [showCustomerModal, setShowCustomerModal] = useState(false)
-  const [showRemarketingModal, setShowRemarketingModal] = useState(false)
-  const [showFiltersModal, setShowFiltersModal] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterIndustry, setFilterIndustry] = useState('')
   const [filterTag, setFilterTag] = useState('')
-  const [filterEngagement, setFilterEngagement] = useState('')
-  const [filterRisk, setFilterRisk] = useState('')
   const [sortBy, setSortBy] = useState('name')
   const [advancedFilters, setAdvancedFilters] = useState<FilterType>({})
-
+  // Sample customer data
   const [customers] = useState<Customer[]>([
     {
       id: 1,
-      name: 'ABC Corporation',
-      contact: 'Nguyễn Văn A',
-      email: 'contact@abc.com',
-      phone: '0901234567',
-      gender: 'male',
-      address: '123 Nguyễn Huệ, Q1, TP.HCM',
-      idNumber: '079123456789',
-      profession: 'Giám đốc',
-      company: 'ABC Corporation',
-      region: 'TP.HCM',
+      name: 'Nguyễn Văn An',
+      firstName: 'An',
+      lastName: 'Nguyễn Văn',
+      contact: '0901234567',
+      email: 'nguyen.van.an@company.com',
+      secondaryEmail: 'an.nguyen@personal.com',
+      company: 'Tech Solutions Ltd',
+      companySize: 'large',
       industry: 'Công nghệ',
-      status: 'active',
-      engagementScore: 85,
-      churnRisk: 15,
-      upsellScore: 78,
-      totalValue: '500,000,000',
-      lastPurchase: '2024-01-10',
-      joinDate: '2023-06-15',
-      deals: 5,
-      avgOrderValue: 100000000,
-      lastInteraction: '2024-06-20',
-      responseTime: 2.5,
-      emailOpenRate: 85,
-      clickRate: 35,
-      daysSinceLastInteraction: 3,
+      position: 'CEO',
+      department: 'Điều hành',
+      status: 'vip',
+      customerType: 'diamond',
       tags: [
-        customerTags.find(t => t.id === 'vip')!,
-        customerTags.find(t => t.id === 'high-engagement')!
+        { id: '1', name: 'VIP', color: 'bg-purple-100 text-purple-800', category: 'value' },
+        { id: '2', name: 'Khách hàng lâu năm', color: 'bg-blue-100 text-blue-800', category: 'engagement' }
+      ],
+      totalValue: '2,500,000',
+      lifetimeValue: '15,000,000',
+      averageOrderValue: '500,000',
+      lastOrderDate: '2024-01-20',
+      lastInteraction: '2024-01-22',
+      daysSinceLastInteraction: 2,
+      engagementScore: 95,
+      churnRisk: 5,
+      loyaltyPoints: 2500,
+      preferredChannel: 'email',
+      dateOfBirth: '1985-03-15',
+      gender: 'male',
+      maritalStatus: 'married',
+      address: '123 Đường Nguyễn Huệ',
+      city: 'Hà Nội',
+      state: 'Hà Nội',
+      country: 'Việt Nam',
+      postalCode: '100000',
+      phone2: '0901234568',
+      website: 'https://techsolutions.com',
+      socialMedia: {
+        linkedin: 'https://linkedin.com/in/nguyen-van-an',
+        facebook: 'https://facebook.com/nguyenvanan'
+      },
+      taxId: '0123456789',
+      creditLimit: 5000000,
+      paymentTerms: '30 ngày',
+      currency: 'VND',
+      taxExempt: false,
+      preferences: {
+        communicationFrequency: 'weekly',
+        marketingConsent: true,
+        newsletter: true,
+        smsConsent: true,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '08:00',
+          end: '18:00'
+        }
+      },
+      assignedSalesRep: 'Lê Thị Mai',
+      accountManager: 'Trần Văn Hùng',
+      customerSince: '2023-01-15',
+      firstPurchaseDate: '2023-01-20',
+      lastPurchaseDate: '2024-01-20',
+      totalOrders: 25,
+      totalSpent: 15000000,
+      averageOrderFrequency: 2,
+      supportTickets: 3,
+      supportPriority: 'high',
+      notes: 'Khách hàng VIP, luôn đánh giá cao dịch vụ',
+      internalNotes: 'Có thể nâng cấp lên gói Enterprise',
+      createdAt: '2023-01-15',
+      updatedAt: '2024-01-22',
+      createdBy: 'admin',
+      updatedBy: 'sales_manager',
+      isDeleted: false,
+      interactions: [
+        {
+          id: '1',
+          type: 'call',
+          channel: 'Phone',
+          title: 'Tư vấn nâng cấp hệ thống',
+          summary: 'Khách hàng quan tâm đến package Enterprise',
+          date: '2024-01-22',
+          status: 'success'
+        }
       ],
       events: [
         {
           id: '1',
           type: 'birthday',
-          title: 'Sinh nhật',
-          date: '1985-03-15',
+          title: 'Sinh nhật CEO',
+          date: '2024-03-15',
           recurring: true,
           reminderDays: 7
         }
       ],
-      interactions: [
-        {
-          id: '1',
-          type: 'email',
-          channel: 'Email Marketing',
-          title: 'Gửi báo giá sản phẩm mới',
-          summary: 'Đã gửi báo giá cho 3 sản phẩm, khách hàng quan tâm đến giải pháp A',
-          date: '2024-06-20',
-          status: 'success',
-          aiSummary: 'Khách hàng tỏ ra quan tâm đến sản phẩm A, yêu cầu demo vào tuần tới.'
-        }
-      ],
       remarketing: {
+        eligible: false,
         priority: 'low',
-        suggestedActions: ['Gửi email cảm ơn', 'Mời tham gia webinar mới'],
-        campaigns: ['Email nurturing', 'Product update']
+        lastCampaign: '2024-01-01',
+        campaigns: []
       }
     },
     {
       id: 2,
-      name: 'XYZ Technology',
-      contact: 'Trần Thị B',
-      email: 'info@xyz.com',
-      phone: '0902345678',
-      gender: 'female',
-      address: '456 Lê Lợi, Q1, TP.HCM',
-      idNumber: '079987654321',
-      profession: 'CTO',
-      company: 'XYZ Technology',
-      region: 'TP.HCM',
+      name: 'Trần Thị Bình',
+      firstName: 'Bình',
+      lastName: 'Trần Thị',
+      contact: '0912345678',
+      email: 'tran.thi.binh@startup.vn',
+      company: 'Startup Innovation',
+      companySize: 'medium',
       industry: 'IT Services',
-      status: 'at-risk',
-      engagementScore: 45,
-      churnRisk: 72,
-      upsellScore: 25,
-      totalValue: '750,000,000',
-      lastPurchase: '2024-01-08',
-      joinDate: '2023-04-20',
-      deals: 8,
-      avgOrderValue: 93750000,
-      lastInteraction: '2024-05-15',
-      responseTime: 48,
-      emailOpenRate: 25,
-      clickRate: 8,
-      daysSinceLastInteraction: 39,
+      position: 'CTO',
+      department: 'Công nghệ',
+      status: 'active',
+      customerType: 'gold',
       tags: [
-        customerTags.find(t => t.id === 'at-risk')!,
-        customerTags.find(t => t.id === 'slow-response')!
+        { id: '3', name: 'Tiềm năng cao', color: 'bg-green-100 text-green-800', category: 'value' },
+        { id: '4', name: 'Startup', color: 'bg-orange-100 text-orange-800', category: 'behavior' }
       ],
-      events: [
-        {
-          id: '2',
-          type: 'anniversary',
-          title: 'Kỷ niệm hợp tác',
-          date: '2023-04-20',
-          recurring: true,
-          reminderDays: 14
+      totalValue: '1,200,000',
+      lifetimeValue: '3,600,000',
+      averageOrderValue: '300,000',
+      lastOrderDate: '2024-01-18',
+      lastInteraction: '2024-01-20',
+      daysSinceLastInteraction: 4,
+      engagementScore: 78,
+      churnRisk: 15,
+      loyaltyPoints: 1200,
+      preferredChannel: 'chat',
+      dateOfBirth: '1990-07-22',
+      gender: 'female',
+      maritalStatus: 'single',
+      address: '456 Đường Lê Lợi',
+      city: 'TP.HCM',
+      state: 'TP.HCM',
+      country: 'Việt Nam',
+      postalCode: '700000',
+      website: 'https://startupinnovation.vn',
+      socialMedia: {
+        linkedin: 'https://linkedin.com/in/tran-thi-binh',
+        twitter: 'https://twitter.com/tranthibibh'
+      },
+      creditLimit: 2000000,
+      paymentTerms: '15 ngày',
+      currency: 'VND',
+      taxExempt: false,
+      preferences: {
+        communicationFrequency: 'monthly',
+        marketingConsent: true,
+        newsletter: true,
+        smsConsent: false,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '09:00',
+          end: '17:00'
         }
-      ],
+      },
+      assignedSalesRep: 'Phạm Minh Tuấn',
+      customerSince: '2023-06-10',
+      firstPurchaseDate: '2023-06-15',
+      lastPurchaseDate: '2024-01-18',
+      totalOrders: 12,
+      totalSpent: 3600000,
+      averageOrderFrequency: 1,
+      supportTickets: 1,
+      supportPriority: 'medium',
+      notes: 'Quan tâm đến công nghệ AI, thường yêu cầu demo',
+      createdAt: '2023-06-10',
+      updatedAt: '2024-01-20',
+      createdBy: 'sales_rep',
+      updatedBy: 'sales_rep',
+      isDeleted: false,
       interactions: [
         {
           id: '2',
+          type: 'email',
+          channel: 'Email',
+          title: 'Proposal mới về AI Solutions',
+          summary: 'Gửi proposal tích hợp AI vào sản phẩm hiện tại',
+          date: '2024-01-20',
+          status: 'pending'
+        }
+      ],
+      events: [],
+      remarketing: {
+        eligible: true,
+        priority: 'medium',
+        lastCampaign: '2023-12-15',
+        campaigns: [
+          {
+            id: 'c1',
+            name: 'AI Solutions Campaign',
+            type: 'email',
+            status: 'sent',
+            sentAt: '2023-12-15',
+            openRate: 85,
+            clickRate: 12
+          }
+        ]
+      }
+    },
+    {
+      id: 3,
+      name: 'Lê Minh Cường',
+      firstName: 'Cường',
+      lastName: 'Lê Minh',
+      contact: '0923456789',
+      email: 'le.minh.cuong@manufacturing.com',
+      company: 'Manufacturing Corp',
+      companySize: 'enterprise',
+      industry: 'Sản xuất',
+      position: 'Giám đốc IT',
+      department: 'IT',
+      status: 'at-risk',
+      customerType: 'silver',
+      tags: [
+        { id: '5', name: 'Rủi ro cao', color: 'bg-red-100 text-red-800', category: 'risk' },
+        { id: '6', name: 'Khó liên lạc', color: 'bg-gray-100 text-gray-800', category: 'engagement' }
+      ],
+      totalValue: '800,000',
+      lifetimeValue: '2,400,000',
+      averageOrderValue: '400,000',
+      lastOrderDate: '2023-11-15',
+      lastInteraction: '2023-12-01',
+      daysSinceLastInteraction: 54,
+      engagementScore: 32,
+      churnRisk: 75,
+      loyaltyPoints: 400,
+      preferredChannel: 'phone',
+      dateOfBirth: '1978-12-10',
+      gender: 'male',
+      maritalStatus: 'married',
+      address: '789 Đường Trần Phú',
+      city: 'Đà Nẵng',
+      state: 'Đà Nẵng',
+      country: 'Việt Nam',
+      postalCode: '550000',
+      phone2: '0923456788',
+      website: 'https://manufacturingcorp.vn',
+      creditLimit: 1500000,
+      paymentTerms: '45 ngày',
+      currency: 'VND',
+      taxExempt: true,
+      preferences: {
+        communicationFrequency: 'quarterly',
+        marketingConsent: false,
+        newsletter: false,
+        smsConsent: false,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '07:00',
+          end: '16:00'
+        }
+      },
+      assignedSalesRep: 'Nguyễn Thị Lan',
+      customerSince: '2023-03-20',
+      firstPurchaseDate: '2023-04-01',
+      lastPurchaseDate: '2023-11-15',
+      totalOrders: 6,
+      totalSpent: 2400000,
+      averageOrderFrequency: 0.5,
+      supportTickets: 8,
+      supportPriority: 'high',
+      notes: 'Khách hàng ít tương tác, cần chăm sóc đặc biệt',
+      internalNotes: 'Có vấn đề về thanh toán, cần theo dõi',
+      createdAt: '2023-03-20',
+      updatedAt: '2023-12-01',
+      createdBy: 'sales_rep',
+      updatedBy: 'account_manager',
+      isDeleted: false,
+      interactions: [
+        {
+          id: '3',
           type: 'call',
           channel: 'Phone',
           title: 'Cuộc gọi chăm sóc khách hàng',
-          summary: 'Không liên lạc được, để lại tin nhắn',
-          date: '2024-05-15',
+          summary: 'Không liên lạc được, để lại voicemail',
+          date: '2023-12-01',
           status: 'failed'
         }
       ],
+      events: [],
       remarketing: {
+        eligible: true,
         priority: 'high',
-        suggestedActions: ['Gọi điện khẩn cấp', 'Gửi ưu đãi đặc biệt', 'Lên lịch meeting'],
-        campaigns: ['Win-back campaign', 'Urgent follow-up']
+        lastCampaign: '2024-01-10',
+        campaigns: [
+          {
+            id: 'c2',
+            name: 'Win-back Campaign',
+            type: 'email',
+            status: 'sent',
+            sentAt: '2024-01-10',
+            openRate: 45,
+            clickRate: 3
+          }
+        ]
       }
     },
-    // Add more sample customers...
+    {
+      id: 4,
+      name: 'Phạm Thanh Hoa',
+      firstName: 'Hoa',
+      lastName: 'Phạm Thanh',
+      contact: '0934567890',
+      email: 'pham.thanh.hoa@retail.com',
+      company: 'Retail Solutions',
+      companySize: 'small',
+      industry: 'Bán lẻ',
+      position: 'Chủ cửa hàng',
+      department: 'Kinh doanh',
+      status: 'active',
+      customerType: 'bronze',
+      tags: [
+        { id: '7', name: 'Khách hàng mới', color: 'bg-blue-100 text-blue-800', category: 'value' }
+      ],
+      totalValue: '450,000',
+      lifetimeValue: '450,000',
+      averageOrderValue: '150,000',
+      lastOrderDate: '2024-01-15',
+      lastInteraction: '2024-01-16',
+      daysSinceLastInteraction: 8,
+      engagementScore: 65,
+      churnRisk: 25,
+      loyaltyPoints: 150,
+      preferredChannel: 'phone',
+      dateOfBirth: '1988-05-20',
+      gender: 'female',
+      maritalStatus: 'married',
+      address: '321 Đường Hai Bà Trưng',
+      city: 'Hải Phòng',
+      state: 'Hải Phòng',
+      country: 'Việt Nam',
+      postalCode: '180000',
+      creditLimit: 500000,
+      paymentTerms: '7 ngày',
+      currency: 'VND',
+      taxExempt: false,
+      preferences: {
+        communicationFrequency: 'weekly',
+        marketingConsent: true,
+        newsletter: true,
+        smsConsent: true,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '08:00',
+          end: '20:00'
+        }
+      },
+      assignedSalesRep: 'Vũ Thị Nga',
+      customerSince: '2023-12-01',
+      firstPurchaseDate: '2023-12-05',
+      lastPurchaseDate: '2024-01-15',
+      totalOrders: 3,
+      totalSpent: 450000,
+      averageOrderFrequency: 1,
+      supportTickets: 0,
+      supportPriority: 'low',
+      notes: 'Khách hàng mới, tiềm năng phát triển',
+      createdAt: '2023-12-01',
+      updatedAt: '2024-01-16',
+      createdBy: 'sales_rep',
+      updatedBy: 'sales_rep',
+      isDeleted: false,
+      interactions: [],
+      events: [],
+      remarketing: {
+        eligible: false,
+        priority: 'low',
+        lastCampaign: '',
+        campaigns: []
+      }
+    },
+    {
+      id: 5,
+      name: 'Hoàng Minh Đức',
+      firstName: 'Đức',
+      lastName: 'Hoàng Minh',
+      contact: '0945678901',
+      email: 'hoang.minh.duc@finance.vn',
+      company: 'Finance Group',
+      companySize: 'large',
+      industry: 'Tài chính',
+      position: 'Giám đốc Tài chính',
+      department: 'Tài chính',
+      status: 'inactive',
+      customerType: 'inactive',
+      tags: [
+        { id: '8', name: 'Không quay lại', color: 'bg-gray-100 text-gray-800', category: 'risk' }
+      ],
+      totalValue: '0',
+      lifetimeValue: '5,200,000',
+      averageOrderValue: '650,000',
+      lastOrderDate: '2023-08-15',
+      lastInteraction: '2023-09-10',
+      daysSinceLastInteraction: 136,
+      engagementScore: 15,
+      churnRisk: 95,
+      loyaltyPoints: 0,
+      preferredChannel: 'email',
+      dateOfBirth: '1975-11-30',
+      gender: 'male',
+      maritalStatus: 'divorced',
+      address: '654 Đường Đồng Khởi',
+      city: 'TP.HCM',
+      state: 'TP.HCM',
+      country: 'Việt Nam',
+      postalCode: '700000',
+      creditLimit: 0,
+      paymentTerms: 'Thanh toán ngay',
+      currency: 'VND',
+      taxExempt: false,
+      preferences: {
+        communicationFrequency: 'monthly',
+        marketingConsent: false,
+        newsletter: false,
+        smsConsent: false,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '09:00',
+          end: '17:00'
+        }
+      },
+      assignedSalesRep: 'Đỗ Văn Minh',
+      customerSince: '2022-05-10',
+      firstPurchaseDate: '2022-05-15',
+      lastPurchaseDate: '2023-08-15',
+      totalOrders: 8,
+      totalSpent: 5200000,
+      averageOrderFrequency: 0.5,
+      supportTickets: 2,
+      supportPriority: 'low',
+      notes: 'Khách hàng ngưng hoạt động từ Q3/2023',
+      internalNotes: 'Chuyển sang đối thủ cạnh tranh',
+      createdAt: '2022-05-10',
+      updatedAt: '2023-09-10',
+      createdBy: 'sales_manager',
+      updatedBy: 'sales_rep',
+      isDeleted: false,
+      interactions: [],
+      events: [],
+      remarketing: {
+        eligible: true,
+        priority: 'high',
+        lastCampaign: '2023-11-01',
+        campaigns: [
+          {
+            id: 'c3',
+            name: 'Reactivation Campaign',
+            type: 'email',
+            status: 'sent',
+            sentAt: '2023-11-01',
+            openRate: 25,
+            clickRate: 0
+          }
+        ]
+      }
+    },
+    {
+      id: 6,
+      name: 'Ngô Thị Linh',
+      firstName: 'Linh',
+      lastName: 'Ngô Thị',
+      contact: '0956789012',
+      email: 'ngo.thi.linh@education.edu.vn',
+      company: 'Education Institute',
+      companySize: 'medium',
+      industry: 'Giáo dục',
+      position: 'Hiệu trưởng',
+      department: 'Điều hành',
+      status: 'prospect',
+      customerType: 'new',
+      tags: [
+        { id: '9', name: 'Prospect', color: 'bg-yellow-100 text-yellow-800', category: 'value' },
+        { id: '10', name: 'Giáo dục', color: 'bg-indigo-100 text-indigo-800', category: 'behavior' }
+      ],
+      totalValue: '0',
+      lifetimeValue: '0',
+      averageOrderValue: '0',
+      lastOrderDate: '',
+      lastInteraction: '2024-01-23',
+      daysSinceLastInteraction: 1,
+      engagementScore: 85,
+      churnRisk: 10,
+      loyaltyPoints: 0,
+      preferredChannel: 'email',
+      dateOfBirth: '1982-09-12',
+      gender: 'female',
+      maritalStatus: 'married',
+      address: '987 Đường Lý Thường Kiệt',
+      city: 'Cần Thơ',
+      state: 'Cần Thơ',
+      country: 'Việt Nam',
+      postalCode: '900000',
+      creditLimit: 1000000,
+      paymentTerms: '30 ngày',
+      currency: 'VND',
+      taxExempt: true,
+      preferences: {
+        communicationFrequency: 'weekly',
+        marketingConsent: true,
+        newsletter: true,
+        smsConsent: false,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '08:00',
+          end: '17:00'
+        }
+      },
+      assignedSalesRep: 'Lý Hoàng Nam',
+      customerSince: '2024-01-20',
+      firstPurchaseDate: '',
+      lastPurchaseDate: '',
+      totalOrders: 0,
+      totalSpent: 0,
+      averageOrderFrequency: 0,
+      supportTickets: 0,
+      supportPriority: 'medium',
+      notes: 'Prospect mới, đang tìm hiểu sản phẩm',
+      createdAt: '2024-01-20',
+      updatedAt: '2024-01-23',
+      createdBy: 'sales_rep',
+      updatedBy: 'sales_rep',
+      isDeleted: false,
+      interactions: [
+        {
+          id: '4',
+          type: 'email',
+          channel: 'Email',
+          title: 'Gửi thông tin sản phẩm',
+          summary: 'Gửi brochure và bảng giá chi tiết',
+          date: '2024-01-23',
+          status: 'success'
+        }
+      ],
+      events: [],
+      remarketing: {
+        eligible: false,
+        priority: 'medium',
+        lastCampaign: '',
+        campaigns: []
+      }
+    }
   ])
 
-  // Filtered and sorted customers with advanced filters
+  // Helper functions
+  const formatCurrency = (value: string) => {
+    return parseInt(value.replace(/,/g, '')).toLocaleString()
+  }
+
+  const getRiskColor = (risk: number) => {
+    if (risk >= 70) return 'text-red-600'
+    if (risk >= 40) return 'text-orange-600'
+    return 'text-green-600'
+  }
+
+  const handleCustomerSelect = (customer: Customer) => {
+    setSelectedCustomer(customer)
+  }
+
+  const handleExportData = (format: 'csv' | 'excel') => {
+    console.log(`Exporting ${filteredCustomers.length} customers as ${format}`)
+    // Implement export logic here
+  }
+
+  const handleRemarketingClick = () => {
+    console.log(`Opening remarketing for ${remarketingCustomers.length} customers`)
+    // Implement remarketing logic here
+  }
+
+  const handleApplyFilters = (filters: FilterType) => {
+    setAdvancedFilters(filters)
+  }
+
+  const handleClearFilters = () => {
+    setAdvancedFilters({})
+    setSearchTerm('')
+    setFilterStatus('')
+    setFilterIndustry('')
+    setFilterTag('')
+  }
+
+  // Filter logic with null safety
   const filteredCustomers = useMemo(() => {
-    let filtered = customers.filter(customer => {
+    return customers.filter((customer) => {
       const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           customer.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+        customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.company.toLowerCase().includes(searchTerm.toLowerCase())
       
       const matchesStatus = !filterStatus || customer.status === filterStatus
       const matchesIndustry = !filterIndustry || customer.industry === filterIndustry
-      const matchesTag = !filterTag || customer.tags.some(tag => tag.id === filterTag)
-      
-      const matchesEngagement = !filterEngagement || 
-        (filterEngagement === 'high' && customer.engagementScore >= 70) ||
-        (filterEngagement === 'medium' && customer.engagementScore >= 40 && customer.engagementScore < 70) ||
-        (filterEngagement === 'low' && customer.engagementScore < 40)
-      
-      const matchesRisk = !filterRisk ||
-        (filterRisk === 'high' && customer.churnRisk >= 60) ||
-        (filterRisk === 'medium' && customer.churnRisk >= 30 && customer.churnRisk < 60) ||
-        (filterRisk === 'low' && customer.churnRisk < 30)
+      const matchesTag = !filterTag || customer.tags.some(tag => tag.name === filterTag)
 
-      // Apply advanced filters
-      const matchesAdvancedFilters = Object.entries(advancedFilters).every(([key, value]) => {
-        if (!value) return true
-        
-        switch (key) {
-          case 'daysSinceLastInteraction':
-            const daysFilter = value as { min?: number; max?: number }
-            if (daysFilter.min !== undefined && customer.daysSinceLastInteraction < daysFilter.min) return false
-            if (daysFilter.max !== undefined && customer.daysSinceLastInteraction > daysFilter.max) return false
-            return true
-          
-          case 'engagementScore':
-            const engagementFilter = value as { min?: number; max?: number }
-            if (engagementFilter.min !== undefined && customer.engagementScore < engagementFilter.min) return false
-            if (engagementFilter.max !== undefined && customer.engagementScore > engagementFilter.max) return false
-            return true
-          
-          case 'churnRisk':
-            const churnFilter = value as { min?: number; max?: number }
-            if (churnFilter.min !== undefined && customer.churnRisk < churnFilter.min) return false
-            if (churnFilter.max !== undefined && customer.churnRisk > churnFilter.max) return false
-            return true
-          
-          case 'totalValue':
-            const valueFilter = value as { min?: number; max?: number }
-            const customerValue = parseInt(customer.totalValue.replace(/,/g, ''))
-            if (valueFilter.min !== undefined && customerValue < valueFilter.min) return false
-            if (valueFilter.max !== undefined && customerValue > valueFilter.max) return false
-            return true
-          
-          case 'isVIP':
-            return !value || customer.status === 'vip'
-          
-          case 'isAtRisk':
-            return !value || customer.status === 'at-risk' || customer.churnRisk >= 60
-          
-          case 'needsRemarketing':
-            return !value || customer.daysSinceLastInteraction > 30 || customer.churnRisk > 50
-          
-          default:
-            return true
+      let matchesAdvanced = true
+
+      // Range filters with null safety
+      const { 
+        engagementScore: engagementFilter, 
+        churnRisk: churnFilter, 
+        totalValue: valueFilter,
+        ...booleanFilters 
+      } = advancedFilters
+
+      if (engagementFilter) {
+        if (engagementFilter.min !== undefined && customer.engagementScore < engagementFilter.min) matchesAdvanced = false
+        if (engagementFilter.max !== undefined && customer.engagementScore > engagementFilter.max) matchesAdvanced = false
+      }
+      if (churnFilter) {
+        if (churnFilter.min !== undefined && customer.churnRisk < churnFilter.min) matchesAdvanced = false
+        if (churnFilter.max !== undefined && customer.churnRisk > churnFilter.max) matchesAdvanced = false
+      }
+      if (valueFilter) {
+        const customerValue = parseInt(customer.totalValue.replace(/,/g, ''))
+        if (valueFilter.min !== undefined && customerValue < valueFilter.min) matchesAdvanced = false
+        if (valueFilter.max !== undefined && customerValue > valueFilter.max) matchesAdvanced = false
+      }
+
+      // Boolean filters
+      Object.entries(booleanFilters).forEach(([key, filterValue]) => {
+        if (filterValue) {
+          if (key === 'isVip') {
+            if (filterValue === true && customer.status !== 'vip') {
+              matchesAdvanced = false
+            }
+          } else if (key === 'isAtRisk') {
+            if (filterValue === true && customer.status !== 'at-risk' && customer.churnRisk < 60) {
+              matchesAdvanced = false
+            }
+          } else if (key === 'needsRemarketing') {
+            if (filterValue === true && customer.daysSinceLastInteraction <= 30 && customer.churnRisk <= 50) {
+              matchesAdvanced = false
+            }
+          }
         }
       })
-      
-      return matchesSearch && matchesStatus && matchesIndustry && matchesTag && 
-             matchesEngagement && matchesRisk && matchesAdvancedFilters
-    })
 
-    // Sort customers
-    filtered.sort((a, b) => {
+      return matchesSearch && matchesStatus && matchesIndustry && matchesTag && 
+             matchesAdvanced
+    }).sort((a, b) => {
       switch (sortBy) {
         case 'name':
           return a.name.localeCompare(b.name)
@@ -324,259 +841,21 @@ export default function CustomersManagement() {
           return 0
       }
     })
+  }, [customers, searchTerm, filterStatus, filterIndustry, filterTag, sortBy, advancedFilters])
 
-    return filtered
-  }, [customers, searchTerm, filterStatus, filterIndustry, filterTag, filterEngagement, filterRisk, sortBy, advancedFilters])
-
-  // Remarketing suggestions
-  const remarketingCustomers = useMemo(() => {
-    return customers.filter(customer => {
-      return customer.daysSinceLastInteraction > 30 || 
-             customer.churnRisk > 50 ||
-             customer.engagementScore < 40
-    }).sort((a, b) => b.churnRisk - a.churnRisk)
-  }, [customers])
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 border-green-200'
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800 border-gray-200'
-      case 'at-risk':
-        return 'bg-red-100 text-red-800 border-red-200'
-      case 'vip':
-        return 'bg-purple-100 text-purple-800 border-purple-200'
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
-    }
-  }
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'Hoạt động'
-      case 'inactive':
-        return 'Không hoạt động'
-      case 'at-risk':
-        return 'Có nguy cơ'
-      case 'vip':
-        return 'VIP'
-      default:
-        return status
-    }
-  }
-
-  const getEngagementColor = (score: number) => {
-    if (score >= 70) return 'text-green-600'
-    if (score >= 40) return 'text-yellow-600'
-    return 'text-red-600'
-  }
-
-  const getRiskColor = (risk: number) => {
-    if (risk >= 60) return 'text-red-600'
-    if (risk >= 30) return 'text-yellow-600'
-    return 'text-green-600'
-  }
-
-  const getIndustryColor = (industry: string) => {
-    switch (industry) {
-      case 'Công nghệ':
-        return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'IT Services':
-        return 'bg-purple-100 text-purple-800 border-purple-200'
-      case 'Sản xuất':
-        return 'bg-orange-100 text-orange-800 border-orange-200'
-      case 'Tư vấn':
-        return 'bg-green-100 text-green-800 border-green-200'
-      case 'Bán lẻ':
-        return 'bg-pink-100 text-pink-800 border-pink-200'
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
-    }
-  }
-
-  const formatCurrency = (value: string) => {
-    const num = parseInt(value.replace(/,/g, ''))
-    if (num >= 1000000000) return `${(num / 1000000000).toFixed(1)}B`
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
-    return num.toString()
-  }
-
-  const handleCustomerSelect = (customer: Customer) => {
-    setSelectedCustomer(customer)
-    setShowCustomerModal(true)
-  }
-
-  const handleRemarketingClick = () => {
-    setShowRemarketingModal(true)
-  }
-
-  // Export Functions
-  const getFilterSummary = () => {
-    const filterInfo = []
-    
-    if (searchTerm) filterInfo.push(`Tìm kiếm: "${searchTerm}"`)
-    if (filterStatus) filterInfo.push(`Trạng thái: ${filterStatus}`)
-    if (filterIndustry) filterInfo.push(`Ngành: ${filterIndustry}`)
-    if (filterTag) filterInfo.push(`Tag: ${filterTag}`)
-    
-    // Advanced filters
-    if (advancedFilters.daysSinceLastInteraction) {
-      const days = advancedFilters.daysSinceLastInteraction
-      filterInfo.push(`Ngày không tương tác: ${days.min || 0}-${days.max || '∞'}`)
-    }
-    if (advancedFilters.engagementScore) {
-      const score = advancedFilters.engagementScore
-      filterInfo.push(`Điểm tương tác: ${score.min || 0}-${score.max || 100}`)
-    }
-    if (advancedFilters.churnRisk) {
-      const risk = advancedFilters.churnRisk
-      filterInfo.push(`Rủi ro churn: ${risk.min || 0}-${risk.max || 100}%`)
-    }
-    
-    return filterInfo.length > 0 ? filterInfo.join(' | ') : 'Không có bộ lọc'
-  }
-
-  const exportToCSV = (customers: Customer[], filename: string) => {
-    const headers = [
-      'ID', 'Tên', 'Email', 'Điện thoại', 'Công ty', 'Địa chỉ', 'Ngành', 'Vùng',
-      'Trạng thái', 'Điểm tương tác', 'Rủi ro churn', 'Điểm upsell', 'Tổng giá trị',
-      'Mua hàng cuối', 'Ngày tham gia', 'Số deals', 'AOV', 'Tương tác cuối',
-      'Thời gian phản hồi', 'Tỷ lệ mở email', 'Tỷ lệ click', 'Tags'
-    ]
-    
-    const csvContent = [
-      headers.join(','),
-      ...customers.map(customer => [
-        customer.id,
-        `"${customer.name}"`,
-        customer.email,
-        customer.phone,
-        `"${customer.company}"`,
-        `"${customer.address}"`,
-        customer.industry,
-        customer.region,
-        customer.status,
-        customer.engagementScore,
-        customer.churnRisk,
-        customer.upsellScore,
-        customer.totalValue.replace(/[,đ]/g, ''),
-        customer.lastPurchase,
-        customer.joinDate,
-        customer.deals,
-        customer.avgOrderValue,
-        customer.lastInteraction,
-        customer.responseTime,
-        customer.emailOpenRate,
-        customer.clickRate,
-        `"${customer.tags.map(tag => tag.name).join('; ')}"`
-      ].join(','))
-    ].join('\n')
-
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = filename
-    link.click()
-    URL.revokeObjectURL(link.href)
-  }
-  const exportToExcel = (customers: Customer[], filename: string) => {
-    const filterSummary = getFilterSummary()
-    const exportDate = new Date().toLocaleString('vi-VN')
-    
-    // Tạo worksheet data
-    const worksheetData = [
-      // Info header
-      ['DANH SÁCH KHÁCH HÀNG - VILEAD CRM'],
-      [`Ngày xuất: ${exportDate}`],
-      [`Bộ lọc áp dụng: ${filterSummary}`],
-      [`Tổng số khách hàng: ${customers.length}`],
-      [], // Empty row
-      // Headers
-      [
-        'STT', 'Tên khách hàng', 'Email', 'Điện thoại', 'Công ty', 'Địa chỉ', 'Ngành nghề', 'Khu vực',
-        'Trạng thái', 'Điểm tương tác', 'Rủi ro churn (%)', 'Điểm upsell', 'Tổng giá trị (VND)',
-        'Lần mua cuối', 'Ngày tham gia', 'Số deals', 'AOV (VND)', 'Tương tác cuối',
-        'Thời gian phản hồi (giờ)', 'Tỷ lệ mở email (%)', 'Tỷ lệ click (%)', 'Tags', 'Ghi chú'
-      ],
-      // Data rows
-      ...customers.map((customer, index) => [
-        index + 1,
-        customer.name,
-        customer.email,
-        customer.phone,
-        customer.company,
-        customer.address,
-        customer.industry,
-        customer.region,
-        customer.status === 'active' ? 'Hoạt động' : 
-        customer.status === 'inactive' ? 'Không hoạt động' :
-        customer.status === 'at-risk' ? 'Có rủi ro' : 'VIP',
-        customer.engagementScore,
-        customer.churnRisk,
-        customer.upsellScore,
-        customer.totalValue,
-        customer.lastPurchase,
-        customer.joinDate,
-        customer.deals,
-        customer.avgOrderValue.toLocaleString('vi-VN'),
-        customer.lastInteraction,
-        customer.responseTime,
-        customer.emailOpenRate,
-        customer.clickRate,        customer.tags.map(tag => tag.name).join(', '),
-        `Xuất từ bộ lọc: ${filterSummary}`
-      ])
-    ]
-
-    // Tạo CSV từ worksheet data (simplified Excel export)
-    const csvContent = worksheetData.map(row => 
-      row.map(cell => `"${cell}"`).join(',')
-    ).join('\n')
-
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'application/vnd.ms-excel;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = filename
-    link.click()
-    URL.revokeObjectURL(link.href)
-  }
-  const handleExportData = (format: 'csv' | 'excel') => {
-    const currentDate = new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')
-    const filenameSuffix = Object.keys(advancedFilters).length > 0 ? '_filtered' : '_all'
-    const filename = `khach-hang${filenameSuffix}_${currentDate}.${format === 'csv' ? 'csv' : 'xlsx'}`
-    
-    // Sử dụng dữ liệu đã được lọc
-    const dataToExport = filteredCustomers
-
-    if (format === 'csv') {
-      exportToCSV(dataToExport, filename)
-    } else {
-      exportToExcel(dataToExport, filename)
-    }
-
-    // Hiển thị thông báo
-    const hasFilters = Object.keys(advancedFilters).length > 0 || searchTerm || filterStatus || filterIndustry || filterTag
-    const message = hasFilters 
-      ? `✅ Đã xuất ${dataToExport.length} khách hàng theo bộ lọc thành công!\n📄 File: ${filename}\n🔍 Bộ lọc: ${getFilterSummary()}`
-      : `✅ Đã xuất tất cả ${dataToExport.length} khách hàng thành công!\n📄 File: ${filename}`
-    
-    alert(message)
-  }
-
-  const handleAdvancedFilterChange = (filters: FilterType) => {
-    setAdvancedFilters(filters)
-  }
+  const remarketingCustomers = customers.filter(c => 
+    c.remarketing.eligible && (c.status === 'at-risk' || c.churnRisk >= 50)
+  )
 
   return (
     <div className="space-y-6">
-      {/* Header with Actions */}      <div className="flex items-center justify-between">
+      {/* Header with Actions */}
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Chăm sóc Khách hàng</h1>
           <p className="text-gray-600">Quản lý thông tin chi tiết và hành vi khách hàng</p>
-        </div>        <div className="flex items-center space-x-3">
-          {/* Export Dropdown */}
+        </div>
+        <div className="flex items-center space-x-3">
           <div className="relative group">
             <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
               <Download className="w-4 h-4" />
@@ -617,6 +896,159 @@ export default function CustomersManagement() {
         </div>
       </div>
 
+      {/* Customer Classification Section */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-gray-800">Phân loại khách hàng</h2>
+          <button className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors">
+            <Info className="w-4 h-4 mr-2" />
+            <span>Định nghĩa phân hạng</span>
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+          {/* Diamond Customer */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="h-2 bg-yellow-500 rounded-t-lg"></div>
+            <div className="p-4">
+              <div className="flex items-center">
+                <div className="rounded-full bg-yellow-100 p-3 mr-4 flex items-center justify-center">
+                  <Crown className="w-5 h-5 text-yellow-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Khách hàng Kim cương</p>
+                  <p className="text-2xl font-bold">24</p>
+                  <div className="flex items-center text-green-600 text-xs">
+                    <ArrowUpRight className="w-3 h-3" />
+                    <span className="ml-1">8% so với tháng trước</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Silver Customer */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="h-2 bg-gray-400 rounded-t-lg"></div>
+            <div className="p-4">
+              <div className="flex items-center">
+                <div className="rounded-full bg-gray-100 p-3 mr-4 flex items-center justify-center">
+                  <Award className="w-5 h-5 text-gray-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Khách hàng Bạc</p>
+                  <p className="text-2xl font-bold">86</p>
+                  <div className="flex items-center text-green-600 text-xs">
+                    <ArrowUpRight className="w-3 h-3" />
+                    <span className="ml-1">12% so với tháng trước</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Gold Customer */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="h-2 bg-yellow-400 rounded-t-lg"></div>
+            <div className="p-4">
+              <div className="flex items-center">
+                <div className="rounded-full bg-yellow-100 p-3 mr-4 flex items-center justify-center">
+                  <Star className="w-5 h-5 text-yellow-500" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Khách hàng Vàng</p>
+                  <p className="text-2xl font-bold">53</p>
+                  <div className="flex items-center text-green-600 text-xs">
+                    <ArrowUpRight className="w-3 h-3" />
+                    <span className="ml-1">5% so với tháng trước</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Potential Customer */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="h-2 bg-green-500 rounded-t-lg"></div>
+            <div className="p-4">
+              <div className="flex items-center">
+                <div className="rounded-full bg-green-100 p-3 mr-4 flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Khách hàng Tiềm năng</p>
+                  <p className="text-2xl font-bold">112</p>
+                  <div className="flex items-center text-green-600 text-xs">
+                    <ArrowUpRight className="w-3 h-3" />
+                    <span className="ml-1">18% so với tháng trước</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* New Customer */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="h-2 bg-blue-500 rounded-t-lg"></div>
+            <div className="p-4">
+              <div className="flex items-center">
+                <div className="rounded-full bg-blue-100 p-3 mr-4 flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Khách hàng Mới</p>
+                  <p className="text-2xl font-bold">42</p>
+                  <div className="flex items-center text-green-600 text-xs">
+                    <ArrowUpRight className="w-3 h-3" />
+                    <span className="ml-1">15% so với tháng trước</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Old Customer */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="h-2 bg-purple-500 rounded-t-lg"></div>
+            <div className="p-4">
+              <div className="flex items-center">
+                <div className="rounded-full bg-purple-100 p-3 mr-4 flex items-center justify-center">
+                  <History className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Khách hàng Cũ</p>
+                  <p className="text-2xl font-bold">78</p>
+                  <div className="flex items-center text-red-600 text-xs">
+                    <ArrowDownRight className="w-3 h-3" />
+                    <span className="ml-1">5% so với tháng trước</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Inactive Customer */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="h-2 bg-red-500 rounded-t-lg"></div>
+            <div className="p-4">
+              <div className="flex items-center">
+                <div className="rounded-full bg-red-100 p-3 mr-4 flex items-center justify-center">
+                  <TrendingDown className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Không quay lại</p>
+                  <p className="text-2xl font-bold">37</p>
+                  <div className="flex items-center text-red-600 text-xs">
+                    <ArrowUpRight className="w-3 h-3" />
+                    <span className="ml-1">7% so với tháng trước</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* View Toggle */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -628,16 +1060,7 @@ export default function CustomersManagement() {
               }`}
             >
               🗂️ Danh sách
-            </button>
-            <button
-              onClick={() => setSelectedView('cards')}
-              className={`px-3 py-1 rounded text-sm font-medium ${
-                selectedView === 'cards' ? 'bg-white text-gray-900 shadow' : 'text-gray-600'
-              }`}
-            >
-              📋 Thẻ khách hàng
-            </button>
-            <button
+            </button>            <button
               onClick={() => setSelectedView('analytics')}
               className={`px-3 py-1 rounded text-sm font-medium ${
                 selectedView === 'analytics' ? 'bg-white text-gray-900 shadow' : 'text-gray-600'
@@ -707,793 +1130,521 @@ export default function CustomersManagement() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </div>      )}
 
       {/* Advanced Filters */}
       <CustomerFilters 
-        onFilterChange={handleAdvancedFilterChange}
+        onFilterChange={handleApplyFilters}
         initialFilters={advancedFilters}
       />
 
-      {/* Advanced Filters */}
-      <div className="card p-4">
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-            />
-          </div>
-          
-          <select 
-            value={filterStatus} 
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="input-field"
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="active">Hoạt động</option>
-            <option value="inactive">Không hoạt động</option>
-            <option value="at-risk">Có nguy cơ</option>
-            <option value="vip">VIP</option>
-          </select>
-
-          <select 
-            value={filterIndustry} 
-            onChange={(e) => setFilterIndustry(e.target.value)}
-            className="input-field"
-          >
-            <option value="">Tất cả ngành</option>
-            <option value="Công nghệ">Công nghệ</option>
-            <option value="IT Services">IT Services</option>
-            <option value="Sản xuất">Sản xuất</option>
-            <option value="Tư vấn">Tư vấn</option>
-            <option value="Bán lẻ">Bán lẻ</option>
-          </select>
-
-          <select 
-            value={filterTag} 
-            onChange={(e) => setFilterTag(e.target.value)}
-            className="input-field"
-          >
-            <option value="">Tất cả thẻ</option>
-            {customerTags.map(tag => (
-              <option key={tag.id} value={tag.id}>{tag.name}</option>
-            ))}
-          </select>
-
-          <select 
-            value={filterEngagement} 
-            onChange={(e) => setFilterEngagement(e.target.value)}
-            className="input-field"
-          >
-            <option value="">Mức tương tác</option>
-            <option value="high">Cao (≥70)</option>
-            <option value="medium">Trung bình (40-69)</option>
-            <option value="low">Thấp (&lt;40)</option>
-          </select>
-
-          <select 
-            value={filterRisk} 
-            onChange={(e) => setFilterRisk(e.target.value)}
-            className="input-field"
-          >
-            <option value="">Rủi ro rời bỏ</option>
-            <option value="high">Cao (≥60)</option>
-            <option value="medium">Trung bình (30-59)</option>
-            <option value="low">Thấp (&lt;30)</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Stats Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-        <div className="card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-gray-600">Tổng khách hàng</div>
-              <div className="text-2xl font-bold text-primary-600">{filteredCustomers.length}</div>
-            </div>
-            <Users className="w-8 h-8 text-primary-600" />
-          </div>
-        </div>
-        
-        <div className="card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-gray-600">VIP & Hoạt động</div>
-              <div className="text-2xl font-bold text-green-600">
-                {filteredCustomers.filter(c => c.status === 'active' || c.status === 'vip').length}
-              </div>
-            </div>
-            <Star className="w-8 h-8 text-green-600" />
-          </div>
-        </div>
-
-        <div className="card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-gray-600">Có nguy cơ</div>
-              <div className="text-2xl font-bold text-red-600">
-                {filteredCustomers.filter(c => c.status === 'at-risk' || c.churnRisk >= 60).length}
-              </div>
-            </div>
-            <AlertTriangle className="w-8 h-8 text-red-600" />
-          </div>
-        </div>
-
-        <div className="card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-gray-600">Cần remarketing</div>
-              <div className="text-2xl font-bold text-orange-600">
-                {remarketingCustomers.length}
-              </div>
-            </div>
-            <Target className="w-8 h-8 text-orange-600" />
-          </div>
-        </div>
-
-        <div className="card p-4">
-          <div className="text-sm text-gray-600">Tổng giá trị</div>
-          <div className="text-2xl font-bold text-success-600">
-            {formatCurrency(filteredCustomers.reduce((sum, customer) => 
-              sum + parseInt(customer.totalValue.replace(/,/g, '')), 0).toString())} VNĐ
-          </div>
-        </div>
-
-        <div className="card p-4">
-          <div className="text-sm text-gray-600">Điểm tương tác TB</div>
-          <div className="text-2xl font-bold text-primary-600">
-            {Math.round(filteredCustomers.reduce((sum, customer) => 
-              sum + customer.engagementScore, 0) / filteredCustomers.length || 0)}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
+      {/* Content based on selected view */}
       {selectedView === 'list' && (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="table-header">Khách hàng</th>
-                  <th className="table-header">Liên hệ</th>
-                  <th className="table-header">Trạng thái</th>
-                  <th className="table-header">Tags</th>
-                  <th className="table-header">Tương tác cuối</th>
-                  <th className="table-header">Điểm số AI</th>
-                  <th className="table-header">Giá trị</th>
-                  <th className="table-header sticky right-0 bg-gray-50 shadow-[-2px_0_4px_rgba(0,0,0,0.1)] z-10">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredCustomers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50">
-                    <td className="table-cell">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0">
-                          <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                            <User className="w-5 h-5 text-primary-600" />
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Danh sách khách hàng</h3>
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm khách hàng..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-2 w-64 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <select 
+                  value={filterStatus} 
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >                  <option value="">Tất cả trạng thái</option>
+                  <option value="active">Hoạt động</option>
+                  <option value="inactive">Không hoạt động</option>
+                  <option value="at-risk">Có nguy cơ</option>
+                  <option value="vip">VIP</option>
+                  <option value="prospect">Tiềm năng</option>
+                  <option value="lead">Khách hàng tiềm năng</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Khách hàng</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Công ty</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Hạng KH</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Trạng thái</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Tương tác cuối</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Điểm tương tác</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Rủi ro</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Giá trị</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCustomers.map((customer) => (
+                    <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium ${
+                            customer.status === 'vip' ? 'bg-purple-600' :
+                            customer.status === 'active' ? 'bg-green-600' :
+                            customer.status === 'at-risk' ? 'bg-red-600' : 'bg-gray-600'
+                          }`}>
+                            {customer.name.charAt(0)}
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900">{customer.name}</div>
+                            <div className="text-sm text-gray-500">{customer.email}</div>
                           </div>
                         </div>
-                        <div>
-                          <div className="font-medium text-gray-900">{customer.name}</div>
-                          <div className="text-sm text-gray-500">{customer.contact}</div>
-                          <div className="text-xs text-gray-400">{customer.region} • {customer.industry}</div>
+                      </td>                      <td className="py-3 px-4">
+                        <div className="text-sm text-gray-900">{customer.company}</div>
+                        <div className="text-xs text-gray-500">{customer.industry}</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          customer.customerType === 'diamond' ? 'bg-yellow-100 text-yellow-800' :
+                          customer.customerType === 'gold' ? 'bg-amber-100 text-amber-800' :
+                          customer.customerType === 'silver' ? 'bg-gray-100 text-gray-800' :
+                          customer.customerType === 'bronze' ? 'bg-orange-100 text-orange-800' :
+                          customer.customerType === 'new' ? 'bg-blue-100 text-blue-800' :
+                          customer.customerType === 'returning' ? 'bg-purple-100 text-purple-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {customer.customerType === 'diamond' ? '💎 Kim cương' :
+                           customer.customerType === 'gold' ? '🥇 Vàng' :
+                           customer.customerType === 'silver' ? '🥈 Bạc' :
+                           customer.customerType === 'bronze' ? '🥉 Đồng' :
+                           customer.customerType === 'new' ? '🆕 Mới' :
+                           customer.customerType === 'returning' ? '🔄 Quay lại' : '❌ Không hoạt động'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          customer.status === 'vip' ? 'bg-purple-100 text-purple-800' :
+                          customer.status === 'active' ? 'bg-green-100 text-green-800' :
+                          customer.status === 'at-risk' ? 'bg-red-100 text-red-800' :
+                          customer.status === 'prospect' ? 'bg-yellow-100 text-yellow-800' :
+                          customer.status === 'lead' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {customer.status === 'vip' ? 'VIP' :
+                           customer.status === 'active' ? 'Hoạt động' :
+                           customer.status === 'at-risk' ? 'Có nguy cơ' :
+                           customer.status === 'prospect' ? 'Tiềm năng' :
+                           customer.status === 'lead' ? 'Khách hàng tiềm năng' : 'Không hoạt động'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="text-sm text-gray-900">{customer.lastInteraction || 'Chưa có'}</div>
+                        <div className="text-xs text-gray-500">{customer.daysSinceLastInteraction} ngày</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center">
+                          <div className={`w-2 h-2 rounded-full mr-2 ${
+                            customer.engagementScore >= 80 ? 'bg-green-500' :
+                            customer.engagementScore >= 60 ? 'bg-yellow-500' :
+                            customer.engagementScore >= 40 ? 'bg-orange-500' : 'bg-red-500'
+                          }`}></div>
+                          <span className="text-sm font-medium">{customer.engagementScore}</span>
                         </div>
-                      </div>
-                    </td>
-                    <td className="table-cell">
-                      <div className="text-sm text-gray-900">{customer.email}</div>
-                      <div className="text-sm text-gray-500">{customer.phone}</div>
-                    </td>
-                    <td className="table-cell">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(customer.status)}`}>
-                        {getStatusText(customer.status)}
-                      </span>
-                    </td>
-                    <td className="table-cell">
-                      <div className="flex flex-wrap gap-1">
-                        {customer.tags.slice(0, 2).map((tag) => (
-                          <span key={tag.id} className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${tag.color}`}>
-                            {tag.name}
-                          </span>
-                        ))}
-                        {customer.tags.length > 2 && (
-                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 border border-gray-200">
-                            +{customer.tags.length - 2}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="table-cell">
-                      <div className="text-sm text-gray-900">{customer.lastInteraction}</div>
-                      <div className="text-xs text-gray-500">
-                        {customer.daysSinceLastInteraction} ngày trước
-                      </div>
-                    </td>
-                    <td className="table-cell">
-                      <div className="space-y-1">
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className={`text-sm font-medium ${getRiskColor(customer.churnRisk)}`}>
+                          {customer.churnRisk}%
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="font-medium text-gray-900">{formatCurrency(customer.totalValue)} VNĐ</div>
+                        <div className="text-xs text-gray-500">LTV: {formatCurrency(customer.lifetimeValue)} VNĐ</div>
+                      </td>
+                      <td className="py-3 px-4">
                         <div className="flex items-center space-x-2">
-                          <Activity className="w-3 h-3 text-gray-400" />
-                          <span className={`text-sm font-medium ${getEngagementColor(customer.engagementScore)}`}>
-                            {customer.engagementScore}
-                          </span>
+                          <button 
+                            onClick={() => handleCustomerSelect(customer)}
+                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                          >
+                            Chi tiết
+                          </button>
+                          <button className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
+                            Gọi
+                          </button>
+                          <button className="px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700">
+                            Email
+                          </button>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <AlertTriangle className="w-3 h-3 text-gray-400" />
-                          <span className={`text-sm font-medium ${getRiskColor(customer.churnRisk)}`}>
-                            {customer.churnRisk}%
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <TrendingUp className="w-3 h-3 text-gray-400" />
-                          <span className={`text-sm font-medium ${getEngagementColor(customer.upsellScore)}`}>
-                            {customer.upsellScore}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="table-cell">
-                      <div className="font-medium text-gray-900">{formatCurrency(customer.totalValue)} VNĐ</div>
-                      <div className="text-xs text-gray-500">{customer.deals} deals</div>
-                    </td>
-                    <td className="table-cell sticky right-0 bg-white shadow-[-2px_0_4px_rgba(0,0,0,0.1)] z-10">
-                      <div className="flex items-center space-x-2">
-                        <button 
-                          onClick={() => handleCustomerSelect(customer)}
-                          className="p-1 text-gray-400 hover:text-primary-600"
-                          title="Xem chi tiết"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button className="p-1 text-gray-400 hover:text-green-600" title="Gọi điện">
-                          <Phone className="w-4 h-4" />
-                        </button>
-                        <button className="p-1 text-gray-400 hover:text-blue-600" title="Gửi email">
-                          <Mail className="w-4 h-4" />
-                        </button>
-                        <button className="p-1 text-gray-400 hover:text-gray-600">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      )}
-
-      {selectedView === 'cards' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCustomers.map((customer) => (
-            <div key={customer.id} className="card p-6 hover:shadow-lg transition-shadow cursor-pointer" 
-                 onClick={() => handleCustomerSelect(customer)}>
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                    <User className="w-6 h-6 text-primary-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{customer.name}</h3>
-                    <p className="text-sm text-gray-600">{customer.contact}</p>
-                  </div>
-                </div>
-                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(customer.status)}`}>
-                  {getStatusText(customer.status)}
-                </span>
+      )}      {selectedView === 'analytics' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Analytics Overview Cards */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Tổng khách hàng</p>
+                <p className="text-2xl font-bold text-gray-900">{filteredCustomers.length}</p>
               </div>
+              <Users className="w-8 h-8 text-blue-600" />
+            </div>
+          </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <MapPin className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">{customer.region}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Briefcase className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">{customer.industry}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <DollarSign className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-900 font-medium">{formatCurrency(customer.totalValue)} VNĐ</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">{customer.daysSinceLastInteraction} ngày trước</span>
-                </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Khách hàng VIP</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {filteredCustomers.filter(c => c.status === 'vip').length}
+                </p>
               </div>
+              <Star className="w-8 h-8 text-purple-600" />
+            </div>
+          </div>
 
-              <div className="mt-4">
-                <div className="flex flex-wrap gap-1">
-                  {customer.tags.map((tag) => (
-                    <span key={tag.id} className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${tag.color}`}>
-                      {tag.name}
-                    </span>
-                  ))}
-                </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Có nguy cơ</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {filteredCustomers.filter(c => c.status === 'at-risk').length}
+                </p>
               </div>
+              <AlertTriangle className="w-8 h-8 text-red-600" />
+            </div>
+          </div>
 
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex justify-between text-sm">
-                  <div className="flex items-center space-x-1">
-                    <Activity className="w-3 h-3 text-gray-400" />
-                    <span className={getEngagementColor(customer.engagementScore)}>
-                      Tương tác: {customer.engagementScore}
-                    </span>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Tổng giá trị</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {formatCurrency(
+                    filteredCustomers.reduce((sum, c) => sum + parseInt(c.totalValue.replace(/,/g, '')), 0).toString()
+                  )} VNĐ
+                </p>
+              </div>
+              <DollarSign className="w-8 h-8 text-green-600" />
+            </div>
+          </div>
+
+          {/* Detailed Analytics */}
+          <div className="col-span-full">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Phân tích chi tiết</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Phân bố theo trạng thái</h4>
+                  <div className="space-y-2">
+                    {['active', 'vip', 'at-risk', 'inactive'].map(status => {
+                      const count = filteredCustomers.filter(c => c.status === status).length
+                      const percentage = filteredCustomers.length > 0 ? (count / filteredCustomers.length * 100).toFixed(1) : 0
+                      return (
+                        <div key={status} className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600 capitalize">
+                            {status === 'active' ? 'Hoạt động' :
+                             status === 'vip' ? 'VIP' :
+                             status === 'at-risk' ? 'Có nguy cơ' : 'Không hoạt động'}
+                          </span>
+                          <span className="text-sm font-medium">{count} ({percentage}%)</span>
+                        </div>
+                      )
+                    })}
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <AlertTriangle className="w-3 h-3 text-gray-400" />
-                    <span className={getRiskColor(customer.churnRisk)}>
-                      Rủi ro: {customer.churnRisk}%
-                    </span>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Điểm tương tác trung bình</h4>
+                  <div className="text-3xl font-bold text-blue-600">
+                    {Math.round(
+                      filteredCustomers.reduce((sum, c) => sum + c.engagementScore, 0) / filteredCustomers.length || 0
+                    )}
                   </div>
+                  <p className="text-sm text-gray-500 mt-1">trên 100 điểm</p>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Rủi ro trung bình</h4>
+                  <div className="text-3xl font-bold text-orange-600">
+                    {Math.round(
+                      filteredCustomers.reduce((sum, c) => sum + c.churnRisk, 0) / filteredCustomers.length || 0
+                    )}%
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">khả năng rời bỏ</p>
                 </div>
               </div>
             </div>
-          ))}
+          </div>
         </div>
-      )}
-
-      {selectedView === 'analytics' && (
-        <CustomerAnalytics customers={customers} />
       )}
 
       {selectedView === 'events' && (
-        <CustomerEventsManager customers={customers} />
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Quản lý sự kiện khách hàng</h3>
+            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              <Plus className="w-4 h-4 inline mr-2" />
+              Thêm sự kiện
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCustomers.filter(c => c.events.length > 0).map(customer => (
+              <div key={customer.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${
+                    customer.status === 'vip' ? 'bg-purple-600' :
+                    customer.status === 'active' ? 'bg-green-600' :
+                    customer.status === 'at-risk' ? 'bg-red-600' : 'bg-gray-600'
+                  }`}>
+                    {customer.name.charAt(0)}
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900">{customer.name}</h4>
+                    <p className="text-xs text-gray-500">{customer.company}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {customer.events.map(event => (
+                    <div key={event.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-4 h-4 text-blue-600" />
+                        <div>
+                          <p className="text-sm font-medium">{event.title}</p>
+                          <p className="text-xs text-gray-500">{event.date}</p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-1">
+                        <button className="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                          <Eye className="w-3 h-3" />
+                        </button>
+                        <button className="p-1 text-red-600 hover:bg-red-100 rounded">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {filteredCustomers.filter(c => c.events.length > 0).length === 0 && (
+            <div className="text-center py-8">
+              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">Chưa có sự kiện nào được tạo</p>
+              <button className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Tạo sự kiện đầu tiên
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       {selectedView === 'insights' && (
-        <CustomerAIInsights customers={customers} />
-      )}
-      {/* Customer Detail Modal */}
-      {showCustomerModal && selectedCustomer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
-                    <User className="w-8 h-8 text-primary-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">{selectedCustomer.name}</h2>
-                    <p className="text-gray-600">{selectedCustomer.contact} • {selectedCustomer.region}</p>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(selectedCustomer.status)}`}>
-                        {getStatusText(selectedCustomer.status)}
-                      </span>
-                      {selectedCustomer.tags.map((tag) => (
-                        <span key={tag.id} className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${tag.color}`}>
-                          {tag.name}
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <Zap className="w-6 h-6 text-purple-600" />
+              <h3 className="text-lg font-semibold text-gray-900">AI Insights - Phân tích thông minh</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* High-risk customers insights */}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h4 className="font-medium text-red-800 mb-3">🚨 Cảnh báo rủi ro cao</h4>
+                <div className="space-y-2">
+                  {filteredCustomers
+                    .filter(c => c.churnRisk >= 70)
+                    .slice(0, 3)
+                    .map(customer => (
+                      <div key={customer.id} className="flex items-center justify-between">
+                        <span className="text-sm text-red-700">{customer.name}</span>
+                        <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                          {customer.churnRisk}% rủi ro
                         </span>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
+                    ))}
                 </div>
-                <button 
-                  onClick={() => setShowCustomerModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircle className="w-6 h-6" />
+                <button className="mt-3 text-xs text-red-600 hover:text-red-800 underline">
+                  Xem tất cả khách hàng rủi ro cao
                 </button>
               </div>
-            </div>
 
-            <div className="p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Customer Profile */}
-                <div className="lg:col-span-1 space-y-6">
-                  <div className="card p-4">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <User className="w-5 h-5 mr-2" />
-                      Thông tin cơ bản
-                    </h3>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Email</label>
-                        <div className="text-sm text-gray-900">{selectedCustomer.email}</div>
+              {/* Growth opportunities */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-medium text-green-800 mb-3">📈 Cơ hội tăng trưởng</h4>
+                <div className="space-y-2">
+                  {filteredCustomers
+                    .filter(c => c.engagementScore >= 80 && c.status === 'active')
+                    .slice(0, 3)
+                    .map(customer => (
+                      <div key={customer.id} className="flex items-center justify-between">
+                        <span className="text-sm text-green-700">{customer.name}</span>
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                          {customer.engagementScore} điểm
+                        </span>
                       </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Điện thoại</label>
-                        <div className="text-sm text-gray-900">{selectedCustomer.phone}</div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Địa chỉ</label>
-                        <div className="text-sm text-gray-900">{selectedCustomer.address}</div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Giới tính</label>
-                        <div className="text-sm text-gray-900 capitalize">{selectedCustomer.gender}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="card p-4">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Briefcase className="w-5 h-5 mr-2" />
-                      Thông tin mở rộng
-                    </h3>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">CMND/CCCD</label>
-                        <div className="text-sm text-gray-900">{selectedCustomer.idNumber}</div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Nghề nghiệp</label>
-                        <div className="text-sm text-gray-900">{selectedCustomer.profession}</div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Công ty</label>
-                        <div className="text-sm text-gray-900">{selectedCustomer.company}</div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-500">Ngành</label>
-                        <div className="text-sm text-gray-900">{selectedCustomer.industry}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="card p-4">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <BarChart3 className="w-5 h-5 mr-2" />
-                      Điểm số AI
-                    </h3>
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Mức độ tương tác</span>
-                          <span className={getEngagementColor(selectedCustomer.engagementScore)}>
-                            {selectedCustomer.engagementScore}/100
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full" 
-                            style={{ width: `${selectedCustomer.engagementScore}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Rủi ro rời bỏ</span>
-                          <span className={getRiskColor(selectedCustomer.churnRisk)}>
-                            {selectedCustomer.churnRisk}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-red-600 h-2 rounded-full" 
-                            style={{ width: `${selectedCustomer.churnRisk}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Tiềm năng upsell</span>
-                          <span className={getEngagementColor(selectedCustomer.upsellScore)}>
-                            {selectedCustomer.upsellScore}/100
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-green-600 h-2 rounded-full" 
-                            style={{ width: `${selectedCustomer.upsellScore}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    ))}
                 </div>
-
-                {/* Interactions & Timeline */}
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="card p-4">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <MessageCircle className="w-5 h-5 mr-2" />
-                      Lịch sử tương tác gần nhất
-                    </h3>
-                    <div className="space-y-4">
-                      {selectedCustomer.interactions.map((interaction) => (
-                        <div key={interaction.id} className="border-l-4 border-primary-200 pl-4 py-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <span className="text-sm font-medium text-gray-900">{interaction.title}</span>
-                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                  interaction.status === 'success' ? 'bg-green-100 text-green-800' :
-                                  interaction.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-red-100 text-red-800'
-                                }`}>
-                                  {interaction.status === 'success' ? 'Thành công' :
-                                   interaction.status === 'pending' ? 'Đang xử lý' : 'Thất bại'}
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-600 mb-2">{interaction.summary}</p>
-                              {interaction.aiSummary && (
-                                <div className="bg-blue-50 border border-blue-200 rounded p-2 mb-2">
-                                  <div className="flex items-start space-x-2">
-                                    <Zap className="w-4 h-4 text-blue-600 mt-0.5" />
-                                    <div>
-                                      <div className="text-xs font-medium text-blue-800 mb-1">AI Summary</div>
-                                      <p className="text-sm text-blue-700">{interaction.aiSummary}</p>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                              <div className="flex items-center space-x-4 text-xs text-gray-500">
-                                <span>{interaction.channel}</span>
-                                <span>•</span>
-                                <span>{interaction.date}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="card p-4">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Calendar className="w-5 h-5 mr-2" />
-                        Sự kiện cá nhân
-                      </h3>
-                      <div className="space-y-3">
-                        {selectedCustomer.events.map((event) => (
-                          <div key={event.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                                {event.type === 'birthday' ? (
-                                  <Gift className="w-4 h-4 text-primary-600" />
-                                ) : (
-                                  <Calendar className="w-4 h-4 text-primary-600" />
-                                )}
-                              </div>
-                              <div>
-                                <div className="font-medium text-gray-900">{event.title}</div>
-                                <div className="text-sm text-gray-500">{event.date}</div>
-                              </div>
-                            </div>
-                            <button className="text-primary-600 hover:text-primary-700">
-                              <Bell className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="card p-4">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Target className="w-5 h-5 mr-2" />
-                        Gợi ý Remarketing
-                      </h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Mức độ ưu tiên:</span>
-                          <span className={`font-medium ${
-                            selectedCustomer.remarketing.priority === 'high' ? 'text-red-600' :
-                            selectedCustomer.remarketing.priority === 'medium' ? 'text-yellow-600' :
-                            'text-green-600'
-                          }`}>
-                            {selectedCustomer.remarketing.priority === 'high' ? 'Cao' :
-                             selectedCustomer.remarketing.priority === 'medium' ? 'Trung bình' : 'Thấp'}
-                          </span>
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-700 mb-2">Hành động đề xuất:</div>
-                          <div className="space-y-1">
-                            {selectedCustomer.remarketing.suggestedActions.map((action, index) => (
-                              <div key={index} className="flex items-center space-x-2">
-                                <CheckCircle className="w-3 h-3 text-green-600" />
-                                <span className="text-sm text-gray-600">{action}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-700 mb-2">Chiến dịch phù hợp:</div>
-                          <div className="flex flex-wrap gap-1">
-                            {selectedCustomer.remarketing.campaigns.map((campaign, index) => (
-                              <span key={index} className="inline-flex px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                                {campaign}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <button className="mt-3 text-xs text-green-600 hover:text-green-800 underline">
+                  Xem khách hàng tiềm năng nâng cấp
+                </button>
               </div>
-            </div>
 
-            <div className="p-6 border-t border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                    <Phone className="w-4 h-4" />
-                    <span>Gọi điện</span>
-                  </button>
-                  <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                    <Mail className="w-4 h-4" />
-                    <span>Gửi email</span>
-                  </button>
-                  <button className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                    <Calendar className="w-4 h-4" />
-                    <span>Đặt lịch</span>
-                  </button>
+              {/* Remarketing recommendations */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-medium text-blue-800 mb-3">🎯 Gợi ý Remarketing</h4>
+                <div className="space-y-2">
+                  {filteredCustomers
+                    .filter(c => c.daysSinceLastInteraction > 30)
+                    .slice(0, 3)
+                    .map(customer => (
+                      <div key={customer.id} className="flex items-center justify-between">
+                        <span className="text-sm text-blue-700">{customer.name}</span>
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                          {customer.daysSinceLastInteraction} ngày
+                        </span>
+                      </div>
+                    ))}
                 </div>
-                <div className="flex items-center space-x-2">
-                  <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                    <Settings className="w-4 h-4" />
-                    <span>Cài đặt</span>
-                  </button>
-                  <button 
-                    onClick={() => setShowCustomerModal(false)}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-                  >
-                    Đóng
-                  </button>
+                <button className="mt-3 text-xs text-blue-600 hover:text-blue-800 underline">
+                  Tạo chiến dịch remarketing
+                </button>
+              </div>
+
+              {/* Industry insights */}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h4 className="font-medium text-purple-800 mb-3">🏢 Phân tích ngành</h4>
+                <div className="space-y-2">
+                  {Array.from(new Set(filteredCustomers.map(c => c.industry)))
+                    .slice(0, 3)
+                    .map(industry => {
+                      const count = filteredCustomers.filter(c => c.industry === industry).length
+                      return (
+                        <div key={industry} className="flex items-center justify-between">
+                          <span className="text-sm text-purple-700">{industry}</span>
+                          <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                            {count} khách hàng
+                          </span>
+                        </div>
+                      )
+                    })}
                 </div>
+                <button className="mt-3 text-xs text-purple-600 hover:text-purple-800 underline">
+                  Xem báo cáo chi tiết theo ngành
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Remarketing Modal */}
-      {showRemarketingModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Remarketing Dashboard</h2>
-                  <p className="text-gray-600">Quản lý chiến dịch tái tiếp cận khách hàng</p>
+      {/* Customer Detail Modal */}
+      {selectedCustomer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Chi tiết khách hàng</h3>
+              <button 
+                onClick={() => setSelectedCustomer(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="flex items-center space-x-4">
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-medium ${
+                  selectedCustomer.status === 'vip' ? 'bg-purple-600' :
+                  selectedCustomer.status === 'active' ? 'bg-green-600' :
+                  selectedCustomer.status === 'at-risk' ? 'bg-red-600' : 'bg-gray-600'
+                }`}>
+                  {selectedCustomer.name.charAt(0)}
                 </div>
-                <button 
-                  onClick={() => setShowRemarketingModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircle className="w-6 h-6" />
+                <div>
+                  <h4 className="text-xl font-semibold">{selectedCustomer.name}</h4>
+                  <p className="text-gray-600">{selectedCustomer.position} tại {selectedCustomer.company}</p>
+                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                    selectedCustomer.status === 'vip' ? 'bg-purple-100 text-purple-800' :
+                    selectedCustomer.status === 'active' ? 'bg-green-100 text-green-800' :
+                    selectedCustomer.status === 'at-risk' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {selectedCustomer.status === 'vip' ? 'VIP' :
+                     selectedCustomer.status === 'active' ? 'Hoạt động' :
+                     selectedCustomer.status === 'at-risk' ? 'Có nguy cơ' : 'Không hoạt động'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <p className="text-sm text-gray-900">{selectedCustomer.email}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Điện thoại</label>
+                  <p className="text-sm text-gray-900">{selectedCustomer.contact}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Địa chỉ</label>
+                  <p className="text-sm text-gray-900">{selectedCustomer.address}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Ngành</label>
+                  <p className="text-sm text-gray-900">{selectedCustomer.industry}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">{selectedCustomer.engagementScore}</div>
+                  <div className="text-sm text-blue-700">Điểm tương tác</div>
+                </div>
+                <div className="text-center p-4 bg-red-50 rounded-lg">
+                  <div className="text-2xl font-bold text-red-600">{selectedCustomer.churnRisk}%</div>
+                  <div className="text-sm text-red-700">Rủi ro rời bỏ</div>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">{formatCurrency(selectedCustomer.totalValue)}</div>
+                  <div className="text-sm text-green-700">Giá trị (VNĐ)</div>
+                </div>
+              </div>
+
+              {selectedCustomer.notes && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú</label>
+                  <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">{selectedCustomer.notes}</p>
+                </div>
+              )}
+
+              <div className="flex space-x-3">
+                <button className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  <Phone className="w-4 h-4 inline mr-2" />
+                  Gọi điện
+                </button>
+                <button className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                  <Mail className="w-4 h-4 inline mr-2" />
+                  Gửi email
+                </button>
+                <button className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                  <Calendar className="w-4 h-4 inline mr-2" />
+                  Đặt lịch
                 </button>
               </div>
             </div>
-
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="card p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm text-gray-600">Khách hàng cần chăm sóc</div>
-                      <div className="text-2xl font-bold text-red-600">{remarketingCustomers.length}</div>
-                    </div>
-                    <AlertTriangle className="w-8 h-8 text-red-600" />
-                  </div>
-                </div>
-                <div className="card p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm text-gray-600">Ưu tiên cao</div>
-                      <div className="text-2xl font-bold text-orange-600">
-                        {remarketingCustomers.filter(c => c.remarketing.priority === 'high').length}
-                      </div>
-                    </div>
-                    <Target className="w-8 h-8 text-orange-600" />
-                  </div>
-                </div>
-                <div className="card p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm text-gray-600">Tiềm năng recover</div>
-                      <div className="text-2xl font-bold text-green-600">
-                        {formatCurrency(remarketingCustomers.reduce((sum, c) => 
-                          sum + parseInt(c.totalValue.replace(/,/g, '')), 0).toString())} VNĐ
-                      </div>
-                    </div>
-                    <DollarSign className="w-8 h-8 text-green-600" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Danh sách khách hàng cần chăm sóc</h3>
-                  <div className="flex space-x-2">
-                    <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                      <Send className="w-4 h-4" />
-                      <span>Gửi campaign hàng loạt</span>
-                    </button>
-                    <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                      <RefreshCw className="w-4 h-4" />
-                      <span>Cập nhật điểm số</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="card overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="table-header">Khách hàng</th>
-                          <th className="table-header">Lần cuối tương tác</th>
-                          <th className="table-header">Rủi ro</th>
-                          <th className="table-header">Ưu tiên</th>
-                          <th className="table-header">Giá trị</th>
-                          <th className="table-header">Hành động</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {remarketingCustomers.map((customer) => (
-                          <tr key={customer.id} className="hover:bg-gray-50">
-                            <td className="table-cell">
-                              <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                                  <User className="w-4 h-4 text-primary-600" />
-                                </div>
-                                <div>
-                                  <div className="font-medium text-gray-900">{customer.name}</div>
-                                  <div className="text-sm text-gray-500">{customer.contact}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="table-cell">
-                              <div className="text-sm text-gray-900">{customer.lastInteraction}</div>
-                              <div className="text-xs text-gray-500">{customer.daysSinceLastInteraction} ngày</div>
-                            </td>
-                            <td className="table-cell">
-                              <div className={`text-sm font-medium ${getRiskColor(customer.churnRisk)}`}>
-                                {customer.churnRisk}%
-                              </div>
-                            </td>
-                            <td className="table-cell">
-                              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                customer.remarketing.priority === 'high' ? 'bg-red-100 text-red-800' :
-                                customer.remarketing.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-green-100 text-green-800'
-                              }`}>
-                                {customer.remarketing.priority === 'high' ? 'Cao' :
-                                 customer.remarketing.priority === 'medium' ? 'Trung bình' : 'Thấp'}
-                              </span>
-                            </td>
-                            <td className="table-cell">
-                              <div className="font-medium text-gray-900">{formatCurrency(customer.totalValue)} VNĐ</div>
-                            </td>
-                            <td className="table-cell">
-                              <div className="flex items-center space-x-2">
-                                <button 
-                                  onClick={() => handleCustomerSelect(customer)}
-                                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-                                >
-                                  Chi tiết
-                                </button>
-                                <button className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
-                                  Gọi
-                                </button>
-                                <button className="px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700">
-                                  Email
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+          </div>        </div>
       )}
     </div>
   )
