@@ -252,12 +252,11 @@ const getPermissionsByRole = (role: UserRole): Permissions => {
         canViewPersonalCustomers: true,
         canImportExportCustomers: false,
         canEditCustomers: true,
-        
-        // Orders - Leader: quản lý đội
+          // Orders - Leader: KHÔNG truy cập
         canViewAllOrders: false,
-        canViewTeamOrders: true,
-        canViewPersonalOrders: true,
-        canEditOrders: true,
+        canViewTeamOrders: false,
+        canViewPersonalOrders: false,
+        canEditOrders: false,
         
         // Products - Leader: chỉ xem, không chỉnh sửa/lịch sử
         canViewAllProducts: true,
@@ -328,12 +327,11 @@ const getPermissionsByRole = (role: UserRole): Permissions => {
         canViewPersonalCustomers: true,
         canImportExportCustomers: false,
         canEditCustomers: true,
-        
-        // Orders - Sale: chỉ cá nhân
+          // Orders - Sale: KHÔNG truy cập
         canViewAllOrders: false,
         canViewTeamOrders: false,
-        canViewPersonalOrders: true,
-        canEditOrders: true,
+        canViewPersonalOrders: false,
+        canEditOrders: false,
         
         // Products - Sale: chỉ xem, không chỉnh sửa/lịch sử
         canViewAllProducts: true,

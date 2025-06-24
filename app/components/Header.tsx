@@ -173,10 +173,9 @@ export default function Header() {
 
               <DropdownMenuSeparator className="my-3" />
 
-              {/* Customer Management */}
-              <DropdownMenuGroup>
+              {/* Customer Management */}              <DropdownMenuGroup>
                 <DropdownMenuLabel className="text-xs font-medium text-green-600 uppercase tracking-wide mb-2 flex items-center gap-1">
-                  👥 Quản lý khách hàng
+                  👥 Chăm sóc khách hàng
                 </DropdownMenuLabel>
                 <DropdownMenuItem className="cursor-pointer flex items-center p-2 hover:bg-green-50 rounded-md">
                   <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">

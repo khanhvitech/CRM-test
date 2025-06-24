@@ -4,7 +4,7 @@ import { Inter } from 'next/font/google'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'ViLead CRM - Quản lý khách hàng thông minh',
+  title: 'ViLead CRM - Chăm sóc khách hàng thông minh',
   description: 'Hệ thống CRM ViLead giúp quản lý leads, khách hàng và doanh số hiệu quả',
 }
 

@@ -229,10 +229,9 @@ export default function VileadDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="customers">
-            <Card>
+          <TabsContent value="customers">            <Card>
               <CardHeader>
-                <CardTitle>Quản Lý Khách Hàng</CardTitle>
+                <CardTitle>Chăm Sóc Khách Hàng</CardTitle>
                 <CardDescription>
                   Danh sách và thông tin khách hàng
                 </CardDescription>

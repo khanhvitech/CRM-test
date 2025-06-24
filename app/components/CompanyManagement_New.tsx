@@ -46,14 +46,13 @@ const sampleDepartments = [
   }
 ]
 
-const sampleProducts = [
-  {
+const sampleProducts = [  {
     id: 1,
     name: "CRM Software",
     category: "Software",
     price: 2000000,
     status: "active",
-    description: "Phần mềm quản lý khách hàng"
+    description: "Phần mềm chăm sóc khách hàng"
   },
   {
     id: 2,

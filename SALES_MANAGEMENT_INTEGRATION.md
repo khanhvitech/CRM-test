@@ -10,7 +10,7 @@
 - **Chức năng**: Tích hợp quản lý Leads và Deals trong một interface duy nhất
 - **Tính năng chính**:
   - **Tab Tổng Quan**: Dashboard với metrics tổng hợp
-  - **Tab Leads**: Quản lý khách hàng tiềm năng
+  - **Tab Leads**: Chăm sóc khách hàng tiềm năng
   - **Tab Pipeline**: Visualize quy trình chuyển đổi Lead → Deal
   - **Tab Deals**: Quản lý cơ hội bán hàng
 

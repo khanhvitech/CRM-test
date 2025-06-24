@@ -72,22 +72,20 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       iconText: "🚀",
       tooltip: "Hoạt động bán hàng: Quản lý tổng thể Lead và Deal",
       roles: ["admin", "ceo", "leader", "sale"]
-    },
-    {
+    },    {
       id: 'customers',
       icon: UserCheck,
-      label: "Quản lý Khách hàng",
+      label: "Chăm sóc Khách hàng",
       iconText: "👤",
-      tooltip: "Quản lý Khách hàng: Thông tin và lịch sử khách hàng",
+      tooltip: "Chăm sóc Khách hàng: Thông tin và lịch sử khách hàng",
       roles: ["admin", "ceo", "leader", "sale"]
-    },
-    {
+    },    {
       id: 'orders',
       icon: ShoppingCart,
       label: "Quản lý Đơn hàng",
       iconText: "🛒",
       tooltip: "Quản lý Đơn hàng: Trạng thái và hóa đơn",
-      roles: ["admin", "ceo", "leader", "sale"]
+      roles: ["admin", "ceo"]
     },
     {
       id: 'tasks',

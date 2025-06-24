@@ -33,18 +33,18 @@
 ### Quyền truy cập theo vai trò:
 
 #### 👑 **Admin (Toàn quyền)**
-- 8 phần: Bàn làm việc, Tổng quan, Hoạt động bán hàng, Quản lý khách hàng, Quản lý đơn hàng, Quản lý công việc, Báo cáo, Cài đặt
+- 8 phần: Bàn làm việc, Tổng quan, Hoạt động bán hàng, Chăm sóc khách hàng, Quản lý đơn hàng, Quản lý công việc, Báo cáo, Cài đặt
 
 #### 🏢 **CEO (Xem tất cả)** ← **ĐÃ CẬP NHẬT**
-- **6 phần**: Bàn làm việc, Hoạt động bán hàng, Quản lý khách hàng, Quản lý đơn hàng, Quản lý công việc, Báo cáo
+- **6 phần**: Bàn làm việc, Hoạt động bán hàng, Chăm sóc khách hàng, Quản lý đơn hàng, Quản lý công việc, Báo cáo
 - **Đã loại bỏ**: ❌ Tổng quan, ❌ Cài đặt
 
 #### 👥 **Leader (Quản lý nhóm)** ← **ĐÃ CẬP NHẬT**
-- **6 phần**: Bàn làm việc, Hoạt động bán hàng, Quản lý khách hàng, Quản lý đơn hàng, Quản lý công việc, Báo cáo
+- **6 phần**: Bàn làm việc, Hoạt động bán hàng, Chăm sóc khách hàng, Quản lý đơn hàng, Quản lý công việc, Báo cáo
 - **Đã loại bỏ**: ❌ Tổng quan, ❌ Cài đặt
 
 #### 👤 **Sale (Cá nhân)** ← **ĐÃ CẬP NHẬT**
-- **5 phần**: Bàn làm việc, Hoạt động bán hàng, Quản lý khách hàng, Quản lý đơn hàng, Quản lý công việc
+- **5 phần**: Bàn làm việc, Hoạt động bán hàng, Chăm sóc khách hàng, Quản lý đơn hàng, Quản lý công việc
 - **Đã loại bỏ**: ❌ Tổng quan, ❌ Báo cáo, ❌ Cài đặt
 
 ## Tính năng Sale được giữ lại
@@ -52,7 +52,7 @@
 ### ✅ **5 Phần chính cho Sale:**
 1. **💼 Bàn làm việc** - Công việc AI gợi ý hàng ngày
 2. **🚀 Hoạt động bán hàng** - Quản lý Lead và Deal cá nhân
-3. **👤 Quản lý Khách hàng** - Thông tin khách hàng được giao
+3. **👤 Chăm sóc Khách hàng** - Thông tin khách hàng được giao
 4. **🛒 Quản lý Đơn hàng** - Đơn hàng và hóa đơn cá nhân
 5. **✅ Quản lý Công việc** - Tasks và tiến độ cá nhân
 
@@ -72,7 +72,7 @@
 
 ### 🎯 **Tập trung**
 - Sale không bị phân tán bởi quá nhiều tính năng
-- Tập trung vào công việc chính: bán hàng và quản lý khách hàng
+- Tập trung vào công việc chính: bán hàng và chăm sóc khách hàng
 
 ### 🔒 **Bảo mật**
 - Không truy cập được dữ liệu nhạy cảm

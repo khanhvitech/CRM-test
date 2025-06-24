@@ -7,7 +7,7 @@ import {
   Star, Heart, DollarSign, MessageCircle, Activity, Target, Gift,
   MapPin, Briefcase, CreditCard, UserCheck, UserX, Users, ChevronDown,
   Bell, RefreshCw, Zap, BarChart3, PieChart, CheckCircle, XCircle,
-  FileText, History, Send, Settings
+  FileText, History, Send, Settings, Download
 } from 'lucide-react'
 import CustomerFilters, { CustomerFilters as FilterType } from './CustomerFilters'
 import CustomerEventsManager from './CustomerEventsManager'
@@ -413,19 +413,196 @@ export default function CustomersManagement() {
     setShowRemarketingModal(true)
   }
 
+  // Export Functions
+  const getFilterSummary = () => {
+    const filterInfo = []
+    
+    if (searchTerm) filterInfo.push(`Tìm kiếm: "${searchTerm}"`)
+    if (filterStatus) filterInfo.push(`Trạng thái: ${filterStatus}`)
+    if (filterIndustry) filterInfo.push(`Ngành: ${filterIndustry}`)
+    if (filterTag) filterInfo.push(`Tag: ${filterTag}`)
+    
+    // Advanced filters
+    if (advancedFilters.daysSinceLastInteraction) {
+      const days = advancedFilters.daysSinceLastInteraction
+      filterInfo.push(`Ngày không tương tác: ${days.min || 0}-${days.max || '∞'}`)
+    }
+    if (advancedFilters.engagementScore) {
+      const score = advancedFilters.engagementScore
+      filterInfo.push(`Điểm tương tác: ${score.min || 0}-${score.max || 100}`)
+    }
+    if (advancedFilters.churnRisk) {
+      const risk = advancedFilters.churnRisk
+      filterInfo.push(`Rủi ro churn: ${risk.min || 0}-${risk.max || 100}%`)
+    }
+    
+    return filterInfo.length > 0 ? filterInfo.join(' | ') : 'Không có bộ lọc'
+  }
+
+  const exportToCSV = (customers: Customer[], filename: string) => {
+    const headers = [
+      'ID', 'Tên', 'Email', 'Điện thoại', 'Công ty', 'Địa chỉ', 'Ngành', 'Vùng',
+      'Trạng thái', 'Điểm tương tác', 'Rủi ro churn', 'Điểm upsell', 'Tổng giá trị',
+      'Mua hàng cuối', 'Ngày tham gia', 'Số deals', 'AOV', 'Tương tác cuối',
+      'Thời gian phản hồi', 'Tỷ lệ mở email', 'Tỷ lệ click', 'Tags'
+    ]
+    
+    const csvContent = [
+      headers.join(','),
+      ...customers.map(customer => [
+        customer.id,
+        `"${customer.name}"`,
+        customer.email,
+        customer.phone,
+        `"${customer.company}"`,
+        `"${customer.address}"`,
+        customer.industry,
+        customer.region,
+        customer.status,
+        customer.engagementScore,
+        customer.churnRisk,
+        customer.upsellScore,
+        customer.totalValue.replace(/[,đ]/g, ''),
+        customer.lastPurchase,
+        customer.joinDate,
+        customer.deals,
+        customer.avgOrderValue,
+        customer.lastInteraction,
+        customer.responseTime,
+        customer.emailOpenRate,
+        customer.clickRate,
+        `"${customer.tags.map(tag => tag.name).join('; ')}"`
+      ].join(','))
+    ].join('\n')
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(link.href)
+  }
+  const exportToExcel = (customers: Customer[], filename: string) => {
+    const filterSummary = getFilterSummary()
+    const exportDate = new Date().toLocaleString('vi-VN')
+    
+    // Tạo worksheet data
+    const worksheetData = [
+      // Info header
+      ['DANH SÁCH KHÁCH HÀNG - VILEAD CRM'],
+      [`Ngày xuất: ${exportDate}`],
+      [`Bộ lọc áp dụng: ${filterSummary}`],
+      [`Tổng số khách hàng: ${customers.length}`],
+      [], // Empty row
+      // Headers
+      [
+        'STT', 'Tên khách hàng', 'Email', 'Điện thoại', 'Công ty', 'Địa chỉ', 'Ngành nghề', 'Khu vực',
+        'Trạng thái', 'Điểm tương tác', 'Rủi ro churn (%)', 'Điểm upsell', 'Tổng giá trị (VND)',
+        'Lần mua cuối', 'Ngày tham gia', 'Số deals', 'AOV (VND)', 'Tương tác cuối',
+        'Thời gian phản hồi (giờ)', 'Tỷ lệ mở email (%)', 'Tỷ lệ click (%)', 'Tags', 'Ghi chú'
+      ],
+      // Data rows
+      ...customers.map((customer, index) => [
+        index + 1,
+        customer.name,
+        customer.email,
+        customer.phone,
+        customer.company,
+        customer.address,
+        customer.industry,
+        customer.region,
+        customer.status === 'active' ? 'Hoạt động' : 
+        customer.status === 'inactive' ? 'Không hoạt động' :
+        customer.status === 'at-risk' ? 'Có rủi ro' : 'VIP',
+        customer.engagementScore,
+        customer.churnRisk,
+        customer.upsellScore,
+        customer.totalValue,
+        customer.lastPurchase,
+        customer.joinDate,
+        customer.deals,
+        customer.avgOrderValue.toLocaleString('vi-VN'),
+        customer.lastInteraction,
+        customer.responseTime,
+        customer.emailOpenRate,
+        customer.clickRate,        customer.tags.map(tag => tag.name).join(', '),
+        `Xuất từ bộ lọc: ${filterSummary}`
+      ])
+    ]
+
+    // Tạo CSV từ worksheet data (simplified Excel export)
+    const csvContent = worksheetData.map(row => 
+      row.map(cell => `"${cell}"`).join(',')
+    ).join('\n')
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(link.href)
+  }
+  const handleExportData = (format: 'csv' | 'excel') => {
+    const currentDate = new Date().toLocaleDateString('vi-VN').replace(/\//g, '-')
+    const filenameSuffix = Object.keys(advancedFilters).length > 0 ? '_filtered' : '_all'
+    const filename = `khach-hang${filenameSuffix}_${currentDate}.${format === 'csv' ? 'csv' : 'xlsx'}`
+    
+    // Sử dụng dữ liệu đã được lọc
+    const dataToExport = filteredCustomers
+
+    if (format === 'csv') {
+      exportToCSV(dataToExport, filename)
+    } else {
+      exportToExcel(dataToExport, filename)
+    }
+
+    // Hiển thị thông báo
+    const hasFilters = Object.keys(advancedFilters).length > 0 || searchTerm || filterStatus || filterIndustry || filterTag
+    const message = hasFilters 
+      ? `✅ Đã xuất ${dataToExport.length} khách hàng theo bộ lọc thành công!\n📄 File: ${filename}\n🔍 Bộ lọc: ${getFilterSummary()}`
+      : `✅ Đã xuất tất cả ${dataToExport.length} khách hàng thành công!\n📄 File: ${filename}`
+    
+    alert(message)
+  }
+
   const handleAdvancedFilterChange = (filters: FilterType) => {
     setAdvancedFilters(filters)
   }
 
   return (
     <div className="space-y-6">
-      {/* Header with Actions */}
-      <div className="flex items-center justify-between">
+      {/* Header with Actions */}      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Quản lý Khách hàng</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Chăm sóc Khách hàng</h1>
           <p className="text-gray-600">Quản lý thông tin chi tiết và hành vi khách hàng</p>
-        </div>
-        <div className="flex items-center space-x-3">
+        </div>        <div className="flex items-center space-x-3">
+          {/* Export Dropdown */}
+          <div className="relative group">
+            <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+              <Download className="w-4 h-4" />
+              <span>Xuất dữ liệu ({filteredCustomers.length})</span>
+              <ChevronDown className="w-4 h-4" />
+            </button>
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+              <div className="py-2">
+                <button
+                  onClick={() => handleExportData('csv')}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center space-x-2"
+                >
+                  <FileText className="w-4 h-4 text-green-600" />
+                  <span>Xuất CSV</span>
+                </button>
+                <button
+                  onClick={() => handleExportData('excel')}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center space-x-2"
+                >
+                  <FileText className="w-4 h-4 text-blue-600" />
+                  <span>Xuất Excel</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
           <button 
             onClick={handleRemarketingClick}
             className="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
@@ -500,6 +677,38 @@ export default function CustomersManagement() {
           </select>
         </div>
       </div>
+
+      {/* Filter Summary */}
+      {(Object.keys(advancedFilters).length > 0 || searchTerm || filterStatus || filterIndustry || filterTag) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Filter className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-900">
+                Đang áp dụng bộ lọc - Hiển thị {filteredCustomers.length} trong tổng số {customers.length} khách hàng
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-blue-700">
+                {Object.keys(advancedFilters).length > 0 && "Bộ lọc nâng cao ✓"}
+                {(searchTerm || filterStatus || filterIndustry || filterTag) && " Bộ lọc cơ bản ✓"}
+              </span>
+              <button
+                onClick={() => {
+                  setSearchTerm('')
+                  setFilterStatus('')
+                  setFilterIndustry('')
+                  setFilterTag('')
+                  setAdvancedFilters({})
+                }}
+                className="text-xs text-blue-600 hover:text-blue-800 underline"
+              >
+                Xóa tất cả bộ lọc
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Advanced Filters */}
       <CustomerFilters 

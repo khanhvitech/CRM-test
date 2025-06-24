@@ -441,248 +441,67 @@ export default function SalesManagement() {
       </div>
     </div>
   )
-  const renderPipeline = () => {
-    // Kanban columns for lead conversion process
-    const kanbanColumns = [
-      {
-        id: 'new',
-        title: 'Leads Mới',
-        status: 'new',
-        color: 'bg-gray-100 border-gray-300',
-        headerColor: 'bg-gray-50 text-gray-700',
-        icon: <Users className="w-5 h-5" />,
-        leads: leads.filter(lead => lead.status === 'new')
-      },
-      {
-        id: 'contacted',
-        title: 'Đã Liên Hệ',
-        status: 'contacted',
-        color: 'bg-blue-100 border-blue-300',
-        headerColor: 'bg-blue-50 text-blue-700',
-        icon: <Phone className="w-5 h-5" />,
-        leads: leads.filter(lead => lead.status === 'contacted')
-      },
-      {
-        id: 'qualified',
-        title: 'Đã Xác Định',
-        status: 'qualified',
-        color: 'bg-yellow-100 border-yellow-300',
-        headerColor: 'bg-yellow-50 text-yellow-700',
-        icon: <CheckCircle className="w-5 h-5" />,
-        leads: leads.filter(lead => lead.status === 'qualified')
-      },
-      {
-        id: 'proposal',
-        title: 'Đã Đề Xuất',
-        status: 'proposal',
-        color: 'bg-purple-100 border-purple-300',
-        headerColor: 'bg-purple-50 text-purple-700',
-        icon: <Briefcase className="w-5 h-5" />,
-        leads: leads.filter(lead => lead.status === 'proposal')
-      },
-      {
-        id: 'negotiation',
-        title: 'Đang Đàm Phán',
-        status: 'negotiation',
-        color: 'bg-orange-100 border-orange-300',
-        headerColor: 'bg-orange-50 text-orange-700',
-        icon: <Activity className="w-5 h-5" />,
-        leads: leads.filter(lead => lead.status === 'negotiation')
-      },
-      {
-        id: 'converted',
-        title: 'Đã Chuyển Đổi',
-        status: 'converted',
-        color: 'bg-green-100 border-green-300',
-        headerColor: 'bg-green-50 text-green-700',
-        icon: <Target className="w-5 h-5" />,
-        leads: leads.filter(lead => lead.status === 'converted')
-      }
-    ]
 
-    // Calculate total value for each column
-    const getColumnValue = (columnLeads: Lead[]) => {
-      return columnLeads.reduce((sum, lead) => sum + lead.value, 0)
-    }
-
-    return (
-      <div className="space-y-6">
-        {/* Pipeline Summary */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Sales Pipeline - Kanban Board</h3>
-            <div className="flex items-center space-x-4 text-sm">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span className="text-gray-600">Tổng Leads: {leads.length}</span>
+  const renderPipeline = () => (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quy trình Sales Pipeline</h3>
+        
+        {/* Pipeline Flow */}
+        <div className="flex items-center justify-between mb-6 bg-gray-50 rounded-lg p-4">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <Users className="w-4 h-4 text-blue-600" />
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-gray-600">Đã chuyển đổi: {leads.filter(l => l.status === 'converted').length}</span>
+              <span className="text-sm font-medium">Leads</span>
+            </div>
+            <ArrowRight className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <Target className="w-4 h-4 text-green-600" />
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                <span className="text-gray-600">Tỷ lệ: {leads.length > 0 ? Math.round((leads.filter(l => l.status === 'converted').length / leads.length) * 100) : 0}%</span>
+              <span className="text-sm font-medium">Deals</span>
+            </div>
+            <ArrowRight className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                <ShoppingCart className="w-4 h-4 text-purple-600" />
               </div>
+              <span className="text-sm font-medium">Đơn hàng</span>
             </div>
           </div>
         </div>
 
-        {/* Kanban Board */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-            {kanbanColumns.map((column) => (
-              <div
-                key={column.id}
-                className={`border-2 border-dashed rounded-lg ${column.color} min-h-[600px]`}
-              >
-                {/* Column Header */}
-                <div className={`p-4 rounded-t-lg ${column.headerColor} border-b`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      {column.icon}
-                      <h4 className="font-medium text-sm">{column.title}</h4>
-                    </div>
-                    <span className="text-xs font-bold bg-white px-2 py-1 rounded-full">
-                      {column.leads.length}
-                    </span>
-                  </div>
-                  <div className="mt-2 text-xs opacity-75">
-                    {getColumnValue(column.leads).toLocaleString('vi-VN')} VND
-                  </div>
-                </div>
-
-                {/* Column Content */}
-                <div className="p-3 space-y-3">
-                  {column.leads.map((lead) => (
-                    <div
-                      key={lead.id}
-                      className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 cursor-move hover:shadow-md transition-shadow"
-                    >
-                      {/* Lead Card Header */}
-                      <div className="flex items-start justify-between mb-2">
-                        <h5 className="font-medium text-sm text-gray-900 truncate">
-                          {lead.name}
-                        </h5>
-                        <div className="flex space-x-1">
-                          {lead.tags.map((tag, index) => (
-                            <span
-                              key={index}
-                              className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded-full ${
-                                tag === 'hot' ? 'bg-red-100 text-red-800' :
-                                tag === 'warm' ? 'bg-orange-100 text-orange-800' :
-                                tag === 'cold' ? 'bg-blue-100 text-blue-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}
-                            >
-                              {tag === 'hot' ? '🔥' : tag === 'warm' ? '🌡️' : tag === 'cold' ? '❄️' : tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Lead Details */}
-                      <div className="space-y-2 text-xs text-gray-600">
-                        <div className="flex items-center">
-                          <Building2 className="w-3 h-3 mr-1" />
-                          <span className="truncate">{lead.company || 'Cá nhân'}</span>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <Package className="w-3 h-3 mr-1" />
-                          <span className="truncate">{lead.product}</span>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <DollarSign className="w-3 h-3 mr-1" />
-                          <span className="font-medium text-green-600">
-                            {lead.value.toLocaleString('vi-VN')} VND
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <User className="w-3 h-3 mr-1" />
-                          <span>{lead.assignedTo}</span>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <Calendar className="w-3 h-3 mr-1" />
-                          <span>{new Date(lead.createdAt).toLocaleDateString('vi-VN')}</span>
-                        </div>
-                      </div>
-
-                      {/* Lead Actions */}
-                      <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100">
-                        <div className="flex space-x-1">
-                          <button className="p-1 text-gray-400 hover:text-blue-600 transition-colors" title="Xem chi tiết">
-                            <Eye className="w-3 h-3" />
-                          </button>
-                          <button className="p-1 text-gray-400 hover:text-orange-600 transition-colors" title="Chỉnh sửa">
-                            <MoreVertical className="w-3 h-3" />
-                          </button>
-                        </div>
-                        
-                        {lead.status !== 'converted' && (
-                          <button className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors">
-                            Tạo Deal
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Empty State */}
-                  {column.leads.length === 0 && (
-                    <div className="text-center py-8 text-gray-400">
-                      <div className="w-12 h-12 mx-auto mb-2 opacity-50">
-                        {column.icon}
-                      </div>
-                      <p className="text-xs">Chưa có leads</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Pipeline Analytics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
-            <h4 className="text-sm font-medium mb-2">Tỷ lệ chuyển đổi</h4>
-            <div className="text-2xl font-bold">
-              {leads.length > 0 ? Math.round((leads.filter(l => l.status === 'converted').length / leads.length) * 100) : 0}%
+        {/* Pipeline Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-blue-900 mb-2">Leads → Deals</h4>
+            <div className="text-2xl font-bold text-blue-600">
+              {Math.round((deals.length / leads.length) * 100)}%
             </div>
-            <p className="text-xs opacity-75">Lead → Deal</p>
+            <p className="text-sm text-blue-700">Tỷ lệ chuyển đổi Lead thành Deal</p>
           </div>
           
-          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
-            <h4 className="text-sm font-medium mb-2">Giá trị Pipeline</h4>
-            <div className="text-lg font-bold">
-              {leads.reduce((sum, lead) => sum + lead.value, 0).toLocaleString('vi-VN')}
+          <div className="bg-green-50 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-green-900 mb-2">Deals → Orders</h4>
+            <div className="text-2xl font-bold text-green-600">
+              {deals.length > 0 ? Math.round((orders.length / deals.length) * 100) : 0}%
             </div>
-            <p className="text-xs opacity-75">VND</p>
+            <p className="text-sm text-green-700">Tỷ lệ chuyển đổi Deal thành Đơn hàng</p>
           </div>
           
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-4 text-white">
-            <h4 className="text-sm font-medium mb-2">Thời gian TB</h4>
-            <div className="text-2xl font-bold">
-              {Math.round(Math.random() * 15 + 5)}
+          <div className="bg-purple-50 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-purple-900 mb-2">Leads → Orders</h4>
+            <div className="text-2xl font-bold text-purple-600">
+              {leads.length > 0 ? Math.round((orders.length / leads.length) * 100) : 0}%
             </div>
-            <p className="text-xs opacity-75">ngày/giai đoạn</p>
-          </div>
-          
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-4 text-white">
-            <h4 className="text-sm font-medium mb-2">Doanh thu thực</h4>
-            <div className="text-lg font-bold">
-              {orders.reduce((sum, order) => sum + order.totalValue, 0).toLocaleString('vi-VN')}
-            </div>
-            <p className="text-xs opacity-75">VND</p>
+            <p className="text-sm text-purple-700">Tỷ lệ chuyển đổi tổng thể</p>
           </div>
         </div>
       </div>
-    )
-  }
+    </div>
+  )
 
   return (
     <div className="p-6 space-y-6">
