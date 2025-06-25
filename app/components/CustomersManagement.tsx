@@ -43,6 +43,16 @@ interface CustomerEvent {
   customMessage?: string
 }
 
+interface CustomerProduct {
+  id: string
+  name: string
+  category: string
+  purchaseDate: string
+  quantity: number
+  price: number
+  status: 'active' | 'expired' | 'cancelled'
+}
+
 interface Customer {
   id: number
   name: string
@@ -71,6 +81,7 @@ interface Customer {
   preferredChannel: 'email' | 'phone' | 'chat' | 'in-person' | 'social'
   interactions: CustomerInteraction[]
   events: CustomerEvent[]
+  products: CustomerProduct[]
   
   // Personal Information
   dateOfBirth?: string
@@ -275,6 +286,34 @@ export default function CustomersManagement() {
           recurring: true,
           reminderDays: 7
         }
+      ],      products: [
+        {
+          id: '1',
+          name: 'CRM Enterprise',
+          category: 'Software',
+          purchaseDate: '2024-01-20',
+          quantity: 1,
+          price: 2500000,
+          status: 'active'
+        },
+        {
+          id: '2',
+          name: 'AI Analytics Module',
+          category: 'Add-on',
+          purchaseDate: '2023-12-15',
+          quantity: 1,
+          price: 1200000,
+          status: 'active'
+        },
+        {
+          id: '3',
+          name: 'Marketing Automation',
+          category: 'Software',
+          purchaseDate: '2023-11-10',
+          quantity: 1,
+          price: 800000,
+          status: 'active'
+        }
       ],
       remarketing: {
         eligible: false,
@@ -366,7 +405,26 @@ export default function CustomersManagement() {
           status: 'pending'
         }
       ],
-      events: [],
+      events: [],      products: [
+        {
+          id: '4',
+          name: 'CRM Startup',
+          category: 'Software',
+          purchaseDate: '2024-01-18',
+          quantity: 1,
+          price: 800000,
+          status: 'active'
+        },
+        {
+          id: '5',
+          name: 'Lead Management',
+          category: 'Module',
+          purchaseDate: '2023-12-20',
+          quantity: 1,
+          price: 400000,
+          status: 'active'
+        }
+      ],
       remarketing: {
         eligible: true,
         priority: 'medium',
@@ -465,7 +523,17 @@ export default function CustomersManagement() {
           status: 'failed'
         }
       ],
-      events: [],
+      events: [],      products: [
+        {
+          id: '6',
+          name: 'ERP Manufacturing',
+          category: 'Software',
+          purchaseDate: '2023-11-15',
+          quantity: 1,
+          price: 800000,
+          status: 'active'
+        }
+      ],
       remarketing: {
         eligible: true,
         priority: 'high',
@@ -542,8 +610,7 @@ export default function CustomersManagement() {
       totalSpent: 450000,
       averageOrderFrequency: 1,
       supportTickets: 0,
-      supportPriority: 'low',
-      notes: 'Khách hàng mới, tiềm năng phát triển',
+      supportPriority: 'low',      notes: 'Khách hàng mới, tiềm năng phát triển',
       createdAt: '2023-12-01',
       updatedAt: '2024-01-16',
       createdBy: 'sales_rep',
@@ -551,6 +618,17 @@ export default function CustomersManagement() {
       isDeleted: false,
       interactions: [],
       events: [],
+      products: [
+        {
+          id: '6',
+          name: 'CRM Basic',
+          category: 'Software',
+          purchaseDate: '2024-01-15',
+          quantity: 1,
+          price: 450000,
+          status: 'active'
+        }
+      ],
       remarketing: {
         eligible: false,
         priority: 'low',
@@ -618,8 +696,7 @@ export default function CustomersManagement() {
       averageOrderFrequency: 0.5,
       supportTickets: 2,
       supportPriority: 'low',
-      notes: 'Khách hàng ngưng hoạt động từ Q3/2023',
-      internalNotes: 'Chuyển sang đối thủ cạnh tranh',
+      notes: 'Khách hàng ngưng hoạt động từ Q3/2023',      internalNotes: 'Chuyển sang đối thủ cạnh tranh',
       createdAt: '2022-05-10',
       updatedAt: '2023-09-10',
       createdBy: 'sales_manager',
@@ -627,6 +704,35 @@ export default function CustomersManagement() {
       isDeleted: false,
       interactions: [],
       events: [],
+      products: [
+        {
+          id: '7',
+          name: 'CRM Enterprise',
+          category: 'Software',
+          purchaseDate: '2022-05-15',
+          quantity: 1,
+          price: 2000000,
+          status: 'expired'
+        },
+        {
+          id: '8',
+          name: 'Financial Analytics',
+          category: 'Module',
+          purchaseDate: '2022-08-20',
+          quantity: 1,
+          price: 1500000,
+          status: 'expired'
+        },
+        {
+          id: '9',
+          name: 'Reporting Dashboard',
+          category: 'Add-on',
+          purchaseDate: '2023-01-10',
+          quantity: 1,
+          price: 800000,
+          status: 'expired'
+        }
+      ],
       remarketing: {
         eligible: true,
         priority: 'high',
@@ -710,8 +816,7 @@ export default function CustomersManagement() {
       updatedAt: '2024-01-23',
       createdBy: 'sales_rep',
       updatedBy: 'sales_rep',
-      isDeleted: false,
-      interactions: [
+      isDeleted: false,      interactions: [
         {
           id: '4',
           type: 'email',
@@ -723,6 +828,26 @@ export default function CustomersManagement() {
         }
       ],
       events: [],
+      products: [
+        {
+          id: '10',
+          name: 'CRM Education',
+          category: 'Software',
+          purchaseDate: '2024-01-22',
+          quantity: 1,
+          price: 600000,
+          status: 'active'
+        },
+        {
+          id: '11',
+          name: 'Student Management',
+          category: 'Module',
+          purchaseDate: '2024-01-22',
+          quantity: 1,
+          price: 300000,
+          status: 'active'
+        }
+      ],
       remarketing: {
         eligible: false,
         priority: 'medium',
@@ -768,10 +893,13 @@ export default function CustomersManagement() {
     setFilterIndustry('')
     setFilterTag('')
   }
-
-  // Filter logic with null safety
+  // Filter logic with null safety - Only show customers who have purchased products
   const filteredCustomers = useMemo(() => {
     return customers.filter((customer) => {
+      // Only show customers who have purchased products
+      const hasPurchasedProducts = customer.products && customer.products.length > 0
+      if (!hasPurchasedProducts) return false
+
       const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         customer.company.toLowerCase().includes(searchTerm.toLowerCase())
@@ -906,7 +1034,7 @@ export default function CustomersManagement() {
           </button>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           {/* Diamond Customer */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
             <div className="h-2 bg-yellow-500 rounded-t-lg"></div>
@@ -964,28 +1092,7 @@ export default function CustomersManagement() {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Potential Customer */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
-            <div className="h-2 bg-green-500 rounded-t-lg"></div>
-            <div className="p-4">
-              <div className="flex items-center">
-                <div className="rounded-full bg-green-100 p-3 mr-4 flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Khách hàng Tiềm năng</p>
-                  <p className="text-2xl font-bold">112</p>
-                  <div className="flex items-center text-green-600 text-xs">
-                    <ArrowUpRight className="w-3 h-3" />
-                    <span className="ml-1">18% so với tháng trước</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            </div>          </div>
 
           {/* New Customer */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
@@ -1177,6 +1284,7 @@ export default function CustomersManagement() {
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Công ty</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Hạng KH</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Trạng thái</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">Sản phẩm đã mua</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Tương tác cuối</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Điểm tương tác</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Rủi ro</th>
@@ -1235,9 +1343,34 @@ export default function CustomersManagement() {
                           {customer.status === 'vip' ? 'VIP' :
                            customer.status === 'active' ? 'Hoạt động' :
                            customer.status === 'at-risk' ? 'Có nguy cơ' :
-                           customer.status === 'prospect' ? 'Tiềm năng' :
-                           customer.status === 'lead' ? 'Khách hàng tiềm năng' : 'Không hoạt động'}
+                           customer.status === 'prospect' ? 'Tiềm năng' :                           customer.status === 'lead' ? 'Khách hàng tiềm năng' : 'Không hoạt động'}
                         </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="max-w-xs">
+                          {customer.products && customer.products.length > 0 ? (
+                            <div className="space-y-1">
+                              {customer.products.slice(0, 2).map((product, index) => (
+                                <div key={product.id} className="flex items-center justify-between">
+                                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                    product.status === 'active' ? 'bg-green-100 text-green-800' :
+                                    product.status === 'expired' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-red-100 text-red-800'
+                                  }`}>
+                                    {product.name}
+                                  </span>
+                                </div>
+                              ))}
+                              {customer.products.length > 2 && (
+                                <div className="text-xs text-gray-500">
+                                  +{customer.products.length - 2} sản phẩm khác
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">Chưa mua sản phẩm</span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-4">
                         <div className="text-sm text-gray-900">{customer.lastInteraction || 'Chưa có'}</div>
