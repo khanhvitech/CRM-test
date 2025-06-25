@@ -599,20 +599,26 @@ export default function CreateTaskModal({
               {/* Related Entity Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Gắn với Lead/Đơn hàng/Khách hàng
+                  Gắn với Lead/Đơn hàng/Khách hàng hoặc Công việc chung
                 </label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
                   {[
                     { value: 'lead', label: 'Lead', icon: Building },
                     { value: 'order', label: 'Đơn hàng', icon: ShoppingCart },
-                    { value: 'customer', label: 'Khách hàng', icon: Users }
+                    { value: 'customer', label: 'Khách hàng', icon: Users },
+                    { value: 'general', label: 'Công việc chung', icon: FileText }
                   ].map(type => (
                     <button
                       key={type.value}
                       type="button"
                       onClick={() => {
-                        setFormData(prev => ({ ...prev, relatedType: type.value, relatedId: '', relatedName: '' }))
-                        setShowRelatedSearch(true)
+                        if (type.value === 'general') {
+                          setFormData(prev => ({ ...prev, relatedType: type.value, relatedId: '', relatedName: '' }))
+                          setShowRelatedSearch(false)
+                        } else {
+                          setFormData(prev => ({ ...prev, relatedType: type.value, relatedId: '', relatedName: '' }))
+                          setShowRelatedSearch(true)
+                        }
                         setSearchTerm('')
                       }}
                       className={`p-3 border-2 rounded-lg text-center font-medium transition-all flex items-center justify-center space-x-2 ${
@@ -628,7 +634,7 @@ export default function CreateTaskModal({
                 </div>
 
                 {/* Related Entity Search */}
-                {formData.relatedType && (
+                {formData.relatedType && formData.relatedType !== 'general' && (
                   <div className="relative">
                     <div className="flex items-center space-x-2">
                       <div className="flex-1 relative">
@@ -704,14 +710,17 @@ export default function CreateTaskModal({
                 )}
 
                 {/* Selected Related Entity */}
-                {formData.relatedId && (
+                {(formData.relatedType === 'general' || formData.relatedId) && (
                   <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         {formData.relatedType === 'lead' && <Building className="w-4 h-4 text-blue-600" />}
                         {formData.relatedType === 'order' && <ShoppingCart className="w-4 h-4 text-blue-600" />}
                         {formData.relatedType === 'customer' && <Users className="w-4 h-4 text-blue-600" />}
-                        <span className="font-medium text-blue-900">{formData.relatedName}</span>
+                        {formData.relatedType === 'general' && <FileText className="w-4 h-4 text-blue-600" />}
+                        <span className="font-medium text-blue-900">
+                          {formData.relatedType === 'general' ? 'Công việc chung' : formData.relatedName}
+                        </span>
                       </div>
                       <button
                         type="button"
@@ -916,14 +925,17 @@ export default function CreateTaskModal({
                     </div>
                   )}
 
-                  {formData.relatedId && (
+                  {(formData.relatedType === 'general' || formData.relatedId) && (
                     <div className="flex items-center space-x-3">
                       {formData.relatedType === 'lead' && <Building className="w-5 h-5 text-gray-400" />}
                       {formData.relatedType === 'order' && <ShoppingCart className="w-5 h-5 text-gray-400" />}
                       {formData.relatedType === 'customer' && <Users className="w-5 h-5 text-gray-400" />}
+                      {formData.relatedType === 'general' && <FileText className="w-5 h-5 text-gray-400" />}
                       <div>
-                        <span className="font-medium">Liên quan: </span>
-                        <span>{formData.relatedName}</span>
+                        <span className="font-medium">Loại: </span>
+                        <span>
+                          {formData.relatedType === 'general' ? 'Công việc chung' : formData.relatedName}
+                        </span>
                       </div>
                     </div>
                   )}

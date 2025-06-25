@@ -51,7 +51,7 @@ interface Task {
   assignedTeam?: string
   tags: string[]
   
-  relatedType?: 'lead' | 'order' | 'customer'
+  relatedType?: 'lead' | 'order' | 'customer' | 'general'
   relatedId?: string
   relatedName?: string
   relatedInfo?: {

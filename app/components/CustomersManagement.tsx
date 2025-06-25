@@ -8,7 +8,7 @@ import {
   MapPin, Briefcase, CreditCard, UserCheck, UserX, Users, ChevronDown,
   Bell, RefreshCw, Zap, BarChart3, PieChart, CheckCircle, XCircle,
   FileText, History, Send, Settings, Download, Crown, Award, UserPlus,
-  Info, ArrowUpRight, ArrowDownRight, X
+  Info, ArrowUpRight, ArrowDownRight, X, MessageSquare
 } from 'lucide-react'
 import CustomerFilters, { CustomerFilters as FilterType } from './CustomerFilters'
 import CustomerEventsManager from './CustomerEventsManager'
@@ -66,7 +66,7 @@ interface Customer {
   industry: string
   position: string
   department: string
-  status: 'active' | 'inactive' | 'at-risk' | 'vip' | 'prospect' | 'lead'
+  status: 'active' | 'inactive' | 'at-risk' | 'vip' | 'churned' | 'dormant'
   customerType: 'diamond' | 'gold' | 'silver' | 'bronze' | 'new' | 'returning' | 'inactive'
   tags: CustomerTag[]
   totalValue: string
@@ -165,6 +165,8 @@ interface Customer {
     eligible: boolean
     priority: 'low' | 'medium' | 'high'
     lastCampaign: string
+    suggestedActions?: string[]
+    bestTimeToContact?: string
     campaigns: Array<{
       id: string
       name: string
@@ -185,8 +187,32 @@ export default function CustomersManagement() {
   const [filterStatus, setFilterStatus] = useState('')
   const [filterIndustry, setFilterIndustry] = useState('')
   const [filterTag, setFilterTag] = useState('')
+  const [filterCustomerType, setFilterCustomerType] = useState('')
   const [sortBy, setSortBy] = useState('name')
   const [advancedFilters, setAdvancedFilters] = useState<FilterType>({})
+  const [showRemarketingModal, setShowRemarketingModal] = useState(false)
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false)
+  const [showRankingDefinitionModal, setShowRankingDefinitionModal] = useState(false)
+  const [newCustomerData, setNewCustomerData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    company: '',
+    position: '',
+    industry: '',
+    companySize: 'small',
+    customerType: 'bronze',
+    status: 'active',
+    preferredChannel: 'email',
+    address: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    notes: '',
+    marketingConsent: false,
+    smsConsent: false
+  })
   // Sample customer data
   const [customers] = useState<Customer[]>([
     {
@@ -429,6 +455,12 @@ export default function CustomersManagement() {
         eligible: true,
         priority: 'medium',
         lastCampaign: '2023-12-15',
+        suggestedActions: [
+          'Gửi email về sản phẩm AI mới với ưu đãi 15%',
+          'Mời tham gia webinar về công nghệ mới',
+          'Liên hệ qua điện thoại để tư vấn trực tiếp'
+        ],
+        bestTimeToContact: '9:00-11:00 AM (Thứ 2-5)',
         campaigns: [
           {
             id: 'c1',
@@ -538,6 +570,12 @@ export default function CustomersManagement() {
         eligible: true,
         priority: 'high',
         lastCampaign: '2024-01-10',
+        suggestedActions: [
+          'Gửi ưu đãi đặc biệt 20% cho đơn hàng tiếp theo',
+          'Liên hệ trực tiếp để tìm hiểu nguyên nhân không hoạt động',
+          'Gửi survey để thu thập feedback'
+        ],
+        bestTimeToContact: '2:00-4:00 PM (Thứ 3, 5)',
         campaigns: [
           {
             id: 'c2',
@@ -737,6 +775,12 @@ export default function CustomersManagement() {
         eligible: true,
         priority: 'high',
         lastCampaign: '2023-11-01',
+        suggestedActions: [
+          'Gửi thông báo về gói dịch vụ mới với giá ưu đãi',
+          'Mời thử nghiệm miễn phí trong 30 ngày',
+          'Liên hệ để tư vấn nâng cấp gói dịch vụ'
+        ],
+        bestTimeToContact: '10:00 AM-12:00 PM (Thứ 2, 4, 6)',
         campaigns: [
           {
             id: 'c3',
@@ -762,16 +806,16 @@ export default function CustomersManagement() {
       industry: 'Giáo dục',
       position: 'Hiệu trưởng',
       department: 'Điều hành',
-      status: 'prospect',
-      customerType: 'new',
+      status: 'active',
+      customerType: 'returning',
       tags: [
-        { id: '9', name: 'Prospect', color: 'bg-yellow-100 text-yellow-800', category: 'value' },
+        { id: '9', name: 'Khách hàng quay lại', color: 'bg-green-100 text-green-800', category: 'value' },
         { id: '10', name: 'Giáo dục', color: 'bg-indigo-100 text-indigo-800', category: 'behavior' }
       ],
-      totalValue: '0',
-      lifetimeValue: '0',
-      averageOrderValue: '0',
-      lastOrderDate: '',
+      totalValue: '850,000',
+      lifetimeValue: '1,700,000',
+      averageOrderValue: '425,000',
+      lastOrderDate: '2024-01-10',
       lastInteraction: '2024-01-23',
       daysSinceLastInteraction: 1,
       engagementScore: 85,
@@ -811,18 +855,19 @@ export default function CustomersManagement() {
       averageOrderFrequency: 0,
       supportTickets: 0,
       supportPriority: 'medium',
-      notes: 'Prospect mới, đang tìm hiểu sản phẩm',
-      createdAt: '2024-01-20',
+      notes: 'Khách hàng giáo dục, mua sản phẩm định kỳ',
+      createdAt: '2023-08-20',
       updatedAt: '2024-01-23',
       createdBy: 'sales_rep',
       updatedBy: 'sales_rep',
-      isDeleted: false,      interactions: [
+      isDeleted: false,
+      interactions: [
         {
           id: '4',
           type: 'email',
           channel: 'Email',
-          title: 'Gửi thông tin sản phẩm',
-          summary: 'Gửi brochure và bảng giá chi tiết',
+          title: 'Gia hạn hợp đồng thành công',
+          summary: 'Khách hàng đồng ý gia hạn thêm 1 năm',
           date: '2024-01-23',
           status: 'success'
         }
@@ -833,7 +878,7 @@ export default function CustomersManagement() {
           id: '10',
           name: 'CRM Education',
           category: 'Software',
-          purchaseDate: '2024-01-22',
+          purchaseDate: '2024-01-10',
           quantity: 1,
           price: 600000,
           status: 'active'
@@ -842,17 +887,1155 @@ export default function CustomersManagement() {
           id: '11',
           name: 'Student Management',
           category: 'Module',
-          purchaseDate: '2024-01-22',
+          purchaseDate: '2023-12-15',
           quantity: 1,
-          price: 300000,
+          price: 250000,
           status: 'active'
         }
       ],
       remarketing: {
         eligible: false,
-        priority: 'medium',
+        priority: 'low',
         lastCampaign: '',
         campaigns: []
+      }
+    },
+    {
+      id: 7,
+      name: 'Vũ Văn Khoa',
+      firstName: 'Khoa',
+      lastName: 'Vũ Văn',
+      contact: '0967890123',
+      email: 'vu.van.khoa@trading.com',
+      company: 'Trading Company',
+      companySize: 'medium',
+      industry: 'Thương mại',
+      position: 'Giám đốc Kinh doanh',
+      department: 'Kinh doanh',
+      status: 'churned',
+      customerType: 'inactive',
+      tags: [
+        { id: '11', name: 'Đã churn', color: 'bg-red-100 text-red-800', category: 'risk' },
+        { id: '12', name: 'Cạnh tranh', color: 'bg-orange-100 text-orange-800', category: 'risk' }
+      ],
+      totalValue: '0',
+      lifetimeValue: '3,800,000',
+      averageOrderValue: '475,000',
+      lastOrderDate: '2023-07-20',
+      lastInteraction: '2023-08-15',
+      daysSinceLastInteraction: 162,
+      engagementScore: 8,
+      churnRisk: 100,
+      loyaltyPoints: 0,
+      preferredChannel: 'phone',
+      dateOfBirth: '1980-04-18',
+      gender: 'male',
+      maritalStatus: 'married',
+      address: '147 Đường Nguyễn Trãi',
+      city: 'Hà Nội',
+      state: 'Hà Nội',
+      country: 'Việt Nam',
+      postalCode: '100000',
+      creditLimit: 0,
+      paymentTerms: 'Đã hủy',
+      currency: 'VND',
+      taxExempt: false,
+      preferences: {
+        communicationFrequency: 'monthly',
+        marketingConsent: false,
+        newsletter: false,
+        smsConsent: false,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '09:00',
+          end: '17:00'
+        }
+      },
+      assignedSalesRep: 'Nguyễn Thị Hương',
+      customerSince: '2022-03-10',
+      firstPurchaseDate: '2022-03-15',
+      lastPurchaseDate: '2023-07-20',
+      totalOrders: 8,
+      totalSpent: 3800000,
+      averageOrderFrequency: 0.5,
+      supportTickets: 5,
+      supportPriority: 'low',
+      notes: 'Khách hàng đã chuyển sang đối thủ cạnh tranh',
+      internalNotes: 'Không thể giữ chân, giá cả không cạnh tranh',
+      createdAt: '2022-03-10',
+      updatedAt: '2023-08-15',
+      createdBy: 'sales_manager',
+      updatedBy: 'sales_rep',
+      isDeleted: false,
+      interactions: [
+        {
+          id: '5',
+          type: 'call',
+          channel: 'Phone',
+          title: 'Cuộc gọi thông báo hủy',
+          summary: 'Khách hàng thông báo chuyển sang nhà cung cấp khác',
+          date: '2023-08-15',
+          status: 'success'
+        }
+      ],
+      events: [],
+      products: [
+        {
+          id: '12',
+          name: 'CRM Professional',
+          category: 'Software',
+          purchaseDate: '2022-03-15',
+          quantity: 1,
+          price: 1800000,
+          status: 'cancelled'
+        },
+        {
+          id: '13',
+          name: 'Sales Analytics',
+          category: 'Module',
+          purchaseDate: '2022-08-10',
+          quantity: 1,
+          price: 1200000,
+          status: 'cancelled'
+        }
+      ],
+      remarketing: {
+        eligible: true,
+        priority: 'high',
+        lastCampaign: '2023-10-01',
+        campaigns: [
+          {
+            id: 'c4',
+            name: 'Win-back Premium',
+            type: 'email',
+            status: 'sent',
+            sentAt: '2023-10-01',
+            openRate: 15,
+            clickRate: 0
+          }
+        ]
+      }
+    },
+    {
+      id: 8,
+      name: 'Đặng Thị Mai',
+      firstName: 'Mai',
+      lastName: 'Đặng Thị',
+      contact: '0978901234',
+      email: 'dang.thi.mai@logistics.vn',
+      company: 'Logistics Solutions',
+      companySize: 'large',
+      industry: 'Vận tải',
+      position: 'Giám đốc Vận hành',
+      department: 'Vận hành',
+      status: 'dormant',
+      customerType: 'silver',
+      tags: [
+        { id: '13', name: 'Tạm ngưng', color: 'bg-gray-100 text-gray-800', category: 'risk' },
+        { id: '14', name: 'Mùa vụ', color: 'bg-blue-100 text-blue-800', category: 'behavior' }
+      ],
+      totalValue: '0',
+      lifetimeValue: '6,500,000',
+      averageOrderValue: '1,300,000',
+      lastOrderDate: '2023-10-30',
+      lastInteraction: '2023-12-20',
+      daysSinceLastInteraction: 35,
+      engagementScore: 45,
+      churnRisk: 55,
+      loyaltyPoints: 650,
+      preferredChannel: 'email',
+      dateOfBirth: '1983-08-25',
+      gender: 'female',
+      maritalStatus: 'married',
+      address: '258 Đường Cách Mang Tháng 8',
+      city: 'TP.HCM',
+      state: 'TP.HCM',
+      country: 'Việt Nam',
+      postalCode: '700000',
+      creditLimit: 2000000,
+      paymentTerms: '60 ngày',
+      currency: 'VND',
+      taxExempt: false,
+      preferences: {
+        communicationFrequency: 'monthly',
+        marketingConsent: true,
+        newsletter: true,
+        smsConsent: false,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '07:00',
+          end: '18:00'
+        }
+      },
+      assignedSalesRep: 'Bùi Văn Tấn',
+      customerSince: '2022-01-20',
+      firstPurchaseDate: '2022-02-10',
+      lastPurchaseDate: '2023-10-30',
+      totalOrders: 5,
+      totalSpent: 6500000,
+      averageOrderFrequency: 0.3,
+      supportTickets: 2,
+      supportPriority: 'medium',
+      notes: 'Khách hàng theo mùa, thường mua cuối năm',
+      internalNotes: 'Dự kiến sẽ quay lại Q1/2024',
+      createdAt: '2022-01-20',
+      updatedAt: '2023-12-20',
+      createdBy: 'sales_rep',
+      updatedBy: 'account_manager',
+      isDeleted: false,
+      interactions: [
+        {
+          id: '6',
+          type: 'meeting',
+          channel: 'In-person',
+          title: 'Họp đánh giá năm 2023',
+          summary: 'Khách hàng tạm ngưng do khó khăn tài chính',
+          date: '2023-12-20',
+          status: 'success'
+        }
+      ],
+      events: [
+        {
+          id: '2',
+          type: 'custom',
+          title: 'Đánh giá nhu cầu Q1',
+          date: '2024-03-01',
+          recurring: false,
+          reminderDays: 14,
+          customMessage: 'Liên hệ để đánh giá nhu cầu năm mới'
+        }
+      ],
+      products: [
+        {
+          id: '14',
+          name: 'Logistics Management',
+          category: 'Software',
+          purchaseDate: '2023-10-30',
+          quantity: 1,
+          price: 2500000,
+          status: 'active'
+        },
+        {
+          id: '15',
+          name: 'Fleet Tracking',
+          category: 'Module',
+          purchaseDate: '2023-03-20',
+          quantity: 1,
+          price: 1800000,
+          status: 'active'
+        }
+      ],
+      remarketing: {
+        eligible: true,
+        priority: 'medium',
+        lastCampaign: '2024-01-15',
+        campaigns: [
+          {
+            id: 'c5',
+            name: 'New Year Campaign',
+            type: 'email',
+            status: 'sent',
+            sentAt: '2024-01-15',
+            openRate: 68,
+            clickRate: 8
+          }
+        ]
+      }
+    },
+    {
+      id: 9,
+      name: 'Bùi Thị Lan',
+      firstName: 'Lan',
+      lastName: 'Bùi Thị',
+      contact: '0989012345',
+      email: 'bui.thi.lan@healthcare.vn',
+      company: 'Healthcare Solutions',
+      companySize: 'large',
+      industry: 'Y tế',
+      position: 'Giám đốc Y khoa',
+      department: 'Y khoa',
+      status: 'vip',
+      customerType: 'diamond',
+      tags: [
+        { id: '15', name: 'VIP', color: 'bg-purple-100 text-purple-800', category: 'value' },
+        { id: '16', name: 'Y tế', color: 'bg-green-100 text-green-800', category: 'behavior' }
+      ],
+      totalValue: '3,200,000',
+      lifetimeValue: '18,500,000',
+      averageOrderValue: '800,000',
+      lastOrderDate: '2024-01-21',
+      lastInteraction: '2024-01-24',
+      daysSinceLastInteraction: 0,
+      engagementScore: 98,
+      churnRisk: 2,
+      loyaltyPoints: 3200,
+      preferredChannel: 'email',
+      dateOfBirth: '1977-06-18',
+      gender: 'female',
+      maritalStatus: 'married',
+      address: '159 Đường Pasteur',
+      city: 'TP.HCM',
+      state: 'TP.HCM',
+      country: 'Việt Nam',
+      postalCode: '700000',
+      phone2: '0989012346',
+      website: 'https://healthcaresolutions.vn',
+      socialMedia: {
+        linkedin: 'https://linkedin.com/in/bui-thi-lan',
+        facebook: 'https://facebook.com/buithilan'
+      },
+      taxId: '0987654321',
+      creditLimit: 8000000,
+      paymentTerms: '30 ngày',
+      currency: 'VND',
+      taxExempt: false,
+      preferences: {
+        communicationFrequency: 'weekly',
+        marketingConsent: true,
+        newsletter: true,
+        smsConsent: true,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '07:00',
+          end: '19:00'
+        }
+      },
+      assignedSalesRep: 'Hoàng Văn Dũng',
+      accountManager: 'Nguyễn Thị Hồng',
+      customerSince: '2022-08-10',
+      firstPurchaseDate: '2022-08-15',
+      lastPurchaseDate: '2024-01-21',
+      totalOrders: 23,
+      totalSpent: 18500000,
+      averageOrderFrequency: 2.5,
+      supportTickets: 1,
+      supportPriority: 'high',
+      notes: 'Khách hàng VIP trong lĩnh vực y tế, rất quan tâm đến bảo mật',
+      internalNotes: 'Có thể mở rộng sang các bệnh viện khác',
+      createdAt: '2022-08-10',
+      updatedAt: '2024-01-24',
+      createdBy: 'admin',
+      updatedBy: 'sales_manager',
+      isDeleted: false,
+      interactions: [
+        {
+          id: '7',
+          type: 'meeting',
+          channel: 'In-person',
+          title: 'Họp triển khai hệ thống mới',
+          summary: 'Thảo luận về tích hợp AI vào hệ thống quản lý bệnh nhân',
+          date: '2024-01-24',
+          status: 'success'
+        }
+      ],
+      events: [
+        {
+          id: '3',
+          type: 'anniversary',
+          title: 'Kỷ niệm 2 năm hợp tác',
+          date: '2024-08-10',
+          recurring: true,
+          reminderDays: 30
+        }
+      ],
+      products: [
+        {
+          id: '16',
+          name: 'Healthcare CRM Enterprise',
+          category: 'Software',
+          purchaseDate: '2024-01-21',
+          quantity: 1,
+          price: 3200000,
+          status: 'active'
+        },
+        {
+          id: '17',
+          name: 'Patient Management System',
+          category: 'Software',
+          purchaseDate: '2023-11-15',
+          quantity: 1,
+          price: 2500000,
+          status: 'active'
+        },
+        {
+          id: '18',
+          name: 'Medical Analytics',
+          category: 'Module',
+          purchaseDate: '2023-08-20',
+          quantity: 1,
+          price: 1800000,
+          status: 'active'
+        }
+      ],
+      remarketing: {
+        eligible: false,
+        priority: 'low',
+        lastCampaign: '2024-01-01',
+        campaigns: []
+      }
+    },
+    {
+      id: 10,
+      name: 'Cao Minh Tâm',
+      firstName: 'Tâm',
+      lastName: 'Cao Minh',
+      contact: '0990123456',
+      email: 'cao.minh.tam@construction.com',
+      company: 'Construction Corp',
+      companySize: 'enterprise',
+      industry: 'Xây dựng',
+      position: 'Tổng Giám đốc',
+      department: 'Điều hành',
+      status: 'active',
+      customerType: 'gold',
+      tags: [
+        { id: '17', name: 'Dự án lớn', color: 'bg-orange-100 text-orange-800', category: 'value' },
+        { id: '18', name: 'Xây dựng', color: 'bg-brown-100 text-brown-800', category: 'behavior' }
+      ],
+      totalValue: '1,800,000',
+      lifetimeValue: '7,200,000',
+      averageOrderValue: '900,000',
+      lastOrderDate: '2024-01-12',
+      lastInteraction: '2024-01-19',
+      daysSinceLastInteraction: 5,
+      engagementScore: 82,
+      churnRisk: 18,
+      loyaltyPoints: 1800,
+      preferredChannel: 'phone',
+      dateOfBirth: '1973-02-28',
+      gender: 'male',
+      maritalStatus: 'married',
+      address: '357 Đường Cộng Hòa',
+      city: 'TP.HCM',
+      state: 'TP.HCM',
+      country: 'Việt Nam',
+      postalCode: '700000',
+      phone2: '0990123457',
+      website: 'https://constructioncorp.vn',
+      socialMedia: {
+        linkedin: 'https://linkedin.com/in/cao-minh-tam'
+      },
+      taxId: '1234567890',
+      creditLimit: 5000000,
+      paymentTerms: '45 ngày',
+      currency: 'VND',
+      taxExempt: false,
+      preferences: {
+        communicationFrequency: 'monthly',
+        marketingConsent: true,
+        newsletter: false,
+        smsConsent: true,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '06:00',
+          end: '18:00'
+        }
+      },
+      assignedSalesRep: 'Trần Thị Oanh',
+      accountManager: 'Lê Văn Thành',
+      customerSince: '2023-02-15',
+      firstPurchaseDate: '2023-02-20',
+      lastPurchaseDate: '2024-01-12',
+      totalOrders: 8,
+      totalSpent: 7200000,
+      averageOrderFrequency: 0.8,
+      supportTickets: 4,
+      supportPriority: 'medium',
+      notes: 'Chuyên về dự án xây dựng lớn, thường mua theo batch',
+      internalNotes: 'Có tiềm năng mở rộng sang các tỉnh khác',
+      createdAt: '2023-02-15',
+      updatedAt: '2024-01-19',
+      createdBy: 'sales_rep',
+      updatedBy: 'account_manager',
+      isDeleted: false,
+      interactions: [
+        {
+          id: '8',
+          type: 'call',
+          channel: 'Phone',
+          title: 'Tư vấn giải pháp cho dự án mới',
+          summary: 'Khách hàng cần tư vấn cho dự án cao ốc 40 tầng',
+          date: '2024-01-19',
+          status: 'success'
+        }
+      ],
+      events: [],
+      products: [
+        {
+          id: '19',
+          name: 'Construction Management Suite',
+          category: 'Software',
+          purchaseDate: '2024-01-12',
+          quantity: 1,
+          price: 1800000,
+          status: 'active'
+        },
+        {
+          id: '20',
+          name: 'Project Tracking System',
+          category: 'Software',
+          purchaseDate: '2023-10-15',
+          quantity: 1,
+          price: 1500000,
+          status: 'active'
+        },
+        {
+          id: '21',
+          name: 'Resource Planning Module',
+          category: 'Module',
+          purchaseDate: '2023-06-20',
+          quantity: 1,
+          price: 1200000,
+          status: 'active'
+        }
+      ],
+      remarketing: {
+        eligible: false,
+        priority: 'low',
+        lastCampaign: '',
+        campaigns: []
+      }
+    },
+    {
+      id: 11,
+      name: 'Dương Thị Hạnh',
+      firstName: 'Hạnh',
+      lastName: 'Dương Thị',
+      contact: '0901234567',
+      email: 'duong.thi.hanh@fashion.com',
+      company: 'Fashion Boutique',
+      companySize: 'small',
+      industry: 'Thời trang',
+      position: 'Chủ cửa hàng',
+      department: 'Kinh doanh',
+      status: 'active',
+      customerType: 'bronze',
+      tags: [
+        { id: '19', name: 'Thời trang', color: 'bg-pink-100 text-pink-800', category: 'behavior' },
+        { id: '20', name: 'Khách hàng trung thành', color: 'bg-blue-100 text-blue-800', category: 'engagement' }
+      ],
+      totalValue: '680,000',
+      lifetimeValue: '2,720,000',
+      averageOrderValue: '170,000',
+      lastOrderDate: '2024-01-17',
+      lastInteraction: '2024-01-18',
+      daysSinceLastInteraction: 6,
+      engagementScore: 72,
+      churnRisk: 22,
+      loyaltyPoints: 680,
+      preferredChannel: 'chat',
+      dateOfBirth: '1992-11-14',
+      gender: 'female',
+      maritalStatus: 'single',
+      address: '789 Đường Nguyễn Huệ',
+      city: 'TP.HCM',
+      state: 'TP.HCM',
+      country: 'Việt Nam',
+      postalCode: '700000',
+      phone2: '0901234568',
+      website: 'https://fashionboutique.vn',
+      socialMedia: {
+        instagram: 'https://instagram.com/fashionboutique',
+        facebook: 'https://facebook.com/fashionboutique'
+      },
+      taxId: '2468135790',
+      creditLimit: 1000000,
+      paymentTerms: '15 ngày',
+      currency: 'VND',
+      taxExempt: false,
+      preferences: {
+        communicationFrequency: 'weekly',
+        marketingConsent: true,
+        newsletter: true,
+        smsConsent: true,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '09:00',
+          end: '21:00'
+        }
+      },
+      assignedSalesRep: 'Phạm Thị Linh',
+      customerSince: '2023-05-20',
+      firstPurchaseDate: '2023-05-25',
+      lastPurchaseDate: '2024-01-17',
+      totalOrders: 16,
+      totalSpent: 2720000,
+      averageOrderFrequency: 2,
+      supportTickets: 2,
+      supportPriority: 'low',
+      notes: 'Chủ cửa hàng thời trang, quan tâm đến marketing online',
+      internalNotes: 'Có thể upsell social media management tools',
+      createdAt: '2023-05-20',
+      updatedAt: '2024-01-18',
+      createdBy: 'sales_rep',
+      updatedBy: 'sales_rep',
+      isDeleted: false,
+      interactions: [
+        {
+          id: '9',
+          type: 'chat',
+          channel: 'LiveChat',
+          title: 'Hỗ trợ setup campaign marketing',
+          summary: 'Hướng dẫn thiết lập chiến dịch marketing cho mùa sale',
+          date: '2024-01-18',
+          status: 'success'
+        }
+      ],
+      events: [
+        {
+          id: '4',
+          type: 'custom',
+          title: 'Chuẩn bị mùa sale Tết',
+          date: '2024-02-01',
+          recurring: false,
+          reminderDays: 7,
+          customMessage: 'Liên hệ hỗ trợ campaign marketing'
+        }
+      ],
+      products: [
+        {
+          id: '22',
+          name: 'Retail Management System',
+          category: 'Software',
+          purchaseDate: '2024-01-17',
+          quantity: 1,
+          price: 680000,
+          status: 'active'
+        },
+        {
+          id: '23',
+          name: 'Inventory Tracker',
+          category: 'Module',
+          purchaseDate: '2023-12-10',
+          quantity: 1,
+          price: 320000,
+          status: 'active'
+        },
+        {
+          id: '24',
+          name: 'Social Media Integration',
+          category: 'Add-on',
+          purchaseDate: '2023-11-05',
+          quantity: 1,
+          price: 180000,
+          status: 'active'
+        }
+      ],
+      remarketing: {
+        eligible: false,
+        priority: 'low',
+        lastCampaign: '',
+        campaigns: []
+      }
+    },
+    {
+      id: 12,
+      name: 'Lý Văn Phong',
+      firstName: 'Phong',
+      lastName: 'Lý Văn',
+      contact: '0912345678',
+      email: 'ly.van.phong@restaurant.vn',
+      company: 'Restaurant Chain',
+      companySize: 'medium',
+      industry: 'Nhà hàng',
+      position: 'Chủ chuỗi nhà hàng',
+      department: 'F&B',
+      status: 'at-risk',
+      customerType: 'silver',
+      tags: [
+        { id: '21', name: 'Nhà hàng', color: 'bg-yellow-100 text-yellow-800', category: 'behavior' },
+        { id: '22', name: 'Cần chăm sóc', color: 'bg-red-100 text-red-800', category: 'risk' }
+      ],
+      totalValue: '950,000',
+      lifetimeValue: '4,750,000',
+      averageOrderValue: '475,000',
+      lastOrderDate: '2023-12-20',
+      lastInteraction: '2024-01-05',
+      daysSinceLastInteraction: 19,
+      engagementScore: 48,
+      churnRisk: 65,
+      loyaltyPoints: 475,
+      preferredChannel: 'phone',
+      dateOfBirth: '1981-09-03',
+      gender: 'male',
+      maritalStatus: 'married',
+      address: '456 Đường Điện Biên Phủ',
+      city: 'Hà Nội',
+      state: 'Hà Nội',
+      country: 'Việt Nam',
+      postalCode: '100000',
+      phone2: '0912345679',
+      website: 'https://restaurantchain.vn',
+      socialMedia: {
+        facebook: 'https://facebook.com/restaurantchain',
+        instagram: 'https://instagram.com/restaurantchain'
+      },
+      taxId: '3691470258',
+      creditLimit: 2000000,
+      paymentTerms: '30 ngày',
+      currency: 'VND',
+      taxExempt: false,
+      preferences: {
+        communicationFrequency: 'monthly',
+        marketingConsent: true,
+        newsletter: false,
+        smsConsent: false,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '10:00',
+          end: '22:00'
+        }
+      },
+      assignedSalesRep: 'Võ Thị Mai',
+      customerSince: '2023-01-10',
+      firstPurchaseDate: '2023-01-15',
+      lastPurchaseDate: '2023-12-20',
+      totalOrders: 10,
+      totalSpent: 4750000,
+      averageOrderFrequency: 1,
+      supportTickets: 6,
+      supportPriority: 'high',
+      notes: 'Chủ chuỗi nhà hàng, gần đây ít tương tác',
+      internalNotes: 'Cần follow up gấp, có nguy cơ churn cao',
+      createdAt: '2023-01-10',
+      updatedAt: '2024-01-05',
+      createdBy: 'sales_rep',
+      updatedBy: 'account_manager',
+      isDeleted: false,
+      interactions: [
+        {
+          id: '10',
+          type: 'call',
+          channel: 'Phone',
+          title: 'Cuộc gọi check-in',
+          summary: 'Khách hàng bận, hẹn gọi lại tuần sau',
+          date: '2024-01-05',
+          status: 'pending'
+        }
+      ],
+      events: [],
+      products: [
+        {
+          id: '25',
+          name: 'Restaurant Management System',
+          category: 'Software',
+          purchaseDate: '2023-12-20',
+          quantity: 1,
+          price: 950000,
+          status: 'active'
+        },
+        {
+          id: '26',
+          name: 'Order Management',
+          category: 'Module',
+          purchaseDate: '2023-08-15',
+          quantity: 1,
+          price: 650000,
+          status: 'active'
+        },
+        {
+          id: '27',
+          name: 'Kitchen Display System',
+          category: 'Hardware',
+          purchaseDate: '2023-06-10',
+          quantity: 3,
+          price: 1200000,
+          status: 'active'
+        }
+      ],
+      remarketing: {
+        eligible: true,
+        priority: 'high',
+        lastCampaign: '2024-01-10',
+        campaigns: [
+          {
+            id: 'c6',
+            name: 'Restaurant Retention Campaign',
+            type: 'email',
+            status: 'sent',
+            sentAt: '2024-01-10',
+            openRate: 55,
+            clickRate: 8
+          }
+        ]
+      }
+    },
+    {
+      id: 13,
+      name: 'Nguyễn Thị Uyên',
+      firstName: 'Uyên',
+      lastName: 'Nguyễn Thị',
+      contact: '0923456789',
+      email: 'nguyen.thi.uyen@bookstore.com',
+      company: 'Bookstore Network',
+      companySize: 'small',
+      industry: 'Xuất bản',
+      position: 'Chủ cửa hàng sách',
+      department: 'Kinh doanh',
+      status: 'active',
+      customerType: 'new',
+      tags: [
+        { id: '23', name: 'Sách', color: 'bg-indigo-100 text-indigo-800', category: 'behavior' },
+        { id: '24', name: 'Khách hàng mới', color: 'bg-green-100 text-green-800', category: 'value' }
+      ],
+      totalValue: '320,000',
+      lifetimeValue: '320,000',
+      averageOrderValue: '160,000',
+      lastOrderDate: '2024-01-22',
+      lastInteraction: '2024-01-23',
+      daysSinceLastInteraction: 1,
+      engagementScore: 88,
+      churnRisk: 8,
+      loyaltyPoints: 32,
+      preferredChannel: 'email',
+      dateOfBirth: '1989-04-12',
+      gender: 'female',
+      maritalStatus: 'single',
+      address: '123 Đường Sách',
+      city: 'Hà Nội',
+      state: 'Hà Nội',
+      country: 'Việt Nam',
+      postalCode: '100000',
+      website: 'https://bookstorenetwork.vn',
+      socialMedia: {
+        facebook: 'https://facebook.com/bookstorenetwork',
+        instagram: 'https://instagram.com/bookstorenetwork'
+      },
+      taxId: '7410852963',
+      creditLimit: 500000,
+      paymentTerms: '7 ngày',
+      currency: 'VND',
+      taxExempt: false,
+      preferences: {
+        communicationFrequency: 'weekly',
+        marketingConsent: true,
+        newsletter: true,
+        smsConsent: false,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '08:00',
+          end: '18:00'
+        }
+      },
+      assignedSalesRep: 'Đặng Văn Hùng',
+      customerSince: '2024-01-10',
+      firstPurchaseDate: '2024-01-15',
+      lastPurchaseDate: '2024-01-22',
+      totalOrders: 2,
+      totalSpent: 320000,
+      averageOrderFrequency: 2,
+      supportTickets: 0,
+      supportPriority: 'low',
+      notes: 'Khách hàng mới trong lĩnh vực sách, rất tích cực',
+      internalNotes: 'Tiềm năng phát triển tốt, có thể mở rộng',
+      createdAt: '2024-01-10',
+      updatedAt: '2024-01-23',
+      createdBy: 'sales_rep',
+      updatedBy: 'sales_rep',
+      isDeleted: false,
+      interactions: [
+        {
+          id: '11',
+          type: 'email',
+          channel: 'Email',
+          title: 'Welcome email và onboarding',
+          summary: 'Gửi email chào mừng và hướng dẫn sử dụng hệ thống',
+          date: '2024-01-23',
+          status: 'success'
+        }
+      ],
+      events: [
+        {
+          id: '5',
+          type: 'custom',
+          title: 'Follow-up sau 30 ngày',
+          date: '2024-02-22',
+          recurring: false,
+          reminderDays: 3,
+          customMessage: 'Kiểm tra mức độ hài lòng và nhu cầu mở rộng'
+        }
+      ],
+      products: [
+        {
+          id: '28',
+          name: 'Bookstore POS System',
+          category: 'Software',
+          purchaseDate: '2024-01-22',
+          quantity: 1,
+          price: 320000,
+          status: 'active'
+        }
+      ],
+      remarketing: {
+        eligible: false,
+        priority: 'low',
+        lastCampaign: '',
+        campaigns: []
+      }
+    },
+    {
+      id: 14,
+      name: 'Trịnh Văn Đạt',
+      firstName: 'Đạt',
+      lastName: 'Trịnh Văn',
+      contact: '0934567890',
+      email: 'trinh.van.dat@autoservice.com',
+      company: 'Auto Service Center',
+      companySize: 'medium',
+      industry: 'Ô tô',
+      position: 'Chủ xưởng',
+      department: 'Dịch vụ',
+      status: 'active',
+      customerType: 'returning',
+      tags: [
+        { id: '25', name: 'Ô tô', color: 'bg-gray-100 text-gray-800', category: 'behavior' },
+        { id: '26', name: 'Khách quay lại', color: 'bg-green-100 text-green-800', category: 'engagement' }
+      ],
+      totalValue: '1,200,000',
+      lifetimeValue: '3,600,000',
+      averageOrderValue: '600,000',
+      lastOrderDate: '2024-01-16',
+      lastInteraction: '2024-01-17',
+      daysSinceLastInteraction: 7,
+      engagementScore: 76,
+      churnRisk: 15,
+      loyaltyPoints: 1200,
+      preferredChannel: 'phone',
+      dateOfBirth: '1984-12-08',
+      gender: 'male',
+      maritalStatus: 'married',
+      address: '987 Đường Xô Viết Nghệ Tĩnh',
+      city: 'Đà Nẵng',
+      state: 'Đà Nẵng',
+      country: 'Việt Nam',
+      postalCode: '550000',
+      phone2: '0934567891',
+      website: 'https://autoservicecenter.vn',
+      taxId: '8520741963',
+      creditLimit: 3000000,
+      paymentTerms: '30 ngày',
+      currency: 'VND',
+      taxExempt: false,
+      preferences: {
+        communicationFrequency: 'monthly',
+        marketingConsent: true,
+        newsletter: false,
+        smsConsent: true,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '07:00',
+          end: '17:00'
+        }
+      },
+      assignedSalesRep: 'Huỳnh Thị Nga',
+      customerSince: '2023-09-20',
+      firstPurchaseDate: '2023-09-25',
+      lastPurchaseDate: '2024-01-16',
+      totalOrders: 6,
+      totalSpent: 3600000,
+      averageOrderFrequency: 1.5,
+      supportTickets: 3,
+      supportPriority: 'medium',
+      notes: 'Chủ xưởng ô tô, đã quay lại sau khi tạm ngưng',
+      internalNotes: 'Từng dừng hợp tác 2 tháng, nay đã quay lại',
+      createdAt: '2023-09-20',
+      updatedAt: '2024-01-17',
+      createdBy: 'sales_rep',
+      updatedBy: 'sales_rep',
+      isDeleted: false,
+      interactions: [
+        {
+          id: '12',
+          type: 'call',
+          channel: 'Phone',
+          title: 'Tư vấn nâng cấp hệ thống',
+          summary: 'Khách hàng muốn tích hợp thêm module quản lý phụ tùng',
+          date: '2024-01-17',
+          status: 'success'
+        }
+      ],
+      events: [],
+      products: [
+        {
+          id: '29',
+          name: 'Auto Service Management',
+          category: 'Software',
+          purchaseDate: '2024-01-16',
+          quantity: 1,
+          price: 1200000,
+          status: 'active'
+        },
+        {
+          id: '30',
+          name: 'Customer Appointment System',
+          category: 'Module',
+          purchaseDate: '2023-11-10',
+          quantity: 1,
+          price: 800000,
+          status: 'active'
+        },
+        {
+          id: '31',
+          name: 'Parts Inventory Management',
+          category: 'Module',
+          purchaseDate: '2023-09-25',
+          quantity: 1,
+          price: 600000,
+          status: 'active'
+        }
+      ],
+      remarketing: {
+        eligible: false,
+        priority: 'low',
+        lastCampaign: '',
+        campaigns: []
+      }
+    },
+    {
+      id: 15,
+      name: 'Phùng Thị Hương',
+      firstName: 'Hương',
+      lastName: 'Phùng Thị',
+      contact: '0945678901',
+      email: 'phung.thi.huong@pharmacy.vn',
+      company: 'Pharmacy Chain',
+      companySize: 'large',
+      industry: 'Dược phẩm',
+      position: 'Giám đốc chuỗi',
+      department: 'Điều hành',
+      status: 'inactive',
+      customerType: 'inactive',
+      tags: [
+        { id: '27', name: 'Dược phẩm', color: 'bg-green-100 text-green-800', category: 'behavior' },
+        { id: '28', name: 'Tạm ngưng', color: 'bg-gray-100 text-gray-800', category: 'risk' }
+      ],
+      totalValue: '0',
+      lifetimeValue: '8,500,000',
+      averageOrderValue: '850,000',
+      lastOrderDate: '2023-09-30',
+      lastInteraction: '2023-11-15',
+      daysSinceLastInteraction: 71,
+      engagementScore: 25,
+      churnRisk: 85,
+      loyaltyPoints: 0,
+      preferredChannel: 'email',
+      dateOfBirth: '1979-01-25',
+      gender: 'female',
+      maritalStatus: 'divorced',
+      address: '741 Đường Cách Mạng Tháng 8',
+      city: 'TP.HCM',
+      state: 'TP.HCM',
+      country: 'Việt Nam',
+      postalCode: '700000',
+      phone2: '0945678902',
+      website: 'https://pharmacychain.vn',
+      taxId: '9630741852',
+      creditLimit: 0,
+      paymentTerms: 'Đã tạm dừng',
+      currency: 'VND',
+      taxExempt: false,
+      preferences: {
+        communicationFrequency: 'monthly',
+        marketingConsent: false,
+        newsletter: false,
+        smsConsent: false,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '08:00',
+          end: '17:00'
+        }
+      },
+      assignedSalesRep: 'Lê Thị Phương',
+      customerSince: '2022-04-10',
+      firstPurchaseDate: '2022-04-15',
+      lastPurchaseDate: '2023-09-30',
+      totalOrders: 10,
+      totalSpent: 8500000,
+      averageOrderFrequency: 0.6,
+      supportTickets: 5,
+      supportPriority: 'low',
+      notes: 'Chuỗi nhà thuốc, tạm ngưng do thay đổi hệ thống nội bộ',
+      internalNotes: 'Có thể quay lại trong Q2/2024',
+      createdAt: '2022-04-10',
+      updatedAt: '2023-11-15',
+      createdBy: 'sales_manager',
+      updatedBy: 'account_manager',
+      isDeleted: false,
+      interactions: [
+        {
+          id: '13',
+          type: 'email',
+          channel: 'Email',
+          title: 'Email thông báo tạm ngưng',
+          summary: 'Khách hàng thông báo tạm ngưng do thay đổi hệ thống',
+          date: '2023-11-15',
+          status: 'success'
+        }
+      ],
+      events: [
+        {
+          id: '6',
+          type: 'custom',
+          title: 'Follow-up Q2 2024',
+          date: '2024-04-01',
+          recurring: false,
+          reminderDays: 14,
+          customMessage: 'Liên hệ đánh giá khả năng quay lại'
+        }
+      ],
+      products: [
+        {
+          id: '32',
+          name: 'Pharmacy Management System',
+          category: 'Software',
+          purchaseDate: '2022-04-15',
+          quantity: 1,
+          price: 2500000,
+          status: 'expired'
+        },
+        {
+          id: '33',
+          name: 'Drug Inventory Control',
+          category: 'Module',
+          purchaseDate: '2022-08-20',
+          quantity: 1,
+          price: 1800000,
+          status: 'expired'
+        },
+        {
+          id: '34',
+          name: 'Prescription Management',
+          category: 'Module',
+          purchaseDate: '2023-02-10',
+          quantity: 1,
+          price: 1200000,
+          status: 'expired'
+        }
+      ],
+      remarketing: {
+        eligible: true,
+        priority: 'medium',
+        lastCampaign: '2023-12-01',
+        campaigns: [
+          {
+            id: 'c7',
+            name: 'Pharmacy Reactivation',
+            type: 'email',
+            status: 'sent',
+            sentAt: '2023-12-01',
+            openRate: 35,
+            clickRate: 2
+          }
+        ]
       }
     }
   ])
@@ -878,8 +2061,122 @@ export default function CustomersManagement() {
   }
 
   const handleRemarketingClick = () => {
-    console.log(`Opening remarketing for ${remarketingCustomers.length} customers`)
-    // Implement remarketing logic here
+    setShowRemarketingModal(true)
+  }
+
+  const handleAddCustomer = () => {
+    // Validate required fields
+    if (!newCustomerData.email || !newCustomerData.phone) {
+      alert('Vui lòng điền email và số điện thoại')
+      return
+    }
+
+    // Create new customer object
+    const newCustomer: Customer = {
+      id: Math.max(...customers.map(c => c.id)) + 1,
+      name: `${newCustomerData.lastName} ${newCustomerData.firstName}`.trim() || 'Khách hàng mới',
+      firstName: newCustomerData.firstName,
+      lastName: newCustomerData.lastName,
+      contact: newCustomerData.phone,
+      email: newCustomerData.email,
+      company: newCustomerData.company || 'Chưa cập nhật',
+      companySize: newCustomerData.companySize as any,
+      industry: newCustomerData.industry || 'Khác',
+      position: newCustomerData.position || 'Chưa cập nhật',
+      department: 'Chưa phân bổ',
+      status: newCustomerData.status as any,
+      customerType: newCustomerData.customerType as any,
+      tags: [],
+      totalValue: '0',
+      lifetimeValue: '0',
+      averageOrderValue: '0',
+      lastOrderDate: '',
+      lastInteraction: new Date().toISOString().split('T')[0],
+      daysSinceLastInteraction: 0,
+      engagementScore: 50,
+      churnRisk: 20,
+      loyaltyPoints: 0,
+      preferredChannel: newCustomerData.preferredChannel as any,
+      interactions: [],
+      events: [],
+      products: [],
+      address: newCustomerData.address || '',
+      city: newCustomerData.city || '',
+      state: newCustomerData.state || '',
+      country: 'Việt Nam',
+      postalCode: newCustomerData.postalCode || '',
+      creditLimit: 1000000,
+      paymentTerms: '30 ngày',
+      currency: 'VND',
+      taxExempt: false,
+      preferences: {
+        communicationFrequency: 'weekly',
+        marketingConsent: newCustomerData.marketingConsent,
+        newsletter: newCustomerData.marketingConsent,
+        smsConsent: newCustomerData.smsConsent,
+        language: 'vi',
+        timezone: 'Asia/Ho_Chi_Minh',
+        communicationHours: {
+          start: '08:00',
+          end: '18:00'
+        }
+      },
+      customerSince: new Date().toISOString().split('T')[0],
+      firstPurchaseDate: '',
+      lastPurchaseDate: '',
+      totalOrders: 0,
+      totalSpent: 0,
+      averageOrderFrequency: 0,
+      supportTickets: 0,
+      supportPriority: 'medium',
+      notes: newCustomerData.notes,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      createdBy: 'Admin',
+      updatedBy: 'Admin',
+      isDeleted: false,
+      remarketing: {
+        eligible: false,
+        priority: 'low',
+        lastCampaign: '',
+        suggestedActions: [],
+        campaigns: []
+      }
+    }
+
+    // Here you would normally add to the customers array
+    // For now, we'll just show a success message
+    alert('Khách hàng mới đã được thêm thành công!')
+    
+    // Reset form and close modal
+    setNewCustomerData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      company: '',
+      position: '',
+      industry: '',
+      companySize: 'small',
+      customerType: 'bronze',
+      status: 'active',
+      preferredChannel: 'email',
+      address: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      notes: '',
+      marketingConsent: false,
+      smsConsent: false
+    })
+    setShowAddCustomerModal(false)
+  }
+
+  const handleInputChange = (field: string, value: any) => {
+    setNewCustomerData(prev => ({
+      ...prev,
+      [field]: value
+    }))
   }
 
   const handleApplyFilters = (filters: FilterType) => {
@@ -892,13 +2189,20 @@ export default function CustomersManagement() {
     setFilterStatus('')
     setFilterIndustry('')
     setFilterTag('')
+    setFilterCustomerType('')
   }
-  // Filter logic with null safety - Only show customers who have purchased products
+
+  const handleCustomerTypeFilter = (customerType: string) => {
+    setFilterCustomerType(customerType)
+    setSelectedView('list') // Automatically switch to list view when filtering
+  }
+  // Filter logic - Only show customers who have made purchases (existing customers)
   const filteredCustomers = useMemo(() => {
     return customers.filter((customer) => {
-      // Only show customers who have purchased products
-      const hasPurchasedProducts = customer.products && customer.products.length > 0
-      if (!hasPurchasedProducts) return false
+      // Only show customers who have purchase history (exclude prospects/leads)
+      const hasValidPurchaseHistory = customer.products && customer.products.length > 0 && 
+                                     customer.totalSpent > 0
+      if (!hasValidPurchaseHistory) return false
 
       const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -907,6 +2211,7 @@ export default function CustomersManagement() {
       const matchesStatus = !filterStatus || customer.status === filterStatus
       const matchesIndustry = !filterIndustry || customer.industry === filterIndustry
       const matchesTag = !filterTag || customer.tags.some(tag => tag.name === filterTag)
+      const matchesCustomerType = !filterCustomerType || customer.customerType === filterCustomerType
 
       let matchesAdvanced = true
 
@@ -952,7 +2257,7 @@ export default function CustomersManagement() {
       })
 
       return matchesSearch && matchesStatus && matchesIndustry && matchesTag && 
-             matchesAdvanced
+             matchesCustomerType && matchesAdvanced
     }).sort((a, b) => {
       switch (sortBy) {
         case 'name':
@@ -969,14 +2274,663 @@ export default function CustomersManagement() {
           return 0
       }
     })
-  }, [customers, searchTerm, filterStatus, filterIndustry, filterTag, sortBy, advancedFilters])
+  }, [customers, searchTerm, filterStatus, filterIndustry, filterTag, filterCustomerType, sortBy, advancedFilters])
 
   const remarketingCustomers = customers.filter(c => 
     c.remarketing.eligible && (c.status === 'at-risk' || c.churnRisk >= 50)
   )
 
   return (
-    <div className="space-y-6">
+    <>
+      {/* Remarketing Modal */}
+      {showRemarketingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div className="flex items-center space-x-3">
+                <Target className="w-6 h-6 text-orange-600" />
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Remarketing Manager</h2>
+                  <p className="text-gray-600">{remarketingCustomers.length} khách hàng cần remarketing</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowRemarketingModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+              {/* Remarketing Actions */}
+              <div className="mb-6 p-4 bg-orange-50 rounded-lg">
+                <h3 className="font-semibold text-orange-800 mb-3">🎯 Hành động Remarketing</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <button className="flex items-center space-x-2 p-3 bg-white border border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 transition-colors">
+                    <Mail className="w-5 h-5 text-orange-600" />
+                    <div className="text-left">
+                      <div className="font-medium">Email Campaign</div>
+                      <div className="text-sm text-gray-600">Gửi email tái kích hoạt</div>
+                    </div>
+                  </button>
+                  <button className="flex items-center space-x-2 p-3 bg-white border border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 transition-colors">
+                    <MessageSquare className="w-5 h-5 text-orange-600" />
+                    <div className="text-left">
+                      <div className="font-medium">SMS Campaign</div>
+                      <div className="text-sm text-gray-600">Tin nhắn ưu đãi đặc biệt</div>
+                    </div>
+                  </button>
+                  <button className="flex items-center space-x-2 p-3 bg-white border border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 transition-colors">
+                    <Phone className="w-5 h-5 text-orange-600" />
+                    <div className="text-left">
+                      <div className="font-medium">Call List</div>
+                      <div className="text-sm text-gray-600">Tạo danh sách gọi</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Customer List */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-900">Danh sách khách hàng cần remarketing</h3>
+                {remarketingCustomers.map((customer) => (
+                  <div key={customer.id} className="p-4 border rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                          {customer.name.charAt(0)}
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900">{customer.name}</h4>
+                          <p className="text-sm text-gray-600">{customer.email}</p>
+                          <div className="flex items-center space-x-3 mt-1">
+                            <span className="text-sm text-gray-500">
+                              Lần tương tác cuối: {customer.daysSinceLastInteraction} ngày trước
+                            </span>
+                            <span className={`text-sm font-medium ${getRiskColor(customer.churnRisk)}`}>
+                              Rủi ro churn: {customer.churnRisk}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          customer.customerType === 'diamond' ? 'bg-purple-100 text-purple-800' :
+                          customer.customerType === 'gold' ? 'bg-yellow-100 text-yellow-800' :
+                          customer.customerType === 'silver' ? 'bg-gray-100 text-gray-800' :
+                          'bg-orange-100 text-orange-800'
+                        }`}>
+                          {customer.customerType === 'diamond' ? 'Kim cương' :
+                           customer.customerType === 'gold' ? 'Vàng' :
+                           customer.customerType === 'silver' ? 'Bạc' : 'Đồng'}
+                        </span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          customer.status === 'at-risk' ? 'bg-red-100 text-red-800' :
+                          customer.status === 'churned' ? 'bg-gray-100 text-gray-800' :
+                          'bg-orange-100 text-orange-800'
+                        }`}>
+                          {customer.status === 'at-risk' ? 'Có rủi ro' :
+                           customer.status === 'churned' ? 'Đã rời bỏ' :
+                           customer.status === 'dormant' ? 'Không hoạt động' : 'Khác'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Remarketing Suggestions */}
+                    <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                      <p className="text-sm font-medium text-blue-800 mb-2">💡 Gợi ý remarketing:</p>
+                      <div className="space-y-1">
+                        {customer.remarketing.suggestedActions?.map((action, index) => (
+                          <div key={index} className="text-sm text-blue-700">
+                            • {action}
+                          </div>
+                        )) || (
+                          <div className="text-sm text-blue-600">
+                            • Gửi email tái kích hoạt với ưu đãi đặc biệt
+                          </div>
+                        )}
+                      </div>
+                      {customer.remarketing.bestTimeToContact && (
+                        <div className="text-sm text-blue-600 mt-2">
+                          ⏰ Thời gian tốt nhất: {customer.remarketing.bestTimeToContact}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-6 border-t bg-gray-50">
+              <div className="text-sm text-gray-600">
+                Tổng cộng {remarketingCustomers.length} khách hàng được chọn
+              </div>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setShowRemarketingModal(false)}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Đóng
+                </button>
+                <button className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                  Bắt đầu Campaign
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Customer Modal */}
+      {showAddCustomerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div className="flex items-center space-x-3">
+                <UserPlus className="w-6 h-6 text-blue-600" />
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Thêm khách hàng mới</h2>
+                  <p className="text-gray-600">Nhập thông tin chi tiết khách hàng</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddCustomerModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Basic Information */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-900 mb-4">🏷️ Thông tin cơ bản</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Họ</label>
+                      <input
+                        type="text"
+                        value={newCustomerData.lastName}
+                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Nguyễn"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Tên</label>
+                      <input
+                        type="text"
+                        value={newCustomerData.firstName}
+                        onChange={(e) => handleInputChange('firstName', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Văn An"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                    <input
+                      type="email"
+                      required
+                      value={newCustomerData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="email@company.com"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Số điện thoại *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={newCustomerData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="0901234567"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Công ty</label>
+                    <input
+                      type="text"
+                      value={newCustomerData.company}
+                      onChange={(e) => handleInputChange('company', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Tên công ty"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Chức vụ</label>
+                    <input
+                      type="text"
+                      value={newCustomerData.position}
+                      onChange={(e) => handleInputChange('position', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="CEO, Manager, ..."
+                    />
+                  </div>
+                </div>
+                
+                {/* Business Information */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-900 mb-4">🏢 Thông tin doanh nghiệp</h3>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Ngành nghề</label>
+                    <select 
+                      value={newCustomerData.industry}
+                      onChange={(e) => handleInputChange('industry', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Chọn ngành nghề</option>
+                      <option value="Công nghệ">Công nghệ</option>
+                      <option value="Tài chính">Tài chính</option>
+                      <option value="Y tế">Y tế</option>
+                      <option value="Bán lẻ">Bán lẻ</option>
+                      <option value="Sản xuất">Sản xuất</option>
+                      <option value="Giáo dục">Giáo dục</option>
+                      <option value="Bất động sản">Bất động sản</option>
+                      <option value="Khác">Khác</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Quy mô công ty</label>
+                    <select 
+                      value={newCustomerData.companySize}
+                      onChange={(e) => handleInputChange('companySize', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="small">Nhỏ (1-50 nhân viên)</option>
+                      <option value="medium">Trung bình (51-200 nhân viên)</option>
+                      <option value="large">Lớn (201-1000 nhân viên)</option>
+                      <option value="enterprise">Doanh nghiệp (1000+ nhân viên)</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phân loại khách hàng</label>
+                    <select 
+                      value={newCustomerData.customerType}
+                      onChange={(e) => handleInputChange('customerType', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="bronze">Đồng</option>
+                      <option value="silver">Bạc</option>
+                      <option value="gold">Vàng</option>
+                      <option value="diamond">Kim cương</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Trạng thái</label>
+                    <select 
+                      value={newCustomerData.status}
+                      onChange={(e) => handleInputChange('status', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="active">Hoạt động</option>
+                      <option value="inactive">Không hoạt động</option>
+                      <option value="at-risk">Có rủi ro</option>
+                      <option value="vip">VIP</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Kênh liên lạc ưa thích</label>
+                    <select 
+                      value={newCustomerData.preferredChannel}
+                      onChange={(e) => handleInputChange('preferredChannel', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="email">Email</option>
+                      <option value="phone">Điện thoại</option>
+                      <option value="chat">Chat</option>
+                      <option value="in-person">Trực tiếp</option>
+                      <option value="social">Mạng xã hội</option>
+                    </select>
+                  </div>
+                </div>
+                
+                {/* Address Information */}
+                <div className="md:col-span-2 space-y-4">
+                  <h3 className="font-semibold text-gray-900 mb-4">📍 Thông tin địa chỉ</h3>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Địa chỉ</label>
+                    <input
+                      type="text"
+                      value={newCustomerData.address}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="123 Đường ABC, Phường XYZ"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Thành phố</label>
+                      <input
+                        type="text"
+                        value={newCustomerData.city}
+                        onChange={(e) => handleInputChange('city', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Hà Nội"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Tỉnh/Thành phố</label>
+                      <input
+                        type="text"
+                        value={newCustomerData.state}
+                        onChange={(e) => handleInputChange('state', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Hà Nội"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Mã bưu điện</label>
+                      <input
+                        type="text"
+                        value={newCustomerData.postalCode}
+                        onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="100000"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Additional Information */}
+                <div className="md:col-span-2 space-y-4">
+                  <h3 className="font-semibold text-gray-900 mb-4">📝 Thông tin bổ sung</h3>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú</label>
+                    <textarea
+                      rows={3}
+                      value={newCustomerData.notes}
+                      onChange={(e) => handleInputChange('notes', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Ghi chú về khách hàng..."
+                    ></textarea>
+                  </div>
+                  
+                  <div className="flex items-center space-x-6">
+                    <label className="flex items-center">
+                      <input 
+                        type="checkbox" 
+                        checked={newCustomerData.marketingConsent}
+                        onChange={(e) => handleInputChange('marketingConsent', e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Đồng ý nhận email marketing</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input 
+                        type="checkbox" 
+                        checked={newCustomerData.smsConsent}
+                        onChange={(e) => handleInputChange('smsConsent', e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Đồng ý nhận SMS</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-6 border-t bg-gray-50">
+              <div className="text-sm text-gray-600">
+                * Các trường bắt buộc
+              </div>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setShowAddCustomerModal(false)}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Hủy
+                </button>
+                <button 
+                  onClick={handleAddCustomer}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Thêm khách hàng
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ranking Definition Modal */}
+      {showRankingDefinitionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div className="flex items-center space-x-3">
+                <Crown className="w-6 h-6 text-yellow-600" />
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Định nghĩa phân hạng khách hàng</h2>
+                  <p className="text-gray-600">Tiêu chí và ngưỡng phân loại khách hàng</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowRankingDefinitionModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              {/* Ranking Tiers */}
+              <div className="space-y-6">
+                {/* Diamond */}
+                <div className="border border-purple-200 rounded-lg p-6 bg-gradient-to-r from-purple-50 to-pink-50">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
+                      <Crown className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-purple-800">💎 Kim Cương (Diamond)</h3>
+                      <p className="text-purple-600">Khách hàng VIP cao cấp nhất</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-purple-700">Tiêu chí chính:</h4>
+                      <ul className="text-sm text-purple-600 space-y-1">
+                        <li>• Tổng chi tiêu: ≥ 10,000,000 VND</li>
+                        <li>• Số đơn hàng: ≥ 20 đơn</li>
+                        <li>• Điểm engagement: ≥ 90/100</li>
+                        <li>• Rủi ro churn: ≤ 10%</li>
+                        <li>• Thời gian là khách hàng: ≥ 2 năm</li>
+                      </ul>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-purple-700">Đặc quyền:</h4>
+                      <ul className="text-sm text-purple-600 space-y-1">
+                        <li>• Ưu đãi độc quyền 20-30%</li>
+                        <li>• Account Manager riêng</li>
+                        <li>• Hỗ trợ 24/7 ưu tiên cao</li>
+                        <li>• Trải nghiệm cá nhân hóa</li>
+                        <li>• Mời sự kiện VIP</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gold */}
+                <div className="border border-yellow-200 rounded-lg p-6 bg-gradient-to-r from-yellow-50 to-amber-50">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full flex items-center justify-center">
+                      <Star className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-yellow-800">🥇 Vàng (Gold)</h3>
+                      <p className="text-yellow-600">Khách hàng trung thành cao</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-yellow-700">Tiêu chí chính:</h4>
+                      <ul className="text-sm text-yellow-600 space-y-1">
+                        <li>• Tổng chi tiêu: 5,000,000 - 9,999,999 VND</li>
+                        <li>• Số đơn hàng: 10-19 đơn</li>
+                        <li>• Điểm engagement: 70-89/100</li>
+                        <li>• Rủi ro churn: 11-25%</li>
+                        <li>• Thời gian là khách hàng: ≥ 1 năm</li>
+                      </ul>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-yellow-700">Đặc quyền:</h4>
+                      <ul className="text-sm text-yellow-600 space-y-1">
+                        <li>• Ưu đãi 15-20%</li>
+                        <li>• Hỗ trợ ưu tiên</li>
+                        <li>• Chương trình loyalty đặc biệt</li>
+                        <li>• Early access sản phẩm mới</li>
+                        <li>• Tư vấn chuyên sâu</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Silver */}
+                <div className="border border-gray-200 rounded-lg p-6 bg-gradient-to-r from-gray-50 to-slate-50">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-gray-400 to-slate-400 rounded-full flex items-center justify-center">
+                      <Award className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800">🥈 Bạc (Silver)</h3>
+                      <p className="text-gray-600">Khách hàng ổn định</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-gray-700">Tiêu chí chính:</h4>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        <li>• Tổng chi tiêu: 2,000,000 - 4,999,999 VND</li>
+                        <li>• Số đơn hàng: 5-9 đơn</li>
+                        <li>• Điểm engagement: 50-69/100</li>
+                        <li>• Rủi ro churn: 26-40%</li>
+                        <li>• Thời gian là khách hàng: ≥ 6 tháng</li>
+                      </ul>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-gray-700">Đặc quyền:</h4>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        <li>• Ưu đãi 10-15%</li>
+                        <li>• Hỗ trợ tiêu chuẩn</li>
+                        <li>• Newsletter chuyên biệt</li>
+                        <li>• Khuyến mãi định kỳ</li>
+                        <li>• Tích điểm thưởng</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bronze */}
+                <div className="border border-orange-200 rounded-lg p-6 bg-gradient-to-r from-orange-50 to-amber-50">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-amber-600 rounded-full flex items-center justify-center">
+                      <UserCheck className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-orange-800">🥉 Đồng (Bronze)</h3>
+                      <p className="text-orange-600">Khách hàng mới/cơ bản</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-orange-700">Tiêu chí chính:</h4>
+                      <ul className="text-sm text-orange-600 space-y-1">
+                        <li>• Tổng chi tiêu: 500,000 - 1,999,999 VND</li>
+                        <li>• Số đơn hàng: 1-4 đơn</li>
+                        <li>• Điểm engagement: 30-49/100</li>
+                        <li>• Rủi ro churn: 41-60%</li>
+                        <li>• Thời gian là khách hàng: &lt; 6 tháng</li>
+                      </ul>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-orange-700">Đặc quyền:</h4>
+                      <ul className="text-sm text-orange-600 space-y-1">
+                        <li>• Ưu đãi 5-10%</li>
+                        <li>• Hỗ trợ cơ bản</li>
+                        <li>• Welcome package</li>
+                        <li>• Hướng dẫn sử dụng</li>
+                        <li>• Chương trình giới thiệu</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Info */}
+                <div className="border border-blue-200 rounded-lg p-6 bg-blue-50">
+                  <h3 className="text-lg font-bold text-blue-800 mb-4">📋 Quy trình đánh giá</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="font-semibold text-blue-700 mb-2">Tần suất cập nhật:</h4>
+                      <ul className="text-sm text-blue-600 space-y-1">
+                        <li>• Tự động: Mỗi đơn hàng mới</li>
+                        <li>• Định kỳ: Cuối mỗi tháng</li>
+                        <li>• Thủ công: Khi có yêu cầu đặc biệt</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-blue-700 mb-2">Yếu tố bổ sung:</h4>
+                      <ul className="text-sm text-blue-600 space-y-1">
+                        <li>• Phản hồi khách hàng</li>
+                        <li>• Mức độ tương tác</li>
+                        <li>• Giới thiệu khách hàng mới</li>
+                        <li>• Tham gia sự kiện</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Special Cases */}
+                <div className="border border-red-200 rounded-lg p-6 bg-red-50">
+                  <h3 className="text-lg font-bold text-red-800 mb-4">⚠️ Trường hợp đặc biệt</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="font-semibold text-red-700">Khách hàng có rủi ro cao (At-risk):</h4>
+                      <p className="text-sm text-red-600">Churn risk &gt; 60% - Cần chăm sóc đặc biệt và remarketing</p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-red-700">Khách hàng không hoạt động (Dormant):</h4>
+                      <p className="text-sm text-red-600">Không có tương tác &gt; 6 tháng - Cần chiến dịch tái kích hoạt</p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-red-700">Khách hàng đã rời bỏ (Churned):</h4>
+                      <p className="text-sm text-red-600">Không có hoạt động &gt; 12 tháng - Cần chiến dịch win-back</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end p-6 border-t bg-gray-50">
+              <button
+                onClick={() => setShowRankingDefinitionModal(false)}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Đã hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-6">
       {/* Header with Actions */}
       <div className="flex items-center justify-between">
         <div>
@@ -1017,7 +2971,10 @@ export default function CustomersManagement() {
             <Target className="w-4 h-4" />
             <span>Remarketing ({remarketingCustomers.length})</span>
           </button>
-          <button className="btn-primary flex items-center space-x-2">
+          <button 
+            onClick={() => setShowAddCustomerModal(true)}
+            className="btn-primary flex items-center space-x-2"
+          >
             <Plus className="w-4 h-4" />
             <span>Thêm khách hàng</span>
           </button>
@@ -1028,15 +2985,53 @@ export default function CustomersManagement() {
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-gray-800">Phân loại khách hàng</h2>
-          <button className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors">
-            <Info className="w-4 h-4 mr-2" />
-            <span>Định nghĩa phân hạng</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            {filterCustomerType && (
+              <div className="flex items-center space-x-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                <span>Đang lọc: {
+                  filterCustomerType === 'diamond' ? 'Kim cương' :
+                  filterCustomerType === 'gold' ? 'Vàng' :
+                  filterCustomerType === 'silver' ? 'Bạc' :
+                  filterCustomerType === 'bronze' ? 'Đồng' :
+                  filterCustomerType === 'new' ? 'Mới' :
+                  filterCustomerType === 'returning' ? 'Quay lại' : filterCustomerType
+                }</span>
+                <button 
+                  onClick={() => setFilterCustomerType('')}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+            <button 
+              onClick={() => setFilterCustomerType('')}
+              className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                !filterCustomerType 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Tất cả ({customers.filter(c => c.products && c.products.length > 0 && c.totalSpent > 0).length})
+            </button>
+            <button 
+              onClick={() => setShowRankingDefinitionModal(true)}
+              className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+            >
+              <Info className="w-4 h-4 mr-2" />
+              <span>Định nghĩa phân hạng</span>
+            </button>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           {/* Diamond Customer */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+          <div 
+            onClick={() => handleCustomerTypeFilter('diamond')}
+            className={`bg-white rounded-lg shadow-sm border-2 hover:shadow-md transition-all cursor-pointer ${
+              filterCustomerType === 'diamond' ? 'border-yellow-500 ring-2 ring-yellow-200' : 'border-gray-200'
+            }`}
+          >
             <div className="h-2 bg-yellow-500 rounded-t-lg"></div>
             <div className="p-4">
               <div className="flex items-center">
@@ -1045,7 +3040,9 @@ export default function CustomersManagement() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Khách hàng Kim cương</p>
-                  <p className="text-2xl font-bold">24</p>
+                  <p className="text-2xl font-bold">
+                    {filteredCustomers.filter(c => c.customerType === 'diamond').length}
+                  </p>
                   <div className="flex items-center text-green-600 text-xs">
                     <ArrowUpRight className="w-3 h-3" />
                     <span className="ml-1">8% so với tháng trước</span>
@@ -1055,8 +3052,40 @@ export default function CustomersManagement() {
             </div>
           </div>
 
+          {/* Gold Customer */}
+          <div 
+            onClick={() => handleCustomerTypeFilter('gold')}
+            className={`bg-white rounded-lg shadow-sm border-2 hover:shadow-md transition-all cursor-pointer ${
+              filterCustomerType === 'gold' ? 'border-yellow-400 ring-2 ring-yellow-200' : 'border-gray-200'
+            }`}
+          >
+            <div className="h-2 bg-yellow-400 rounded-t-lg"></div>
+            <div className="p-4">
+              <div className="flex items-center">
+                <div className="rounded-full bg-yellow-100 p-3 mr-4 flex items-center justify-center">
+                  <Star className="w-5 h-5 text-yellow-500" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Khách hàng Vàng</p>
+                  <p className="text-2xl font-bold">
+                    {filteredCustomers.filter(c => c.customerType === 'gold').length}
+                  </p>
+                  <div className="flex items-center text-green-600 text-xs">
+                    <ArrowUpRight className="w-3 h-3" />
+                    <span className="ml-1">5% so với tháng trước</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Silver Customer */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+          <div 
+            onClick={() => handleCustomerTypeFilter('silver')}
+            className={`bg-white rounded-lg shadow-sm border-2 hover:shadow-md transition-all cursor-pointer ${
+              filterCustomerType === 'silver' ? 'border-gray-400 ring-2 ring-gray-200' : 'border-gray-200'
+            }`}
+          >
             <div className="h-2 bg-gray-400 rounded-t-lg"></div>
             <div className="p-4">
               <div className="flex items-center">
@@ -1065,7 +3094,9 @@ export default function CustomersManagement() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Khách hàng Bạc</p>
-                  <p className="text-2xl font-bold">86</p>
+                  <p className="text-2xl font-bold">
+                    {filteredCustomers.filter(c => c.customerType === 'silver').length}
+                  </p>
                   <div className="flex items-center text-green-600 text-xs">
                     <ArrowUpRight className="w-3 h-3" />
                     <span className="ml-1">12% so với tháng trước</span>
@@ -1075,27 +3106,40 @@ export default function CustomersManagement() {
             </div>
           </div>
 
-          {/* Gold Customer */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
-            <div className="h-2 bg-yellow-400 rounded-t-lg"></div>
+          {/* Bronze Customer */}
+          <div 
+            onClick={() => handleCustomerTypeFilter('bronze')}
+            className={`bg-white rounded-lg shadow-sm border-2 hover:shadow-md transition-all cursor-pointer ${
+              filterCustomerType === 'bronze' ? 'border-orange-400 ring-2 ring-orange-200' : 'border-gray-200'
+            }`}
+          >
+            <div className="h-2 bg-orange-400 rounded-t-lg"></div>
             <div className="p-4">
               <div className="flex items-center">
-                <div className="rounded-full bg-yellow-100 p-3 mr-4 flex items-center justify-center">
-                  <Star className="w-5 h-5 text-yellow-500" />
+                <div className="rounded-full bg-orange-100 p-3 mr-4 flex items-center justify-center">
+                  <Award className="w-5 h-5 text-orange-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Khách hàng Vàng</p>
-                  <p className="text-2xl font-bold">53</p>
+                  <p className="text-sm text-gray-500">Khách hàng Đồng</p>
+                  <p className="text-2xl font-bold">
+                    {filteredCustomers.filter(c => c.customerType === 'bronze').length}
+                  </p>
                   <div className="flex items-center text-green-600 text-xs">
                     <ArrowUpRight className="w-3 h-3" />
-                    <span className="ml-1">5% so với tháng trước</span>
+                    <span className="ml-1">3% so với tháng trước</span>
                   </div>
                 </div>
               </div>
-            </div>          </div>
+            </div>
+          </div>
 
           {/* New Customer */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+          <div 
+            onClick={() => handleCustomerTypeFilter('new')}
+            className={`bg-white rounded-lg shadow-sm border-2 hover:shadow-md transition-all cursor-pointer ${
+              filterCustomerType === 'new' ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+            }`}
+          >
             <div className="h-2 bg-blue-500 rounded-t-lg"></div>
             <div className="p-4">
               <div className="flex items-center">
@@ -1104,7 +3148,9 @@ export default function CustomersManagement() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Khách hàng Mới</p>
-                  <p className="text-2xl font-bold">42</p>
+                  <p className="text-2xl font-bold">
+                    {filteredCustomers.filter(c => c.customerType === 'new').length}
+                  </p>
                   <div className="flex items-center text-green-600 text-xs">
                     <ArrowUpRight className="w-3 h-3" />
                     <span className="ml-1">15% so với tháng trước</span>
@@ -1114,38 +3160,25 @@ export default function CustomersManagement() {
             </div>
           </div>
 
-          {/* Old Customer */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
+          {/* Returning Customer */}
+          <div 
+            onClick={() => handleCustomerTypeFilter('returning')}
+            className={`bg-white rounded-lg shadow-sm border-2 hover:shadow-md transition-all cursor-pointer ${
+              filterCustomerType === 'returning' ? 'border-purple-500 ring-2 ring-purple-200' : 'border-gray-200'
+            }`}
+          >
             <div className="h-2 bg-purple-500 rounded-t-lg"></div>
             <div className="p-4">
               <div className="flex items-center">
                 <div className="rounded-full bg-purple-100 p-3 mr-4 flex items-center justify-center">
-                  <History className="w-5 h-5 text-purple-600" />
+                  <RefreshCw className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Khách hàng Cũ</p>
-                  <p className="text-2xl font-bold">78</p>
-                  <div className="flex items-center text-red-600 text-xs">
-                    <ArrowDownRight className="w-3 h-3" />
-                    <span className="ml-1">5% so với tháng trước</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Inactive Customer */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
-            <div className="h-2 bg-red-500 rounded-t-lg"></div>
-            <div className="p-4">
-              <div className="flex items-center">
-                <div className="rounded-full bg-red-100 p-3 mr-4 flex items-center justify-center">
-                  <TrendingDown className="w-5 h-5 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Không quay lại</p>
-                  <p className="text-2xl font-bold">37</p>
-                  <div className="flex items-center text-red-600 text-xs">
+                  <p className="text-sm text-gray-500">Khách quay lại</p>
+                  <p className="text-2xl font-bold">
+                    {filteredCustomers.filter(c => c.customerType === 'returning').length}
+                  </p>
+                  <div className="flex items-center text-green-600 text-xs">
                     <ArrowUpRight className="w-3 h-3" />
                     <span className="ml-1">7% so với tháng trước</span>
                   </div>
@@ -1209,19 +3242,31 @@ export default function CustomersManagement() {
       </div>
 
       {/* Filter Summary */}
-      {(Object.keys(advancedFilters).length > 0 || searchTerm || filterStatus || filterIndustry || filterTag) && (
+      {(Object.keys(advancedFilters).length > 0 || searchTerm || filterStatus || filterIndustry || filterTag || filterCustomerType) && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Filter className="w-4 h-4 text-blue-600" />
               <span className="text-sm font-medium text-blue-900">
-                Đang áp dụng bộ lọc - Hiển thị {filteredCustomers.length} trong tổng số {customers.length} khách hàng
+                Đang áp dụng bộ lọc - Hiển thị {filteredCustomers.length} trong tổng số {customers.filter(c => c.products && c.products.length > 0 && c.totalSpent > 0).length} khách hàng
               </span>
+              {filterCustomerType && (
+                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                  Loại: {
+                    filterCustomerType === 'diamond' ? 'Kim cương' :
+                    filterCustomerType === 'gold' ? 'Vàng' :
+                    filterCustomerType === 'silver' ? 'Bạc' :
+                    filterCustomerType === 'bronze' ? 'Đồng' :
+                    filterCustomerType === 'new' ? 'Mới' :
+                    filterCustomerType === 'returning' ? 'Quay lại' : filterCustomerType
+                  }
+                </span>
+              )}
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-xs text-blue-700">
                 {Object.keys(advancedFilters).length > 0 && "Bộ lọc nâng cao ✓"}
-                {(searchTerm || filterStatus || filterIndustry || filterTag) && " Bộ lọc cơ bản ✓"}
+                {(searchTerm || filterStatus || filterIndustry || filterTag || filterCustomerType) && " Bộ lọc cơ bản ✓"}
               </span>
               <button
                 onClick={() => {
@@ -1229,6 +3274,7 @@ export default function CustomersManagement() {
                   setFilterStatus('')
                   setFilterIndustry('')
                   setFilterTag('')
+                  setFilterCustomerType('')
                   setAdvancedFilters({})
                 }}
                 className="text-xs text-blue-600 hover:text-blue-800 underline"
@@ -1237,7 +3283,8 @@ export default function CustomersManagement() {
               </button>
             </div>
           </div>
-        </div>      )}
+        </div>
+      )}
 
       {/* Advanced Filters */}
       <CustomerFilters 
@@ -1271,8 +3318,8 @@ export default function CustomersManagement() {
                   <option value="inactive">Không hoạt động</option>
                   <option value="at-risk">Có nguy cơ</option>
                   <option value="vip">VIP</option>
-                  <option value="prospect">Tiềm năng</option>
-                  <option value="lead">Khách hàng tiềm năng</option>
+                  <option value="churned">Đã churn</option>
+                  <option value="dormant">Tạm ngưng</option>
                 </select>
               </div>
             </div>
@@ -1336,14 +3383,15 @@ export default function CustomersManagement() {
                           customer.status === 'vip' ? 'bg-purple-100 text-purple-800' :
                           customer.status === 'active' ? 'bg-green-100 text-green-800' :
                           customer.status === 'at-risk' ? 'bg-red-100 text-red-800' :
-                          customer.status === 'prospect' ? 'bg-yellow-100 text-yellow-800' :
-                          customer.status === 'lead' ? 'bg-blue-100 text-blue-800' :
+                          customer.status === 'churned' ? 'bg-orange-100 text-orange-800' :
+                          customer.status === 'dormant' ? 'bg-gray-100 text-gray-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {customer.status === 'vip' ? 'VIP' :
                            customer.status === 'active' ? 'Hoạt động' :
                            customer.status === 'at-risk' ? 'Có nguy cơ' :
-                           customer.status === 'prospect' ? 'Tiềm năng' :                           customer.status === 'lead' ? 'Khách hàng tiềm năng' : 'Không hoạt động'}
+                           customer.status === 'churned' ? 'Đã churn' :
+                           customer.status === 'dormant' ? 'Tạm ngưng' : 'Không hoạt động'}
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -1399,15 +3447,22 @@ export default function CustomersManagement() {
                         <div className="flex items-center space-x-2">
                           <button 
                             onClick={() => handleCustomerSelect(customer)}
-                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                            className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            title="Xem chi tiết"
                           >
-                            Chi tiết
+                            <Eye className="w-4 h-4" />
                           </button>
-                          <button className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
-                            Gọi
+                          <button 
+                            className="p-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                            title="Gọi điện"
+                          >
+                            <Phone className="w-4 h-4" />
                           </button>
-                          <button className="px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700">
-                            Email
+                          <button 
+                            className="p-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                            title="Gửi email"
+                          >
+                            <Mail className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -1419,100 +3474,372 @@ export default function CustomersManagement() {
           </div>
         </div>
       )}      {selectedView === 'analytics' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Analytics Overview Cards */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Tổng khách hàng</p>
-                <p className="text-2xl font-bold text-gray-900">{filteredCustomers.length}</p>
-              </div>
-              <Users className="w-8 h-8 text-blue-600" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Khách hàng VIP</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {filteredCustomers.filter(c => c.status === 'vip').length}
-                </p>
-              </div>
-              <Star className="w-8 h-8 text-purple-600" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Có nguy cơ</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {filteredCustomers.filter(c => c.status === 'at-risk').length}
-                </p>
-              </div>
-              <AlertTriangle className="w-8 h-8 text-red-600" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Tổng giá trị</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(
-                    filteredCustomers.reduce((sum, c) => sum + parseInt(c.totalValue.replace(/,/g, '')), 0).toString()
-                  )} VNĐ
-                </p>
-              </div>
-              <DollarSign className="w-8 h-8 text-green-600" />
-            </div>
-          </div>
-
-          {/* Detailed Analytics */}
-          <div className="col-span-full">
+        <div className="space-y-6">
+          {/* Overview Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Phân tích chi tiết</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Phân bố theo trạng thái</h4>
-                  <div className="space-y-2">
-                    {['active', 'vip', 'at-risk', 'inactive'].map(status => {
-                      const count = filteredCustomers.filter(c => c.status === status).length
-                      const percentage = filteredCustomers.length > 0 ? (count / filteredCustomers.length * 100).toFixed(1) : 0
-                      return (
-                        <div key={status} className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600 capitalize">
-                            {status === 'active' ? 'Hoạt động' :
-                             status === 'vip' ? 'VIP' :
-                             status === 'at-risk' ? 'Có nguy cơ' : 'Không hoạt động'}
-                          </span>
-                          <span className="text-sm font-medium">{count} ({percentage}%)</span>
+                  <p className="text-sm text-gray-600">Tổng khách hàng</p>
+                  <p className="text-2xl font-bold text-gray-900">{filteredCustomers.length}</p>
+                  <div className="flex items-center mt-1 text-xs">
+                    <TrendingUp className="w-3 h-3 text-green-500 mr-1" />
+                    <span className="text-green-600">+12% so với tháng trước</span>
+                  </div>
+                </div>
+                <Users className="w-8 h-8 text-blue-600" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Tổng doanh thu</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {formatCurrency(
+                      filteredCustomers.reduce((sum, c) => sum + parseInt(c.totalValue.replace(/,/g, '')), 0).toString()
+                    )} VNĐ
+                  </p>
+                  <div className="flex items-center mt-1 text-xs">
+                    <TrendingUp className="w-3 h-3 text-green-500 mr-1" />
+                    <span className="text-green-600">+8.5% so với tháng trước</span>
+                  </div>
+                </div>
+                <DollarSign className="w-8 h-8 text-green-600" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Doanh thu trung bình/KH</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {filteredCustomers.length > 0 ? formatCurrency(
+                      Math.round(filteredCustomers.reduce((sum, c) => sum + parseInt(c.totalValue.replace(/,/g, '')), 0) / filteredCustomers.length).toString()
+                    ) : '0'} VNĐ
+                  </p>
+                  <div className="flex items-center mt-1 text-xs">
+                    <TrendingUp className="w-3 h-3 text-green-500 mr-1" />
+                    <span className="text-green-600">+5.2% so với tháng trước</span>
+                  </div>
+                </div>
+                <BarChart3 className="w-8 h-8 text-blue-600" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Tỷ lệ giữ chân</p>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {Math.round((filteredCustomers.filter(c => c.status !== 'churned').length / filteredCustomers.length) * 100 || 0)}%
+                  </p>
+                  <div className="flex items-center mt-1 text-xs">
+                    <TrendingUp className="w-3 h-3 text-green-500 mr-1" />
+                    <span className="text-green-600">+2.1% so với tháng trước</span>
+                  </div>
+                </div>
+                <Heart className="w-8 h-8 text-purple-600" />
+              </div>
+            </div>
+          </div>
+
+          {/* Status Distribution */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Phân bố theo trạng thái</h3>
+              <div className="space-y-3">
+                {[
+                  { status: 'active', label: 'Hoạt động', color: 'bg-green-500', textColor: 'text-green-600' },
+                  { status: 'vip', label: 'VIP', color: 'bg-purple-500', textColor: 'text-purple-600' },
+                  { status: 'at-risk', label: 'Có nguy cơ', color: 'bg-red-500', textColor: 'text-red-600' },
+                  { status: 'inactive', label: 'Không hoạt động', color: 'bg-gray-500', textColor: 'text-gray-600' },
+                  { status: 'churned', label: 'Đã rời bỏ', color: 'bg-orange-500', textColor: 'text-orange-600' },
+                  { status: 'dormant', label: 'Ngủ đông', color: 'bg-yellow-500', textColor: 'text-yellow-600' }
+                ].map(({ status, label, color, textColor }) => {
+                  const count = filteredCustomers.filter(c => c.status === status).length
+                  const percentage = filteredCustomers.length > 0 ? (count / filteredCustomers.length * 100).toFixed(1) : 0
+                  return (
+                    <div key={status} className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-3 h-3 rounded-full ${color}`}></div>
+                        <span className="text-sm text-gray-700">{label}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-900">{count}</span>
+                        <span className={`text-sm font-medium ${textColor}`}>({percentage}%)</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Phân bố theo loại khách hàng</h3>
+              <div className="space-y-3">
+                {[
+                  { type: 'diamond', label: 'Kim cương', color: 'bg-purple-500', textColor: 'text-purple-600', icon: '💎' },
+                  { type: 'gold', label: 'Vàng', color: 'bg-yellow-500', textColor: 'text-yellow-600', icon: '🥇' },
+                  { type: 'silver', label: 'Bạc', color: 'bg-gray-400', textColor: 'text-gray-600', icon: '🥈' },
+                  { type: 'bronze', label: 'Đồng', color: 'bg-orange-600', textColor: 'text-orange-600', icon: '🥉' }
+                ].map(({ type, label, color, textColor, icon }) => {
+                  const count = filteredCustomers.filter(c => c.customerType === type).length
+                  const percentage = filteredCustomers.length > 0 ? (count / filteredCustomers.length * 100).toFixed(1) : 0
+                  return (
+                    <div key={type} className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-sm">{icon}</span>
+                        <span className="text-sm text-gray-700">{label}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-gray-900">{count}</span>
+                        <span className={`text-sm font-medium ${textColor}`}>({percentage}%)</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Performance Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Điểm tương tác</h3>
+                <Activity className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-blue-600 mb-2">
+                  {Math.round(
+                    filteredCustomers.reduce((sum, c) => sum + c.engagementScore, 0) / filteredCustomers.length || 0
+                  )}
+                </div>
+                <p className="text-sm text-gray-500">điểm trung bình / 100</p>
+              </div>
+              <div className="mt-4 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span>Cao (80-100)</span>
+                  <span>{filteredCustomers.filter(c => c.engagementScore >= 80).length} KH</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span>Trung bình (50-79)</span>
+                  <span>{filteredCustomers.filter(c => c.engagementScore >= 50 && c.engagementScore < 80).length} KH</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span>Thấp (&lt;50)</span>
+                  <span>{filteredCustomers.filter(c => c.engagementScore < 50).length} KH</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Rủi ro Churn</h3>
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-red-600 mb-2">
+                  {Math.round(
+                    filteredCustomers.reduce((sum, c) => sum + c.churnRisk, 0) / filteredCustomers.length || 0
+                  )}%
+                </div>
+                <p className="text-sm text-gray-500">rủi ro trung bình</p>
+              </div>
+              <div className="mt-4 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-red-600">Cao (&gt;70%)</span>
+                  <span>{filteredCustomers.filter(c => c.churnRisk > 70).length} KH</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-orange-600">Trung bình (30-70%)</span>
+                  <span>{filteredCustomers.filter(c => c.churnRisk >= 30 && c.churnRisk <= 70).length} KH</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-green-600">Thấp (&lt;30%)</span>
+                  <span>{filteredCustomers.filter(c => c.churnRisk < 30).length} KH</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Điểm trung thành</h3>
+                <Star className="w-5 h-5 text-yellow-600" />
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-yellow-600 mb-2">
+                  {Math.round(
+                    filteredCustomers.reduce((sum, c) => sum + c.loyaltyPoints, 0) / filteredCustomers.length || 0
+                  )}
+                </div>
+                <p className="text-sm text-gray-500">điểm trung bình</p>
+              </div>
+              <div className="mt-4 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span>Platinum (&gt;2000)</span>
+                  <span>{filteredCustomers.filter(c => c.loyaltyPoints > 2000).length} KH</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span>Gold (1000-2000)</span>
+                  <span>{filteredCustomers.filter(c => c.loyaltyPoints >= 1000 && c.loyaltyPoints <= 2000).length} KH</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span>Silver (&lt;1000)</span>
+                  <span>{filteredCustomers.filter(c => c.loyaltyPoints < 1000).length} KH</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Industry & Geographic Analysis */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Phân tích theo ngành nghề</h3>
+              <div className="space-y-3">
+                {(() => {
+                  const industriesSet = new Set(filteredCustomers.map(c => c.industry))
+                  const industries = Array.from(industriesSet)
+                  return industries.slice(0, 6).map(industry => {
+                    const count = filteredCustomers.filter(c => c.industry === industry).length
+                    const percentage = filteredCustomers.length > 0 ? (count / filteredCustomers.length * 100).toFixed(1) : 0
+                    const avgRevenue = filteredCustomers
+                      .filter(c => c.industry === industry)
+                      .reduce((sum, c) => sum + parseInt(c.totalValue.replace(/,/g, '')), 0) / count || 0
+                    
+                    return (
+                      <div key={industry} className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-900">{industry}</span>
+                          <span className="text-sm text-gray-600">{count} KH ({percentage}%)</span>
                         </div>
-                      )
-                    })}
-                  </div>
-                </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          Doanh thu TB: {formatCurrency(Math.round(avgRevenue).toString())} VNĐ
+                        </div>
+                      </div>
+                    )
+                  })
+                })()}
+              </div>
+            </div>
 
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Điểm tương tác trung bình</h4>
-                  <div className="text-3xl font-bold text-blue-600">
-                    {Math.round(
-                      filteredCustomers.reduce((sum, c) => sum + c.engagementScore, 0) / filteredCustomers.length || 0
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">trên 100 điểm</p>
-                </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Phân tích theo khu vực</h3>
+              <div className="space-y-3">
+                {(() => {
+                  const citiesSet = new Set(filteredCustomers.map(c => c.city))
+                  const cities = Array.from(citiesSet)
+                  return cities.slice(0, 6).map(city => {
+                    const count = filteredCustomers.filter(c => c.city === city).length
+                    const percentage = filteredCustomers.length > 0 ? (count / filteredCustomers.length * 100).toFixed(1) : 0
+                    const avgRevenue = filteredCustomers
+                      .filter(c => c.city === city)
+                      .reduce((sum, c) => sum + parseInt(c.totalValue.replace(/,/g, '')), 0) / count || 0
+                    
+                    return (
+                      <div key={city} className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <MapPin className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm font-medium text-gray-900">{city}</span>
+                          </div>
+                          <span className="text-sm text-gray-600">{count} KH ({percentage}%)</span>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1 ml-6">
+                          Doanh thu TB: {formatCurrency(Math.round(avgRevenue).toString())} VNĐ
+                        </div>
+                      </div>
+                    )
+                  })
+                })()}
+              </div>
+            </div>
+          </div>
 
-                <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Rủi ro trung bình</h4>
-                  <div className="text-3xl font-bold text-orange-600">
-                    {Math.round(
-                      filteredCustomers.reduce((sum, c) => sum + c.churnRisk, 0) / filteredCustomers.length || 0
-                    )}%
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">khả năng rời bỏ</p>
+          {/* Communication Preferences */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Phản hồi và Tương tác</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {filteredCustomers.filter(c => c.preferredChannel === 'email').length}
                 </div>
+                <div className="text-sm text-gray-600 flex items-center justify-center mt-1">
+                  <Mail className="w-4 h-4 mr-1" />
+                  Ưa thích Email
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {filteredCustomers.filter(c => c.preferredChannel === 'phone').length}
+                </div>
+                <div className="text-sm text-gray-600 flex items-center justify-center mt-1">
+                  <Phone className="w-4 h-4 mr-1" />
+                  Ưa thích Điện thoại
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {filteredCustomers.filter(c => c.preferredChannel === 'chat').length}
+                </div>
+                <div className="text-sm text-gray-600 flex items-center justify-center mt-1">
+                  <MessageCircle className="w-4 h-4 mr-1" />
+                  Ưa thích Chat
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">
+                  {filteredCustomers.filter(c => c.daysSinceLastInteraction <= 7).length}
+                </div>
+                <div className="text-sm text-gray-600 flex items-center justify-center mt-1">
+                  <Clock className="w-4 h-4 mr-1" />
+                  Tương tác gần đây
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Remarketing Insights */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Thông tin Remarketing</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="text-center p-4 bg-orange-50 rounded-lg">
+                <div className="text-2xl font-bold text-orange-600">
+                  {remarketingCustomers.length}
+                </div>
+                <div className="text-sm text-orange-700 mt-1">Cần Remarketing</div>
+                <div className="text-xs text-orange-600 mt-1">
+                  {filteredCustomers.length > 0 ? ((remarketingCustomers.length / filteredCustomers.length) * 100).toFixed(1) : 0}% tổng KH
+                </div>
+              </div>
+              <div className="text-center p-4 bg-red-50 rounded-lg">
+                <div className="text-2xl font-bold text-red-600">
+                  {remarketingCustomers.filter(c => c.remarketing.priority === 'high').length}
+                </div>
+                <div className="text-sm text-red-700 mt-1">Ưu tiên cao</div>
+                <div className="text-xs text-red-600 mt-1">Cần xử lý ngay</div>
+              </div>
+              <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {remarketingCustomers.filter(c => c.remarketing.priority === 'medium').length}
+                </div>
+                <div className="text-sm text-yellow-700 mt-1">Ưu tiên trung bình</div>
+                <div className="text-xs text-yellow-600 mt-1">Theo dõi thường xuyên</div>
+              </div>
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">
+                  {Math.round(
+                    remarketingCustomers
+                      .filter(c => c.remarketing.campaigns.length > 0)
+                      .reduce((sum, c) => {
+                        const avgOpenRate = c.remarketing.campaigns.reduce((s, camp) => s + (camp.openRate || 0), 0) / c.remarketing.campaigns.length
+                        return sum + avgOpenRate
+                      }, 0) / remarketingCustomers.filter(c => c.remarketing.campaigns.length > 0).length || 0
+                  )}%
+                </div>
+                <div className="text-sm text-blue-700 mt-1">Tỷ lệ mở TB</div>
+                <div className="text-xs text-blue-600 mt-1">Campaigns gần đây</div>
               </div>
             </div>
           </div>
@@ -1701,7 +4028,9 @@ export default function CustomersManagement() {
                 <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-medium ${
                   selectedCustomer.status === 'vip' ? 'bg-purple-600' :
                   selectedCustomer.status === 'active' ? 'bg-green-600' :
-                  selectedCustomer.status === 'at-risk' ? 'bg-red-600' : 'bg-gray-600'
+                  selectedCustomer.status === 'at-risk' ? 'bg-red-600' :
+                  selectedCustomer.status === 'churned' ? 'bg-orange-600' :
+                  selectedCustomer.status === 'dormant' ? 'bg-blue-600' : 'bg-gray-600'
                 }`}>
                   {selectedCustomer.name.charAt(0)}
                 </div>
@@ -1712,11 +4041,15 @@ export default function CustomersManagement() {
                     selectedCustomer.status === 'vip' ? 'bg-purple-100 text-purple-800' :
                     selectedCustomer.status === 'active' ? 'bg-green-100 text-green-800' :
                     selectedCustomer.status === 'at-risk' ? 'bg-red-100 text-red-800' :
+                    selectedCustomer.status === 'churned' ? 'bg-orange-100 text-orange-800' :
+                    selectedCustomer.status === 'dormant' ? 'bg-blue-100 text-blue-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
                     {selectedCustomer.status === 'vip' ? 'VIP' :
                      selectedCustomer.status === 'active' ? 'Hoạt động' :
-                     selectedCustomer.status === 'at-risk' ? 'Có nguy cơ' : 'Không hoạt động'}
+                     selectedCustomer.status === 'at-risk' ? 'Có nguy cơ' :
+                     selectedCustomer.status === 'churned' ? 'Đã churn' :
+                     selectedCustomer.status === 'dormant' ? 'Tạm ngưng' : 'Không hoạt động'}
                   </span>
                 </div>
               </div>
@@ -1777,8 +4110,10 @@ export default function CustomersManagement() {
                 </button>
               </div>
             </div>
-          </div>        </div>
+          </div>
+        </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }

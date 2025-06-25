@@ -68,7 +68,7 @@ interface Task {
   tags: string[]
   
   // Related entities
-  relatedType?: 'lead' | 'order' | 'customer'
+  relatedType?: 'lead' | 'order' | 'customer' | 'general'
   relatedId?: string
   relatedName?: string
   relatedInfo?: {
@@ -273,8 +273,11 @@ export default function TaskManagement() {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showReminderModal, setShowReminderModal] = useState(false)
   const [showAutoRulesModal, setShowAutoRulesModal] = useState(false)
+  const [showCreateEventModal, setShowCreateEventModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  
+  const [selectedEventDate, setSelectedEventDate] = useState<Date | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
+
   // Filters
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -282,7 +285,9 @@ export default function TaskManagement() {
   const [assigneeFilter, setAssigneeFilter] = useState('')
   const [tagFilter, setTagFilter] = useState('')
   const [dueDateFilter, setDueDateFilter] = useState('')
-  
+  const [selectedStatsFilter, setSelectedStatsFilter] = useState<string>('')
+  const [eventTypeFilter, setEventTypeFilter] = useState('')
+
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date())
   const [calendarView, setCalendarView] = useState<'month' | 'week'>('month')
@@ -291,10 +296,6 @@ export default function TaskManagement() {
   const [quickTemplates, setQuickTemplates] = useState<QuickEventTemplate[]>([])
   const [showLunar, setShowLunar] = useState(true)
   const [showHolidays, setShowHolidays] = useState(true)
-  const [showCreateEventModal, setShowCreateEventModal] = useState(false)
-  const [selectedEventDate, setSelectedEventDate] = useState<Date | null>(null)
-  const [eventTypeFilter, setEventTypeFilter] = useState('')
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
 
   // Initialize sample data
   useEffect(() => {
@@ -412,6 +413,323 @@ export default function TaskManagement() {
         createdAt: '2025-06-10T16:00:00',
         createdBy: 'system',
         updatedAt: '2025-06-11T14:00:00',
+        history: []
+      },
+      {
+        id: '3',
+        title: 'Demo sản phẩm cho Công ty XYZ',
+        description: 'Trình diễn tính năng quản lý bán hàng và báo cáo',
+        dueDate: '2025-06-14T14:00:00',
+        priority: 'high',
+        status: 'pending',
+        progress: 0,
+        assignedTo: '2',
+        tags: ['Demo', 'Quan trọng'],
+        relatedType: 'lead',
+        relatedId: '2',
+        relatedName: 'Công ty XYZ',
+        relatedInfo: { phone: '0912345678' },
+        internalNotes: 'Khách yêu cầu demo online qua Zoom',
+        progressNotes: [],
+        isAutoCreated: false,
+        reminders: [],
+        customReminders: [],
+        createdAt: '2025-06-12T08:30:00',
+        createdBy: '1',
+        updatedAt: '2025-06-12T08:30:00',
+        history: []
+      },
+      {
+        id: '4',
+        title: 'Theo dõi thanh toán ORD-002',
+        description: 'Liên hệ khách hàng về tình trạng thanh toán đơn hàng',
+        dueDate: '2025-06-15T09:00:00',
+        priority: 'medium',
+        status: 'pending',
+        progress: 0,
+        assignedTo: '1',
+        tags: ['Thanh toán', 'Theo dõi'],
+        relatedType: 'order',
+        relatedId: '2',
+        relatedName: 'ORD-002',
+        relatedInfo: { orderNumber: 'ORD-002', orderStatus: 'processing' },
+        internalNotes: 'Đơn hàng đã giao, chờ thanh toán từ ngày 10/06',
+        progressNotes: [],
+        isAutoCreated: true,
+        autoTrigger: 'payment_overdue',
+        reminders: [],
+        customReminders: [],
+        createdAt: '2025-06-12T10:00:00',
+        createdBy: 'system',
+        updatedAt: '2025-06-12T10:00:00',
+        history: []
+      },
+      {
+        id: '5',
+        title: 'Chuẩn bị báo cáo tuần',
+        description: 'Tổng hợp báo cáo doanh số và hiệu quả bán hàng tuần này',
+        dueDate: '2025-06-16T17:00:00',
+        priority: 'medium',
+        status: 'in_progress',
+        progress: 30,
+        assignedTo: '2',
+        tags: ['Báo cáo', 'Tuần'],
+        relatedType: 'general',
+        internalNotes: 'Cần cập nhật số liệu từ team sales',
+        progressNotes: [
+          {
+            id: '2',
+            progress: 30,
+            note: 'Đã thu thập dữ liệu từ CRM, đang xử lý',
+            createdAt: '2025-06-12T11:00:00',
+            createdBy: '2'
+          }
+        ],
+        isAutoCreated: false,
+        reminders: [],
+        customReminders: [],
+        createdAt: '2025-06-10T09:00:00',
+        createdBy: '2',
+        updatedAt: '2025-06-12T11:00:00',
+        history: []
+      },
+      {
+        id: '6',
+        title: 'Chăm sóc khách hàng VIP - Công ty DEF',
+        description: 'Gọi điện chăm sóc và tìm hiểu nhu cầu mở rộng',
+        dueDate: '2025-06-17T10:30:00',
+        priority: 'high',
+        status: 'pending',
+        progress: 0,
+        assignedTo: '1',
+        tags: ['VIP', 'Chăm sóc'],
+        relatedType: 'customer',
+        relatedId: '1',
+        relatedName: 'Công ty DEF',
+        relatedInfo: { phone: '0903456789', customerHistory: 'Khách hàng từ 2023' },
+        internalNotes: 'Khách đã mua 3 gói phần mềm, có thể quan tâm module mới',
+        progressNotes: [],
+        isAutoCreated: false,
+        reminders: [],
+        customReminders: [],
+        createdAt: '2025-06-12T14:00:00',
+        createdBy: '2',
+        updatedAt: '2025-06-12T14:00:00',
+        history: []
+      },
+      {
+        id: '7',
+        title: 'Xử lý khiếu nại từ Công ty GHI',
+        description: 'Giải quyết vấn đề về tính năng đồng bộ dữ liệu',
+        dueDate: '2025-06-13T08:00:00',
+        priority: 'high',
+        status: 'in_progress',
+        progress: 70,
+        assignedTo: '3',
+        tags: ['Khiếu nại', 'Kỹ thuật'],
+        relatedType: 'customer',
+        relatedId: '3',
+        relatedName: 'Công ty GHI',
+        relatedInfo: { phone: '0934567890' },
+        internalNotes: 'Lỗi do cập nhật hệ thống, cần rollback',
+        progressNotes: [
+          {
+            id: '3',
+            progress: 70,
+            note: 'Đã xác định nguyên nhân, đang fix',
+            createdAt: '2025-06-12T16:00:00',
+            createdBy: '3'
+          }
+        ],
+        isAutoCreated: false,
+        reminders: [],
+        customReminders: [],
+        createdAt: '2025-06-11T15:30:00',
+        createdBy: '1',
+        updatedAt: '2025-06-12T16:00:00',
+        history: []
+      },
+      {
+        id: '8',
+        title: 'Cập nhật thông tin lead từ triển lãm',
+        description: 'Nhập thông tin 15 lead mới từ triển lãm công nghệ',
+        dueDate: '2025-06-18T12:00:00',
+        priority: 'medium',
+        status: 'pending',
+        progress: 0,
+        assignedTo: '2',
+        tags: ['Lead mới', 'Triển lãm'],
+        relatedType: 'general',
+        internalNotes: 'Có card visit và thông tin sơ bộ',
+        progressNotes: [],
+        isAutoCreated: false,
+        reminders: [],
+        customReminders: [],
+        createdAt: '2025-06-12T17:00:00',
+        createdBy: '1',
+        updatedAt: '2025-06-12T17:00:00',
+        history: []
+      },
+      {
+        id: '9',
+        title: 'Tổ chức webinar giới thiệu sản phẩm',
+        description: 'Chuẩn bị và tổ chức webinar "CRM cho doanh nghiệp vừa và nhỏ"',
+        dueDate: '2025-06-20T14:00:00',
+        priority: 'medium',
+        status: 'pending',
+        progress: 0,
+        assignedTo: '2',
+        assignedTeam: 'marketing',
+        tags: ['Webinar', 'Marketing'],
+        relatedType: 'general',
+        internalNotes: 'Đã có 25 người đăng ký, cần chuẩn bị slide',
+        progressNotes: [],
+        isAutoCreated: false,
+        reminders: [],
+        customReminders: [],
+        createdAt: '2025-06-11T10:00:00',
+        createdBy: '2',
+        updatedAt: '2025-06-11T10:00:00',
+        history: []
+      },
+      {
+        id: '10',
+        title: 'Kiểm tra và backup dữ liệu hệ thống',
+        description: 'Thực hiện backup tuần và kiểm tra tình trạng server',
+        dueDate: '2025-06-16T02:00:00',
+        priority: 'low',
+        status: 'pending',
+        progress: 0,
+        assignedTo: '3',
+        tags: ['Backup', 'Hệ thống'],
+        relatedType: 'general',
+        internalNotes: 'Backup tự động hàng tuần vào chủ nhật',
+        progressNotes: [],
+        isAutoCreated: true,
+        autoTrigger: 'weekly_backup',
+        reminders: [],
+        customReminders: [],
+        createdAt: '2025-06-09T00:00:00',
+        createdBy: 'system',
+        updatedAt: '2025-06-09T00:00:00',
+        history: []
+      },
+      {
+        id: '11',
+        title: 'Gửi email marketing chiến dịch tháng 6',
+        description: 'Gửi newsletter và ưu đãi đặc biệt cho khách hàng tiềm năng',
+        dueDate: '2025-06-19T09:00:00',
+        priority: 'medium',
+        status: 'pending',
+        progress: 0,
+        assignedTo: '2',
+        tags: ['Email', 'Marketing'],
+        relatedType: 'general',
+        internalNotes: 'Danh sách 300 email đã được duyệt',
+        progressNotes: [],
+        isAutoCreated: false,
+        reminders: [],
+        customReminders: [],
+        createdAt: '2025-06-12T11:30:00',
+        createdBy: '1',
+        updatedAt: '2025-06-12T11:30:00',
+        history: []
+      },
+      {
+        id: '12',
+        title: 'Đào tạo sử dụng phần mềm cho Công ty JKL',
+        description: 'Hướng dẫn team của khách hàng sử dụng các tính năng CRM',
+        dueDate: '2025-06-21T09:00:00',
+        priority: 'high',
+        status: 'pending',
+        progress: 0,
+        assignedTo: '3',
+        tags: ['Đào tạo', 'Onboarding'],
+        relatedType: 'customer',
+        relatedId: '4',
+        relatedName: 'Công ty JKL',
+        relatedInfo: { phone: '0945678901' },
+        internalNotes: 'Khách hàng mới, cần đào tạo chi tiết',
+        progressNotes: [],
+        isAutoCreated: true,
+        autoTrigger: 'new_customer_onboarding',
+        reminders: [],
+        customReminders: [],
+        createdAt: '2025-06-10T14:00:00',
+        createdBy: 'system',
+        updatedAt: '2025-06-10T14:00:00',
+        history: []
+      },
+      {
+        id: '13',
+        title: 'Phân tích đối thủ cạnh tranh',
+        description: 'Nghiên cứu sản phẩm và giá cả của 3 đối thủ chính',
+        dueDate: '2025-06-25T17:00:00',
+        priority: 'medium',
+        status: 'in_progress',
+        progress: 25,
+        assignedTo: '2',
+        tags: ['Phân tích', 'Đối thủ'],
+        relatedType: 'general',
+        internalNotes: 'Đã thu thập thông tin cơ bản, cần phân tích sâu',
+        progressNotes: [
+          {
+            id: '4',
+            progress: 25,
+            note: 'Hoàn thành thu thập thông tin về đối thủ A',
+            createdAt: '2025-06-12T09:00:00',
+            createdBy: '2'
+          }
+        ],
+        isAutoCreated: false,
+        reminders: [],
+        customReminders: [],
+        createdAt: '2025-06-08T10:00:00',
+        createdBy: '1',
+        updatedAt: '2025-06-12T09:00:00',
+        history: []
+      },
+      {
+        id: '14',
+        title: 'Cập nhật tài liệu hướng dẫn sử dụng',
+        description: 'Cập nhật manual với các tính năng mới của phiên bản 2.1',
+        dueDate: '2025-06-22T16:00:00',
+        priority: 'low',
+        status: 'pending',
+        progress: 0,
+        assignedTo: '3',
+        tags: ['Tài liệu', 'Manual'],
+        relatedType: 'general',
+        internalNotes: 'Có 5 tính năng mới cần cập nhật vào tài liệu',
+        progressNotes: [],
+        isAutoCreated: false,
+        reminders: [],
+        customReminders: [],
+        createdAt: '2025-06-11T16:00:00',
+        createdBy: '1',
+        updatedAt: '2025-06-11T16:00:00',
+        history: []
+      },
+      {
+        id: '15',
+        title: 'Họp review quý 2 với team',
+        description: 'Đánh giá kết quả kinh doanh quý 2 và lập kế hoạch quý 3',
+        dueDate: '2025-06-30T10:00:00',
+        priority: 'high',
+        status: 'pending',
+        progress: 0,
+        assignedTo: '1',
+        assignedTeam: 'all',
+        tags: ['Họp', 'Review'],
+        relatedType: 'general',
+        internalNotes: 'Cần chuẩn bị báo cáo tổng hợp và KPI',
+        progressNotes: [],
+        isAutoCreated: false,
+        reminders: [],
+        customReminders: [],
+        createdAt: '2025-06-12T08:00:00',
+        createdBy: '1',
+        updatedAt: '2025-06-12T08:00:00',
         history: []
       }
     ]
@@ -819,6 +1137,46 @@ export default function TaskManagement() {
     highPriority: tasks.filter(t => t.priority === 'high' && t.status !== 'completed').length
   }
 
+  // Filter tasks based on selected stats filter
+  const getFilteredTasksByStats = (statsFilter: string) => {
+    switch (statsFilter) {
+      case 'total':
+        return tasks
+      case 'pending':
+        return tasks.filter(t => t.status === 'pending')
+      case 'in_progress':
+        return tasks.filter(t => t.status === 'in_progress')
+      case 'completed':
+        return tasks.filter(t => t.status === 'completed')
+      case 'overdue':
+        return tasks.filter(t => new Date(t.dueDate) < new Date() && t.status !== 'completed')
+      case 'high_priority':
+        return tasks.filter(t => t.priority === 'high' && t.status !== 'completed')
+      default:
+        return filteredTasks
+    }
+  }
+
+  // Get tasks to display based on stats filter or regular filters  
+  const displayTasks = selectedStatsFilter ? getFilteredTasksByStats(selectedStatsFilter) : filteredTasks
+
+  // Handle stats card click
+  const handleStatsCardClick = (filterType: string) => {
+    if (selectedStatsFilter === filterType) {
+      // If same filter clicked, clear it
+      setSelectedStatsFilter('')
+    } else {
+      // Set new filter and clear other filters
+      setSelectedStatsFilter(filterType)
+      setSearchTerm('')
+      setStatusFilter('')
+      setPriorityFilter('')
+      setAssigneeFilter('')
+      setTagFilter('')
+      setDueDateFilter('')
+    }
+  }
+
   const renderOverview = () => (
     <div className="space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -845,7 +1203,14 @@ export default function TaskManagement() {
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-        <div className="bg-gradient-to-br from-blue-50 to-white p-4 border border-blue-100 rounded-lg">
+        <div 
+          className={`p-4 border border-blue-100 rounded-lg cursor-pointer transition-all duration-200 ${
+            selectedStatsFilter === 'total' 
+              ? 'bg-gradient-to-br from-blue-100 to-blue-50 border-blue-300 transform scale-105' 
+              : 'bg-gradient-to-br from-blue-50 to-white hover:from-blue-100 hover:to-blue-50 hover:border-blue-200'
+          }`}
+          onClick={() => handleStatsCardClick('total')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-gray-600">Tổng công việc</div>
@@ -855,7 +1220,14 @@ export default function TaskManagement() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-50 to-white p-4 border border-gray-100 rounded-lg">
+        <div 
+          className={`p-4 border border-gray-100 rounded-lg cursor-pointer transition-all duration-200 ${
+            selectedStatsFilter === 'pending' 
+              ? 'bg-gradient-to-br from-gray-100 to-gray-50 border-gray-300 transform scale-105' 
+              : 'bg-gradient-to-br from-gray-50 to-white hover:from-gray-100 hover:to-gray-50 hover:border-gray-200'
+          }`}
+          onClick={() => handleStatsCardClick('pending')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-gray-600">Chưa làm</div>
@@ -865,7 +1237,14 @@ export default function TaskManagement() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-yellow-50 to-white p-4 border border-yellow-100 rounded-lg">
+        <div 
+          className={`p-4 border border-yellow-100 rounded-lg cursor-pointer transition-all duration-200 ${
+            selectedStatsFilter === 'in_progress' 
+              ? 'bg-gradient-to-br from-yellow-100 to-yellow-50 border-yellow-300 transform scale-105' 
+              : 'bg-gradient-to-br from-yellow-50 to-white hover:from-yellow-100 hover:to-yellow-50 hover:border-yellow-200'
+          }`}
+          onClick={() => handleStatsCardClick('in_progress')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-gray-600">Đang làm</div>
@@ -875,7 +1254,14 @@ export default function TaskManagement() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-white p-4 border border-green-100 rounded-lg">
+        <div 
+          className={`p-4 border border-green-100 rounded-lg cursor-pointer transition-all duration-200 ${
+            selectedStatsFilter === 'completed' 
+              ? 'bg-gradient-to-br from-green-100 to-green-50 border-green-300 transform scale-105' 
+              : 'bg-gradient-to-br from-green-50 to-white hover:from-green-100 hover:to-green-50 hover:border-green-200'
+          }`}
+          onClick={() => handleStatsCardClick('completed')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-gray-600">Hoàn tất</div>
@@ -885,7 +1271,14 @@ export default function TaskManagement() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-red-50 to-white p-4 border border-red-100 rounded-lg">
+        <div 
+          className={`p-4 border border-red-100 rounded-lg cursor-pointer transition-all duration-200 ${
+            selectedStatsFilter === 'overdue' 
+              ? 'bg-gradient-to-br from-red-100 to-red-50 border-red-300 transform scale-105' 
+              : 'bg-gradient-to-br from-red-50 to-white hover:from-red-100 hover:to-red-50 hover:border-red-200'
+          }`}
+          onClick={() => handleStatsCardClick('overdue')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-gray-600">Quá hạn</div>
@@ -895,7 +1288,14 @@ export default function TaskManagement() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-white p-4 border border-purple-100 rounded-lg">
+        <div 
+          className={`p-4 border border-purple-100 rounded-lg cursor-pointer transition-all duration-200 ${
+            selectedStatsFilter === 'high_priority' 
+              ? 'bg-gradient-to-br from-purple-100 to-purple-50 border-purple-300 transform scale-105' 
+              : 'bg-gradient-to-br from-purple-50 to-white hover:from-purple-100 hover:to-purple-50 hover:border-purple-200'
+          }`}
+          onClick={() => handleStatsCardClick('high_priority')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-gray-600">Ưu tiên cao</div>
@@ -906,7 +1306,35 @@ export default function TaskManagement() {
         </div>
       </div>
 
-      {/* Recent Tasks */}
+      {/* Selected Filter Indicator */}
+      {selectedStatsFilter && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+              <span className="text-sm font-medium text-blue-900">
+                Đang hiển thị: {
+                  selectedStatsFilter === 'total' ? 'Tất cả công việc' :
+                  selectedStatsFilter === 'pending' ? 'Công việc chưa làm' :
+                  selectedStatsFilter === 'in_progress' ? 'Công việc đang làm' :
+                  selectedStatsFilter === 'completed' ? 'Công việc hoàn tất' :
+                  selectedStatsFilter === 'overdue' ? 'Công việc quá hạn' :
+                  selectedStatsFilter === 'high_priority' ? 'Công việc ưu tiên cao' : ''
+                } ({displayTasks.length} công việc)
+              </span>
+            </div>
+            <button
+              onClick={() => setSelectedStatsFilter('')}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center space-x-1"
+            >
+              <X className="w-4 h-4" />
+              <span>Xóa bộ lọc</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Recent Tasks / Filtered Tasks */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900">Công việc gần đây</h3>
@@ -1053,7 +1481,7 @@ export default function TaskManagement() {
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Công việc</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Liên quan</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người phụ tr책</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người phụ trách</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời hạn</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ưu tiên</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiến độ</th>

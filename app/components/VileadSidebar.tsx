@@ -15,7 +15,9 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  Briefcase
+  Briefcase,
+  Receipt,
+  CreditCard
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -32,6 +34,8 @@ interface SidebarProps {
   setCurrentView: (view: string) => void
   isOpen?: boolean
   onClose?: () => void
+  userRole?: string
+  onRoleChange?: (role: string) => void
 }
 
 // Hàm lấy thời gian hiện tại theo múi giờ Việt Nam
@@ -55,7 +59,7 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       label: "Bàn làm việc",
       iconText: "�",
       tooltip: "Bàn làm việc: Công việc AI gợi ý hàng ngày",
-      roles: ["admin", "ceo", "leader", "sale"]
+      roles: ["admin", "ceo", "leader", "sale", "accountant"]
     },
     {
       id: 'dashboard',
@@ -63,7 +67,7 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       label: "Tổng quan",
       iconText: "📊",
       tooltip: "Tổng quan: Dashboard theo vai trò",
-      roles: ["admin", "ceo"]
+      roles: ["admin", "ceo", "accountant"]
     },
     {
       id: 'sales',
@@ -78,14 +82,22 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       label: "Chăm sóc Khách hàng",
       iconText: "👤",
       tooltip: "Chăm sóc Khách hàng: Thông tin và lịch sử khách hàng",
-      roles: ["admin", "ceo", "leader", "sale"]
+      roles: ["admin", "ceo", "leader", "sale", "accountant"]
     },    {
       id: 'orders',
       icon: ShoppingCart,
       label: "Quản lý Đơn hàng",
       iconText: "🛒",
       tooltip: "Quản lý Đơn hàng: Trạng thái và hóa đơn",
-      roles: ["admin", "ceo"]
+      roles: ["admin", "ceo", "accountant"]
+    },
+    {
+      id: 'invoices',
+      icon: Receipt,
+      label: "Hóa đơn & Thanh toán",
+      iconText: "🧾",
+      tooltip: "Hóa đơn & Thanh toán: Quản lý hóa đơn và theo dõi thanh toán",
+      roles: ["admin", "ceo", "leader", "accountant"]
     },
     {
       id: 'tasks',
@@ -101,7 +113,7 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       label: "Báo cáo",
       iconText: "📊",
       tooltip: "Báo cáo: Doanh số, hiệu suất và KPIs",
-      roles: ["admin", "ceo", "leader"]
+      roles: ["admin", "ceo", "leader", "accountant"]
     },
     {
       id: 'settings',
@@ -116,10 +128,17 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
   return allMenuItems.filter(item => item.roles.includes(userRole));
 };
 
-export default function VileadSidebar({ currentView, setCurrentView, isOpen = true, onClose }: SidebarProps) {
+export default function VileadSidebar({ 
+  currentView, 
+  setCurrentView, 
+  isOpen = true, 
+  onClose, 
+  userRole: propUserRole, 
+  onRoleChange 
+}: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [currentTime, setCurrentTime] = useState(getCurrentTime());
-  const [userRole, setUserRole] = useState('admin'); // Default to admin for full access
+  const [userRole, setUserRole] = useState(propUserRole || 'admin'); // Default to admin for full access
 
   const menuItems = getMenuItemsByRole(userRole);
 
@@ -131,8 +150,22 @@ export default function VileadSidebar({ currentView, setCurrentView, isOpen = tr
     return () => clearInterval(timer);
   }, []);
 
+  // Sync với prop userRole từ parent
+  useEffect(() => {
+    if (propUserRole && propUserRole !== userRole) {
+      setUserRole(propUserRole);
+    }
+  }, [propUserRole, userRole]);
+
   const handleCollapse = () => {
     setIsCollapsed(!isCollapsed);
+  };
+
+  const handleRoleChange = (newRole: string) => {
+    setUserRole(newRole);
+    if (onRoleChange) {
+      onRoleChange(newRole);
+    }
   };
 
   return (
@@ -165,6 +198,7 @@ export default function VileadSidebar({ currentView, setCurrentView, isOpen = tr
                     {userRole === 'admin' ? 'Admin Dashboard' : 
                      userRole === 'ceo' ? 'CEO Dashboard' :
                      userRole === 'leader' ? 'Leader Sale Dashboard' : 
+                     userRole === 'accountant' ? 'Kế toán Dashboard' :
                      'Sale Dashboard'}
                   </p>
                 </div>
@@ -204,7 +238,7 @@ export default function VileadSidebar({ currentView, setCurrentView, isOpen = tr
               <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                 Quyền truy cập
               </label>
-              <Select value={userRole} onValueChange={setUserRole}>
+              <Select value={userRole} onValueChange={handleRoleChange}>
                 <SelectTrigger className="w-full h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -212,6 +246,7 @@ export default function VileadSidebar({ currentView, setCurrentView, isOpen = tr
                   <SelectItem value="admin">👑 Admin (Toàn quyền)</SelectItem>
                   <SelectItem value="ceo">🏢 CEO (Xem tất cả)</SelectItem>
                   <SelectItem value="leader">👥 Leader (Nhóm A)</SelectItem>
+                  <SelectItem value="accountant">🧮 Kế toán (Tài chính)</SelectItem>
                   <SelectItem value="sale">👤 Sale (Cá nhân)</SelectItem>
                 </SelectContent>
               </Select>

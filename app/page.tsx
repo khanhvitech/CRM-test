@@ -4,10 +4,12 @@ import { useState } from 'react'
 import VileadSidebar from './components/VileadSidebar'
 import Header from './components/Header'
 import Dashboard from './components/Dashboard'
+import AccountantDashboard from './components/AccountantDashboard'
 import WorkspaceManagement from './components/WorkspaceManagement'
 import SalesManagement from './components/SalesManagement'
 import CustomersManagement from './components/CustomersManagement'
 import OrderManagement from './components/OrderManagement'
+import InvoicePaymentManagement from './components/InvoicePaymentManagement'
 import TaskManagement from './components/TaskManagement'
 import ReportsManagement from './components/ReportsManagement'
 import SettingsManagement from './components/SettingsManagement'
@@ -16,14 +18,27 @@ import ChatbotAssistant from './components/ChatbotAssistantNew'
 
 export default function Home() {
   const [currentView, setCurrentView] = useState('workspace') // Đổi mặc định từ 'dashboard' thành 'workspace'
+  const [userRole, setUserRole] = useState('admin') // Theo dõi vai trò người dùng
 
   const handleViewChange = (view: string) => {
     setCurrentView(view)
   }
 
+  const handleRoleChange = (role: string) => {
+    setUserRole(role)
+    // Nếu chuyển sang kế toán và đang ở dashboard, chuyển sang dashboard kế toán
+    if (role === 'accountant' && currentView === 'dashboard') {
+      // Dashboard sẽ tự động hiển thị AccountantDashboard
+    }
+  }
+
   const renderContent = () => {
     switch (currentView) {
       case 'dashboard':
+        // Hiển thị dashboard phù hợp với vai trò
+        if (userRole === 'accountant') {
+          return <AccountantDashboard />
+        }
         return <Dashboard />
       case 'workspace':
         return <WorkspaceManagement />
@@ -37,6 +52,8 @@ export default function Home() {
         return <SalesManagement />
       case 'orders':
         return <OrderManagement />
+      case 'invoices':
+        return <InvoicePaymentManagement />
       case 'tasks':
         return <TaskManagement />
       case 'products':  // Redirect to settings for backward compatibility
@@ -52,13 +69,18 @@ export default function Home() {
       case 'settings':
         return <SettingsManagement />
       default:
-        return <Dashboard />
+        return userRole === 'accountant' ? <AccountantDashboard /> : <Dashboard />
     }
   }
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <VileadSidebar currentView={currentView} setCurrentView={handleViewChange} />
+      <VileadSidebar 
+        currentView={currentView} 
+        setCurrentView={handleViewChange}
+        userRole={userRole}
+        onRoleChange={handleRoleChange}
+      />
       <div className="flex-1 flex flex-col overflow-hidden" style={{ marginLeft: '256px' }}>
         <Header />
         <main className="flex-1 overflow-auto p-6">
