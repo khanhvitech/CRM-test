@@ -44,7 +44,21 @@ import {
   Star,
   Moon,
   Sun,
-  TreePine
+  TreePine,
+  Grid3X3,
+  List,
+  Columns,
+  ChevronUp,
+  Bot,
+  Brain,
+  TrendingUp,
+  BarChart3,
+  PieChart,
+  Lightbulb,
+  Sparkles,
+  ArrowRight,
+  TrendingDown,
+  MousePointer
 } from 'lucide-react'
 
 // Interfaces
@@ -297,10 +311,70 @@ export default function TaskManagement() {
   const [showLunar, setShowLunar] = useState(true)
   const [showHolidays, setShowHolidays] = useState(true)
 
+  // Task view state
+  const [taskView, setTaskView] = useState<'table' | 'kanban'>('table')
+  
+  // Column visibility state
+  const [visibleColumns, setVisibleColumns] = useState({
+    task: true,
+    related: true,
+    assignee: true,
+    dueDate: true,
+    priority: true,
+    progress: true,
+    status: true,
+    actions: true
+  })
+  
+  const [showColumnSelector, setShowColumnSelector] = useState(false)
+
+  // AI suggestions handler
+  const handleAISuggestionClick = (suggestionType: string, data?: any) => {
+    switch (suggestionType) {
+      case 'overdue':
+        setActiveTab('tasks')
+        setTaskView('table')
+        setStatusFilter('')
+        setSelectedStatsFilter('overdue')
+        break
+      case 'workload':
+        setActiveTab('tasks')
+        setTaskView('table')
+        setAssigneeFilter(data?.assigneeId || '')
+        break
+      case 'high_priority':
+        setActiveTab('tasks')
+        setTaskView('kanban')
+        setPriorityFilter('high')
+        break
+      case 'automation':
+        setActiveTab('automation')
+        setShowAutoRulesModal(true)
+        break
+      default:
+        break
+    }
+  }
+
   // Initialize sample data
   useEffect(() => {
     initializeSampleData()
   }, [])
+
+  // Close column selector when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (showColumnSelector && !target.closest('.column-selector')) {
+        setShowColumnSelector(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showColumnSelector])
 
   const initializeSampleData = () => {
     // Sample templates
@@ -1306,6 +1380,395 @@ export default function TaskManagement() {
         </div>
       </div>
 
+      {/* AI Suggestions & Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* AI Suggestions */}
+        <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Bot className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Gợi ý từ AI</h3>
+                <p className="text-sm text-gray-600">Phân tích thông minh từ dữ liệu công việc</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-1 text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
+              <Sparkles className="w-3 h-3" />
+              <span>Smart</span>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {/* Priority Optimization - Clickable */}
+            <div 
+              className="bg-white rounded-lg p-4 border border-purple-100 cursor-pointer hover:border-red-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleAISuggestionClick('overdue')}
+            >
+              <div className="flex items-start space-x-3">
+                <div className="p-1.5 bg-red-100 rounded-lg group-hover:bg-red-200 transition-colors">
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-gray-900 group-hover:text-red-700">Ưu tiên cao cần xử lý</h4>
+                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <MousePointer className="w-3 h-3 text-red-600" />
+                      <ArrowRight className="w-3 h-3 text-red-600" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Có <span className="font-semibold text-red-600">{taskStats.overdue}</span> công việc quá hạn và <span className="font-semibold text-purple-600">{taskStats.highPriority}</span> công việc ưu tiên cao.
+                    Nên xử lý các công việc của Công ty ABC và Demo sản phẩm trước.
+                  </p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
+                      Khẩn cấp
+                    </span>
+                    <span className="text-xs text-red-600 font-medium group-hover:underline">
+                      Click để xem chi tiết →
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Workload Distribution - Clickable */}
+            <div 
+              className="bg-white rounded-lg p-4 border border-blue-100 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleAISuggestionClick('workload', { assigneeId: '1' })}
+            >
+              <div className="flex items-start space-x-3">
+                <div className="p-1.5 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                  <Users className="w-4 h-4 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-gray-900 group-hover:text-blue-700">Phân bổ công việc</h4>
+                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <BarChart3 className="w-3 h-3 text-blue-600" />
+                      <ArrowRight className="w-3 h-3 text-blue-600" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    <span className="font-semibold text-blue-600">Nguyễn Văn An</span> có {tasks.filter(t => t.assignedTo === '1').length} công việc, 
+                    <span className="font-semibold text-blue-600">Trần Thị Bình</span> có {tasks.filter(t => t.assignedTo === '2').length} công việc.
+                    Nên cân bằng lại khối lượng công việc.
+                  </p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                      Tối ưu hóa
+                    </span>
+                    <span className="text-xs text-blue-600 font-medium group-hover:underline">
+                      Click để phân bổ lại →
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Performance Insight - Clickable */}
+            <div 
+              className="bg-white rounded-lg p-4 border border-green-100 cursor-pointer hover:border-green-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleAISuggestionClick('high_priority')}
+            >
+              <div className="flex items-start space-x-3">
+                <div className="p-1.5 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
+                  <TrendingUp className="w-4 h-4 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-gray-900 group-hover:text-green-700">Hiệu suất tăng trưởng</h4>
+                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <TrendingUp className="w-3 h-3 text-green-600" />
+                      <ArrowRight className="w-3 h-3 text-green-600" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Tỷ lệ hoàn thành công việc tuần này tăng <span className="font-semibold text-green-600">15%</span> so với tuần trước.
+                    Team đang có xu hướng làm việc hiệu quả hơn.
+                  </p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                      Tích cực
+                    </span>
+                    <span className="text-xs text-green-600 font-medium group-hover:underline">
+                      Xem dạng kanban →
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Next Actions - Clickable */}
+            <div 
+              className="bg-white rounded-lg p-4 border border-yellow-100 cursor-pointer hover:border-yellow-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleAISuggestionClick('automation')}
+            >
+              <div className="flex items-start space-x-3">
+                <div className="p-1.5 bg-yellow-100 rounded-lg group-hover:bg-yellow-200 transition-colors">
+                  <Lightbulb className="w-4 h-4 text-yellow-600" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-gray-900 group-hover:text-yellow-700">Hành động tiếp theo</h4>
+                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Zap className="w-3 h-3 text-yellow-600" />
+                      <ArrowRight className="w-3 h-3 text-yellow-600" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Nên tạo thêm công việc <span className="font-semibold text-yellow-600">&quot;Theo dõi feedback khách hàng&quot;</span> cho các deal đã hoàn thành
+                    để tăng tỷ lệ retention.
+                  </p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
+                      Đề xuất
+                    </span>
+                    <span className="text-xs text-yellow-600 font-medium group-hover:underline">
+                      Thiết lập tự động →
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional AI Suggestions */}
+            {/* Quick Actions */}
+            <div 
+              className="bg-white rounded-lg p-4 border border-indigo-100 cursor-pointer hover:border-indigo-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => setShowCreateModal(true)}
+            >
+              <div className="flex items-start space-x-3">
+                <div className="p-1.5 bg-indigo-100 rounded-lg group-hover:bg-indigo-200 transition-colors">
+                  <Plus className="w-4 h-4 text-indigo-600" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-gray-900 group-hover:text-indigo-700">Hành động nhanh</h4>
+                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Zap className="w-3 h-3 text-indigo-600" />
+                      <ArrowRight className="w-3 h-3 text-indigo-600" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Tạo công việc mới cho <span className="font-semibold text-indigo-600">lead mới</span> hoặc 
+                    <span className="font-semibold text-indigo-600"> follow-up khách hàng</span> đã tương tác gần đây.
+                  </p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
+                      Nhanh chóng
+                    </span>
+                    <span className="text-xs text-indigo-600 font-medium group-hover:underline">
+                      Tạo ngay →
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Time Management */}
+            <div 
+              className="bg-white rounded-lg p-4 border border-orange-100 cursor-pointer hover:border-orange-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => {
+                setActiveTab('calendar')
+              }}
+            >
+              <div className="flex items-start space-x-3">
+                <div className="p-1.5 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
+                  <Clock className="w-4 h-4 text-orange-600" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-gray-900 group-hover:text-orange-700">Quản lý thời gian</h4>
+                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Calendar className="w-3 h-3 text-orange-600" />
+                      <ArrowRight className="w-3 h-3 text-orange-600" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Có <span className="font-semibold text-orange-600">{tasks.filter(t => {
+                      const dueDate = new Date(t.dueDate)
+                      const tomorrow = new Date()
+                      tomorrow.setDate(tomorrow.getDate() + 1)
+                      return dueDate <= tomorrow
+                    }).length}</span> công việc cần hoàn thành trong hôm nay và ngày mai.
+                  </p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                      Lịch trình
+                    </span>
+                    <span className="text-xs text-orange-600 font-medium group-hover:underline">
+                      Xem lịch →
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Task Type Distribution Chart */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <PieChart className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Phân loại Công việc</h3>
+                <p className="text-sm text-gray-600">Thống kê theo loại và ưu tiên</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Task Categories */}
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Theo loại công việc</h4>
+              <div className="space-y-2">
+                {/* Lead Tasks */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span className="text-sm text-gray-600">Lead & Khách hàng</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-24 h-2 bg-gray-200 rounded-full">
+                      <div 
+                        className="h-2 bg-blue-500 rounded-full transition-all duration-1000 ease-out" 
+                        style={{ width: `${(tasks.filter(t => t.relatedType === 'lead' || t.relatedType === 'customer').length / tasks.length) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">
+                      {tasks.filter(t => t.relatedType === 'lead' || t.relatedType === 'customer').length}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Order Tasks */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-gray-600">Đơn hàng</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-24 h-2 bg-gray-200 rounded-full">
+                      <div 
+                        className="h-2 bg-green-500 rounded-full transition-all duration-1000 ease-out" 
+                        style={{ width: `${(tasks.filter(t => t.relatedType === 'order').length / tasks.length) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">
+                      {tasks.filter(t => t.relatedType === 'order').length}
+                    </span>
+                  </div>
+                </div>
+
+                {/* General Tasks */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                    <span className="text-sm text-gray-600">Nội bộ & Khác</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-24 h-2 bg-gray-200 rounded-full">
+                      <div 
+                        className="h-2 bg-purple-500 rounded-full transition-all duration-1000 ease-out" 
+                        style={{ width: `${(tasks.filter(t => t.relatedType === 'general' || !t.relatedType).length / tasks.length) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">
+                      {tasks.filter(t => t.relatedType === 'general' || !t.relatedType).length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Priority Distribution */}
+            <div className="pt-4 border-t border-gray-100">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Theo mức độ ưu tiên</h4>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span className="text-sm text-gray-600">Cao</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-20 h-2 bg-gray-200 rounded-full">
+                      <div 
+                        className="h-2 bg-red-500 rounded-full transition-all duration-1000 ease-out" 
+                        style={{ width: `${(tasks.filter(t => t.priority === 'high').length / tasks.length) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">
+                      {tasks.filter(t => t.priority === 'high').length}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <span className="text-sm text-gray-600">Trung bình</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-20 h-2 bg-gray-200 rounded-full">
+                      <div 
+                        className="h-2 bg-yellow-500 rounded-full transition-all duration-1000 ease-out" 
+                        style={{ width: `${(tasks.filter(t => t.priority === 'medium').length / tasks.length) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">
+                      {tasks.filter(t => t.priority === 'medium').length}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                    <span className="text-sm text-gray-600">Thấp</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-20 h-2 bg-gray-200 rounded-full">
+                      <div 
+                        className="h-2 bg-gray-500 rounded-full transition-all duration-1000 ease-out" 
+                        style={{ width: `${(tasks.filter(t => t.priority === 'low').length / tasks.length) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">
+                      {tasks.filter(t => t.priority === 'low').length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Progress Overview */}
+            <div className="pt-4 border-t border-gray-100">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Tình trạng tiến độ</h4>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-3 bg-red-50 rounded-lg">
+                  <div className="text-lg font-bold text-red-600">{tasks.filter(t => t.progress < 30).length}</div>
+                  <div className="text-xs text-red-600">Chậm tiến độ</div>
+                </div>
+                <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                  <div className="text-lg font-bold text-yellow-600">{tasks.filter(t => t.progress >= 30 && t.progress < 70).length}</div>
+                  <div className="text-xs text-yellow-600">Đang tiến hành</div>
+                </div>
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <div className="text-lg font-bold text-green-600">{tasks.filter(t => t.progress >= 70).length}</div>
+                  <div className="text-xs text-green-600">Sắp hoàn thành</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Selected Filter Indicator */}
       {selectedStatsFilter && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -1396,11 +1859,222 @@ export default function TaskManagement() {
     </div>
   )
 
+  // Kanban columns configuration
+  const kanbanColumns = [
+    {
+      id: 'pending',
+      title: 'Chưa làm',
+      status: 'pending',
+      color: 'bg-gray-50',
+      headerColor: 'bg-gray-100',
+      textColor: 'text-gray-700',
+      count: filteredTasks.filter(task => task.status === 'pending').length
+    },
+    {
+      id: 'in_progress', 
+      title: 'Đang làm',
+      status: 'in_progress',
+      color: 'bg-blue-50',
+      headerColor: 'bg-blue-100',
+      textColor: 'text-blue-700',
+      count: filteredTasks.filter(task => task.status === 'in_progress').length
+    },
+    {
+      id: 'completed',
+      title: 'Hoàn tất',
+      status: 'completed',
+      color: 'bg-green-50',
+      headerColor: 'bg-green-100', 
+      textColor: 'text-green-700',
+      count: filteredTasks.filter(task => task.status === 'completed').length
+    }
+  ]
+
   const renderTasks = () => (
     <div className="space-y-4">
       {/* Header and filters */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Danh sách Công việc</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Danh sách Công việc</h2>
+          
+          {/* View Toggle */}
+          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setTaskView('table')}
+              className={`flex items-center space-x-1 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                taskView === 'table' 
+                  ? 'bg-white shadow-sm text-blue-600' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              <span>Bảng</span>
+            </button>
+            <button
+              onClick={() => setTaskView('kanban')}
+              className={`flex items-center space-x-1 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                taskView === 'kanban' 
+                  ? 'bg-white shadow-sm text-blue-600' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Grid3X3 className="w-4 h-4" />
+              <span>Kanban</span>
+            </button>
+          </div>
+          
+          {/* Column Selector - Only show for table view */}
+          {taskView === 'table' && (
+            <div className="relative column-selector">
+              <button
+                onClick={() => setShowColumnSelector(!showColumnSelector)}
+                className="flex items-center space-x-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                <Columns className="w-4 h-4" />
+                <span>Cột hiển thị</span>
+                <ChevronUp className={`w-4 h-4 transition-transform ${showColumnSelector ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showColumnSelector && (
+                <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  <div className="p-4">
+                    <h3 className="text-sm font-medium text-gray-900 mb-3">Chọn cột hiển thị</h3>
+                    <div className="space-y-2">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={visibleColumns.task}
+                          onChange={(e) => setVisibleColumns(prev => ({...prev, task: e.target.checked}))}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Công việc</span>
+                      </label>
+                      
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={visibleColumns.related}
+                          onChange={(e) => setVisibleColumns(prev => ({...prev, related: e.target.checked}))}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Liên quan</span>
+                      </label>
+                      
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={visibleColumns.assignee}
+                          onChange={(e) => setVisibleColumns(prev => ({...prev, assignee: e.target.checked}))}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Người phụ trách</span>
+                      </label>
+                      
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={visibleColumns.dueDate}
+                          onChange={(e) => setVisibleColumns(prev => ({...prev, dueDate: e.target.checked}))}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Thời hạn</span>
+                      </label>
+                      
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={visibleColumns.priority}
+                          onChange={(e) => setVisibleColumns(prev => ({...prev, priority: e.target.checked}))}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Ưu tiên</span>
+                      </label>
+                      
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={visibleColumns.progress}
+                          onChange={(e) => setVisibleColumns(prev => ({...prev, progress: e.target.checked}))}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Tiến độ</span>
+                      </label>
+                      
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={visibleColumns.status}
+                          onChange={(e) => setVisibleColumns(prev => ({...prev, status: e.target.checked}))}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Trạng thái</span>
+                      </label>
+                      
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={visibleColumns.actions}
+                          onChange={(e) => setVisibleColumns(prev => ({...prev, actions: e.target.checked}))}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Thao tác</span>
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200">
+                      <div className="flex items-center space-x-2 text-xs">
+                        <button
+                          onClick={() => {
+                            setVisibleColumns({
+                              task: true,
+                              related: false,
+                              assignee: true,
+                              dueDate: true,
+                              priority: true,
+                              progress: false,
+                              status: true,
+                              actions: true
+                            })
+                          }}
+                          className="text-gray-500 hover:text-gray-700 underline"
+                        >
+                          Cơ bản
+                        </button>
+                        
+                        <span className="text-gray-300">|</span>
+                        
+                        <button
+                          onClick={() => {
+                            setVisibleColumns({
+                              task: true,
+                              related: true,
+                              assignee: true,
+                              dueDate: true,
+                              priority: true,
+                              progress: true,
+                              status: true,
+                              actions: true
+                            })
+                          }}
+                          className="text-gray-500 hover:text-gray-700 underline"
+                        >
+                          Tất cả
+                        </button>
+                      </div>
+                      
+                      <button
+                        onClick={() => setShowColumnSelector(false)}
+                        className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+                      >
+                        Xong
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         
         <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
           {/* Search */}
@@ -1473,29 +2147,237 @@ export default function TaskManagement() {
         </div>
       </div>
 
-      {/* Tasks Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Công việc</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Liên quan</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người phụ trách</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời hạn</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ưu tiên</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiến độ</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredTasks.map((task) => {
-                const isOverdue = new Date(task.dueDate) < new Date() && task.status !== 'completed'
-                const assignee = employees.find(e => e.id === task.assignedTo)
+      {/* Render based on view mode */}
+      {taskView === 'kanban' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {kanbanColumns.map(column => {
+            const columnTasks = filteredTasks.filter(task => task.status === column.status)
+            
+            return (
+              <div key={column.id} className={`${column.color} rounded-lg border border-gray-200`}>
+                {/* Column Header */}
+                <div className={`${column.headerColor} px-4 py-3 rounded-t-lg border-b border-gray-200`}>
+                  <div className="flex items-center justify-between">
+                    <h3 className={`font-semibold ${column.textColor}`}>
+                      {column.title}
+                    </h3>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full bg-white ${column.textColor} border`}>
+                      {column.count}
+                    </span>
+                  </div>
+                </div>
                 
-                return (
-                  <tr key={task.id} className={`hover:bg-gray-50 ${isOverdue ? 'bg-red-50' : ''}`}>
+                {/* Column Content */}
+                <div className="p-4 space-y-3 min-h-[400px]">
+                  {columnTasks.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-32 text-gray-400">
+                      <Circle className="w-8 h-8 mb-2" />
+                      <span className="text-sm">Không có công việc</span>
+                    </div>
+                  ) : (
+                    columnTasks.map(task => {
+                      const isOverdue = new Date(task.dueDate) < new Date() && task.status !== 'completed'
+                      const assignee = employees.find(e => e.id === task.assignedTo)
+                      
+                      return (
+                        <div
+                          key={task.id}
+                          className={`bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${
+                            isOverdue ? 'border-red-300 bg-red-50' : ''
+                          }`}
+                          onClick={() => {
+                            setSelectedTask(task)
+                            setShowDetailModal(true)
+                          }}
+                        >
+                          {/* Task Header */}
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900 text-sm line-clamp-2">
+                                {task.title}
+                              </h4>
+                              {task.description && (
+                                <p className="text-xs text-gray-500 line-clamp-2 mt-1">
+                                  {task.description}
+                                </p>
+                              )}
+                            </div>
+                            <span className={`ml-2 px-2 py-1 text-xs font-medium rounded-full border ${getPriorityColor(task.priority)}`}>
+                              {getPriorityText(task.priority)}
+                            </span>
+                          </div>
+
+                          {/* Task Info */}
+                          <div className="space-y-2">
+                            {/* Related info */}
+                            {task.relatedType && (
+                              <div className="flex items-center text-xs text-gray-600">
+                                <FileText className="w-3 h-3 mr-1" />
+                                <span>{task.relatedName}</span>
+                                <span className="ml-1 text-gray-400">
+                                  ({task.relatedType === 'lead' ? 'Lead' : 
+                                    task.relatedType === 'order' ? 'Đơn hàng' : 'Khách hàng'})
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Assignee */}
+                            <div className="flex items-center text-xs text-gray-600">
+                              <User className="w-3 h-3 mr-1" />
+                              <span>{assignee?.name}</span>
+                            </div>
+
+                            {/* Due date */}
+                            <div className={`flex items-center text-xs ${isOverdue ? 'text-red-600' : 'text-gray-600'}`}>
+                              <Clock className="w-3 h-3 mr-1" />
+                              <span>{formatDate(task.dueDate)}</span>
+                              {isOverdue && (
+                                <AlertTriangle className="w-3 h-3 ml-1" />
+                              )}
+                            </div>
+
+                            {/* Progress */}
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-xs text-gray-500">
+                                <span>Tiến độ</span>
+                                <span>{task.progress}%</span>
+                              </div>
+                              <div className={`w-full h-1.5 rounded-full ${getProgressColor(task.progress)}`}>
+                                <div 
+                                  className={`h-1.5 rounded-full transition-all duration-300 ${getProgressBarColor(task.progress)}`}
+                                  style={{ width: `${task.progress}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Tags */}
+                            {task.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {task.tags.slice(0, 3).map(tag => (
+                                  <span key={tag} className="px-1.5 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-800">
+                                    {tag}
+                                  </span>
+                                ))}
+                                {task.tags.length > 3 && (
+                                  <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-gray-100 text-gray-600">
+                                    +{task.tags.length - 3}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Task Actions */}
+                          <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+                            <div className="flex items-center space-x-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedTask(task)
+                                  setShowDetailModal(true)
+                                }}
+                                className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                                title="Xem chi tiết"
+                              >
+                                <Eye className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedTask(task)
+                                  setShowReminderModal(true)
+                                }}
+                                className="p-1 text-gray-400 hover:text-green-600 transition-colors"
+                                title="Cài đặt nhắc nhở"
+                              >
+                                <Bell className="w-3 h-3" />
+                              </button>
+                            </div>
+                            
+                            {task.status !== 'completed' && (
+                              <div className="flex items-center space-x-1">
+                                {task.status === 'pending' && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      const updatedTask = { ...task, status: 'in_progress' as const }
+                                      handleUpdateTask(updatedTask)
+                                    }}
+                                    className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                                  >
+                                    Bắt đầu
+                                  </button>
+                                )}
+                                {task.status === 'in_progress' && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      const updatedTask = { ...task, status: 'completed' as const, progress: 100 }
+                                      handleUpdateTask(updatedTask)
+                                    }}
+                                    className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                                  >
+                                    Hoàn thành
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        renderTaskTable()
+      )}
+    </div>
+  )
+
+  const renderTaskTable = () => (
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              {visibleColumns.task && (
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Công việc</th>
+              )}
+              {visibleColumns.related && (
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Liên quan</th>
+              )}
+              {visibleColumns.assignee && (
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người phụ trách</th>
+              )}
+              {visibleColumns.dueDate && (
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời hạn</th>
+              )}
+              {visibleColumns.priority && (
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ưu tiên</th>
+              )}
+              {visibleColumns.progress && (
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiến độ</th>
+              )}
+              {visibleColumns.status && (
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+              )}
+              {visibleColumns.actions && (
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+              )}
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {filteredTasks.map((task) => {
+              const isOverdue = new Date(task.dueDate) < new Date() && task.status !== 'completed'
+              const assignee = employees.find(e => e.id === task.assignedTo)
+              
+              return (
+                <tr key={task.id} className={`hover:bg-gray-50 ${isOverdue ? 'bg-red-50' : ''}`}>
+                  {visibleColumns.task && (
                     <td className="px-4 py-4">
                       <div>
                         <div className="font-medium text-gray-900">{task.title}</div>
@@ -1511,7 +2393,9 @@ export default function TaskManagement() {
                         )}
                       </div>
                     </td>
-                    
+                  )}
+                  
+                  {visibleColumns.related && (
                     <td className="px-4 py-4 whitespace-nowrap">
                       {task.relatedType && (
                         <div>
@@ -1527,14 +2411,18 @@ export default function TaskManagement() {
                         </div>
                       )}
                     </td>
-                    
+                  )}
+                  
+                  {visibleColumns.assignee && (
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div>
                         <div className="font-medium text-gray-900">{assignee?.name}</div>
                         <div className="text-sm text-gray-500">{assignee?.team}</div>
                       </div>
                     </td>
-                    
+                  )}
+                  
+                  {visibleColumns.dueDate && (
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className={isOverdue ? 'text-red-600' : ''}>
                         <div className="font-medium">{formatDate(task.dueDate)}</div>
@@ -1547,13 +2435,17 @@ export default function TaskManagement() {
                         )}
                       </div>
                     </td>
-                    
+                  )}
+                  
+                  {visibleColumns.priority && (
                     <td className="px-4 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getPriorityColor(task.priority)}`}>
                         {getPriorityText(task.priority)}
                       </span>
                     </td>
-                    
+                  )}
+                  
+                  {visibleColumns.progress && (
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="w-full">
                         <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
@@ -1568,13 +2460,17 @@ export default function TaskManagement() {
                         </div>
                       </div>
                     </td>
-                    
+                  )}
+                  
+                  {visibleColumns.status && (
                     <td className="px-4 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(task.status)}`}>
                         {getStatusText(task.status)}
                       </span>
                     </td>
-                    
+                  )}
+                  
+                  {visibleColumns.actions && (
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-1">
                         <button 
@@ -1602,12 +2498,12 @@ export default function TaskManagement() {
                         </button>
                       </div>
                     </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                  )}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   )

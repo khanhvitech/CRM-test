@@ -25,10 +25,12 @@ import {
   AlertCircle,
   Activity,
   ShoppingCart,
-  Package
+  Package,
+  Bot
 } from 'lucide-react'
 
 import OrderManagement from './OrderManagement'
+import AISuggestionsTab from './AISuggestionsTab'
 
 interface Lead {
   id: number
@@ -94,7 +96,7 @@ interface MetricData {
 }
 
 export default function SalesManagement() {
-  const [activeTab, setActiveTab] = useState<'leads' | 'deals' | 'orders' | 'pipeline'>('leads')
+  const [activeTab, setActiveTab] = useState<'leads' | 'deals' | 'orders' | 'pipeline' | 'ai-suggestions'>('leads')
   const [showFilters, setShowFilters] = useState(false)
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null)
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null)
@@ -294,19 +296,63 @@ export default function SalesManagement() {
     const currentMonth = new Date().getMonth()
     const currentYear = new Date().getFullYear()
     
+    // Calculate AI Suggestions count
+    const calculateAISuggestions = () => {
+      let suggestionsCount = 0
+      
+      // Count high-value leads needing follow-up
+      leads.forEach(lead => {
+        const daysSinceLastContact = lead.lastContactedAt 
+          ? Math.floor((Date.now() - new Date(lead.lastContactedAt).getTime()) / (1000 * 60 * 60 * 24))
+          : Math.floor((Date.now() - new Date(lead.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+        
+        if (lead.value > 50000000 && daysSinceLastContact > 3 && lead.status !== 'converted') {
+          suggestionsCount++
+        }
+        if (lead.status === 'qualified' && daysSinceLastContact > 7) {
+          suggestionsCount++
+        }
+        if (lead.status === 'new' && daysSinceLastContact < 1) {
+          suggestionsCount++
+        }
+      })
+      
+      // Count deal-related suggestions
+      deals.forEach(deal => {
+        const daysUntilExpectedClose = Math.floor((new Date(deal.expectedClose).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        
+        if (deal.stage === 'negotiation' && daysUntilExpectedClose < 7 && daysUntilExpectedClose > 0) {
+          suggestionsCount++
+        }
+        if (deal.probability > 70 && deal.stage === 'proposal') {
+          suggestionsCount++
+        }
+      })
+      
+      // General insights
+      const hotLeads = leads.filter(lead => lead.tags.includes('hot'))
+      if (hotLeads.length > 0) {
+        suggestionsCount++
+      }
+      
+      return suggestionsCount
+    }
+    
     // Simulate previous month data (in real app, this would come from API)
     const previousMonthData = {
       totalLeads: 4, // Tháng trước có 4 leads
       openDeals: 1,  // Tháng trước có 1 deal đang mở
       totalOrders: 0, // Tháng trước chưa có đơn hàng nào
-      conversionRate: 25 // Tỷ lệ chuyển đổi tháng trước 25%
+      conversionRate: 25, // Tỷ lệ chuyển đổi tháng trước 25%
+      aiSuggestions: 2 // Tháng trước có 2 gợi ý AI
     }
     
     const currentData = {
       totalLeads: leads.length,
       openDeals: deals.filter(d => !d.stage.includes('closed')).length,
       totalOrders: orders.length,
-      conversionRate: leads.length > 0 ? Math.round((deals.length / leads.length) * 100) : 0
+      conversionRate: leads.length > 0 ? Math.round((deals.length / leads.length) * 100) : 0,
+      aiSuggestions: calculateAISuggestions()
     }
     
     const calculateTrend = (current: number, previous: number): 'up' | 'down' | 'neutral' => {
@@ -396,6 +442,26 @@ export default function SalesManagement() {
           })
           setTimeout(() => setNotification(null), 3000)
         }
+      },
+      {
+        id: 'ai-suggestions',
+        title: 'Gợi ý AI',
+        value: currentData.aiSuggestions,
+        previousValue: previousMonthData.aiSuggestions,
+        percentageChange: calculatePercentageChange(currentData.aiSuggestions, previousMonthData.aiSuggestions),
+        icon: <Bot className="w-5 h-5" />,
+        color: 'text-blue-600',
+        bgColor: 'bg-blue-100',
+        trend: calculateTrend(currentData.aiSuggestions, previousMonthData.aiSuggestions),
+        clickAction: () => {
+          setActiveTab('ai-suggestions')
+          setSelectedMetric('ai-suggestions')
+          setNotification({
+            message: `Hiển thị ${currentData.aiSuggestions} gợi ý AI thông minh`,
+            type: 'success'
+          })
+          setTimeout(() => setNotification(null), 3000)
+        }
       }
     ]
   }
@@ -429,6 +495,30 @@ export default function SalesManagement() {
     })
 
     setTimeout(() => setNotification(null), 5000)
+  }
+
+  // Handle AI suggestions
+  const handleAISuggestion = (suggestionId: string, action: string) => {
+    switch (action) {
+      case 'accept':
+        setNotification({
+          message: 'Đã thực hiện theo gợi ý AI',
+          type: 'success'
+        })
+        break
+      case 'dismiss':
+        // Just mark as dismissed
+        break
+      case 'like':
+        // Track positive feedback
+        break
+      case 'dislike':
+        // Track negative feedback
+        break
+    }
+    
+    // Clear notification after 3 seconds
+    setTimeout(() => setNotification(null), 3000)
   }
 
   const renderLeads = () => {
@@ -1068,7 +1158,7 @@ export default function SalesManagement() {
           <p className="text-gray-600">Quản lý toàn bộ quy trình từ Lead đến Đơn hàng</p>
         </div>
       </div>      {/* Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">{metrics.map((metric) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">{metrics.map((metric) => (
           <div 
             key={metric.id} 
             className={`bg-white rounded-lg shadow-sm border-2 p-4 cursor-pointer hover:shadow-md transition-all duration-200 ${
@@ -1126,7 +1216,9 @@ export default function SalesManagement() {
               { id: 'leads', name: 'Leads', count: leads.length, icon: <Users className="w-4 h-4" /> },
               { id: 'deals', name: 'Deals', count: deals.filter(d => !d.stage.includes('closed')).length, icon: <Target className="w-4 h-4" /> },
               { id: 'orders', name: 'Đơn hàng', count: orders.length, icon: <ShoppingCart className="w-4 h-4" /> },
-              { id: 'pipeline', name: 'Pipeline', count: leads.length + deals.length + orders.length, icon: <Activity className="w-4 h-4" /> }].map((tab) => (
+              { id: 'pipeline', name: 'Pipeline', count: leads.length + deals.length + orders.length, icon: <Activity className="w-4 h-4" /> },
+              { id: 'ai-suggestions', name: 'Gợi ý AI', count: 4, icon: <Bot className="w-4 h-4" /> }
+            ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => {
@@ -1174,6 +1266,26 @@ export default function SalesManagement() {
             </div>
           )}
           {activeTab === 'pipeline' && renderPipeline()}
+          {activeTab === 'ai-suggestions' && (
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 border border-purple-200">
+                <div className="flex items-start space-x-3">
+                  <TrendingUp className="w-5 h-5 text-purple-600 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-medium text-purple-900">AI Gợi ý thông minh</h4>
+                    <p className="text-sm text-purple-700 mt-1">
+                      AI phân tích dữ liệu leads và deals để đưa ra những gợi ý hành động tối ưu cho đội sales của bạn.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <AISuggestionsTab 
+                leads={leads}
+                deals={deals}
+                onSuggestionAction={handleAISuggestion}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
