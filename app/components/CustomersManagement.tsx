@@ -8,7 +8,8 @@ import {
   MapPin, Briefcase, CreditCard, UserCheck, UserX, Users, ChevronDown,
   Bell, RefreshCw, Zap, BarChart3, PieChart, CheckCircle, XCircle,
   FileText, History, Send, Settings, Download, Crown, Award, UserPlus,
-  Info, ArrowUpRight, ArrowDownRight, X, MessageSquare
+  Info, ArrowUpRight, ArrowDownRight, X, MessageSquare, Columns,
+  Brain, BarChart
 } from 'lucide-react'
 import CustomerFilters, { CustomerFilters as FilterType } from './CustomerFilters'
 import CustomerEventsManager from './CustomerEventsManager'
@@ -31,16 +32,6 @@ interface CustomerInteraction {
   date: string
   status: 'success' | 'pending' | 'failed'
   aiSummary?: string
-}
-
-interface CustomerEvent {
-  id: string
-  type: 'birthday' | 'anniversary' | 'custom'
-  title: string
-  date: string
-  recurring: boolean
-  reminderDays: number
-  customMessage?: string
 }
 
 interface CustomerProduct {
@@ -80,7 +71,6 @@ interface Customer {
   loyaltyPoints: number
   preferredChannel: 'email' | 'phone' | 'chat' | 'in-person' | 'social'
   interactions: CustomerInteraction[]
-  events: CustomerEvent[]
   products: CustomerProduct[]
   
   // Personal Information
@@ -144,6 +134,7 @@ interface Customer {
   totalOrders: number
   totalSpent: number
   averageOrderFrequency: number
+  predictedRevenue?: number
   
   // Support Information
   supportTickets: number
@@ -182,17 +173,58 @@ interface Customer {
 export default function CustomersManagement() {
   const [selectedView, setSelectedView] = useState<'list' | 'analytics' | 'events' | 'insights'>('list')
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [activeTab, setActiveTab] = useState<'details' | 'interactions' | 'orders' | 'notes' | 'ai-suggestions'>('details')
   const [showFilters, setShowFilters] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterIndustry, setFilterIndustry] = useState('')
   const [filterTag, setFilterTag] = useState('')
   const [filterCustomerType, setFilterCustomerType] = useState('')
+  const [filterPurchasedProduct, setFilterPurchasedProduct] = useState('')
+  const [showColumnSelector, setShowColumnSelector] = useState(false)
+  const [visibleColumns, setVisibleColumns] = useState({
+    customer: true,
+    company: true,
+    customerType: true,
+    status: true,
+    products: true,
+    lastInteraction: true,
+    engagementScore: true,
+    churnRisk: true,
+    value: true,
+    birthday: false,
+    firstPurchaseDate: false,
+    lastPurchaseDate: false,
+    phone: false,
+    address: false,
+    actions: true
+  })
   const [sortBy, setSortBy] = useState('name')
   const [advancedFilters, setAdvancedFilters] = useState<FilterType>({})
   const [showRemarketingModal, setShowRemarketingModal] = useState(false)
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false)
   const [showRankingDefinitionModal, setShowRankingDefinitionModal] = useState(false)
+  
+  // AI Action States
+  const [showCallHighRiskModal, setShowCallHighRiskModal] = useState(false)
+  const [showEmailFollowUpModal, setShowEmailFollowUpModal] = useState(false)
+  const [showUpsellCampaignModal, setShowUpsellCampaignModal] = useState(false)
+  const [showAIReportModal, setShowAIReportModal] = useState(false)
+  const [selectedCustomersForAction, setSelectedCustomersForAction] = useState<Customer[]>([])
+  
+  // Helper function to calculate predicted revenue for customers without it
+  const calculatePredictedRevenue = (customer: Customer): number => {
+    if (customer.predictedRevenue) return customer.predictedRevenue;
+    
+    // Simple prediction based on customer data
+    const baseRevenue = customer.totalSpent / customer.totalOrders || 0;
+    const frequencyMultiplier = Math.max(customer.averageOrderFrequency, 0.1);
+    const engagementMultiplier = customer.engagementScore / 100;
+    const churnRiskPenalty = (100 - customer.churnRisk) / 100;
+    
+    return Math.round(baseRevenue * frequencyMultiplier * engagementMultiplier * churnRiskPenalty * 3);
+  };
+  
   const [newCustomerData, setNewCustomerData] = useState({
     firstName: '',
     lastName: '',
@@ -283,6 +315,7 @@ export default function CustomersManagement() {
       totalOrders: 25,
       totalSpent: 15000000,
       averageOrderFrequency: 2,
+      predictedRevenue: 3500000,
       supportTickets: 3,
       supportPriority: 'high',
       notes: 'Khách hàng VIP, luôn đánh giá cao dịch vụ',
@@ -303,16 +336,7 @@ export default function CustomersManagement() {
           status: 'success'
         }
       ],
-      events: [
-        {
-          id: '1',
-          type: 'birthday',
-          title: 'Sinh nhật CEO',
-          date: '2024-03-15',
-          recurring: true,
-          reminderDays: 7
-        }
-      ],      products: [
+      products: [
         {
           id: '1',
           name: 'CRM Enterprise',
@@ -412,6 +436,7 @@ export default function CustomersManagement() {
       totalOrders: 12,
       totalSpent: 3600000,
       averageOrderFrequency: 1,
+      predictedRevenue: 800000,
       supportTickets: 1,
       supportPriority: 'medium',
       notes: 'Quan tâm đến công nghệ AI, thường yêu cầu demo',
@@ -431,7 +456,7 @@ export default function CustomersManagement() {
           status: 'pending'
         }
       ],
-      events: [],      products: [
+      products: [
         {
           id: '4',
           name: 'CRM Startup',
@@ -535,6 +560,7 @@ export default function CustomersManagement() {
       totalOrders: 6,
       totalSpent: 2400000,
       averageOrderFrequency: 0.5,
+      predictedRevenue: 600000,
       supportTickets: 8,
       supportPriority: 'high',
       notes: 'Khách hàng ít tương tác, cần chăm sóc đặc biệt',
@@ -555,7 +581,7 @@ export default function CustomersManagement() {
           status: 'failed'
         }
       ],
-      events: [],      products: [
+      products: [
         {
           id: '6',
           name: 'ERP Manufacturing',
@@ -655,7 +681,6 @@ export default function CustomersManagement() {
       updatedBy: 'sales_rep',
       isDeleted: false,
       interactions: [],
-      events: [],
       products: [
         {
           id: '6',
@@ -741,7 +766,6 @@ export default function CustomersManagement() {
       updatedBy: 'sales_rep',
       isDeleted: false,
       interactions: [],
-      events: [],
       products: [
         {
           id: '7',
@@ -872,7 +896,6 @@ export default function CustomersManagement() {
           status: 'success'
         }
       ],
-      events: [],
       products: [
         {
           id: '10',
@@ -979,7 +1002,6 @@ export default function CustomersManagement() {
           status: 'success'
         }
       ],
-      events: [],
       products: [
         {
           id: '12',
@@ -1094,17 +1116,6 @@ export default function CustomersManagement() {
           summary: 'Khách hàng tạm ngưng do khó khăn tài chính',
           date: '2023-12-20',
           status: 'success'
-        }
-      ],
-      events: [
-        {
-          id: '2',
-          type: 'custom',
-          title: 'Đánh giá nhu cầu Q1',
-          date: '2024-03-01',
-          recurring: false,
-          reminderDays: 14,
-          customMessage: 'Liên hệ để đánh giá nhu cầu năm mới'
         }
       ],
       products: [
@@ -1231,16 +1242,6 @@ export default function CustomersManagement() {
           status: 'success'
         }
       ],
-      events: [
-        {
-          id: '3',
-          type: 'anniversary',
-          title: 'Kỷ niệm 2 năm hợp tác',
-          date: '2024-08-10',
-          recurring: true,
-          reminderDays: 30
-        }
-      ],
       products: [
         {
           id: '16',
@@ -1363,7 +1364,7 @@ export default function CustomersManagement() {
           status: 'success'
         }
       ],
-      events: [],
+
       products: [
         {
           id: '19',
@@ -1484,17 +1485,6 @@ export default function CustomersManagement() {
           summary: 'Hướng dẫn thiết lập chiến dịch marketing cho mùa sale',
           date: '2024-01-18',
           status: 'success'
-        }
-      ],
-      events: [
-        {
-          id: '4',
-          type: 'custom',
-          title: 'Chuẩn bị mùa sale Tết',
-          date: '2024-02-01',
-          recurring: false,
-          reminderDays: 7,
-          customMessage: 'Liên hệ hỗ trợ campaign marketing'
         }
       ],
       products: [
@@ -1619,7 +1609,7 @@ export default function CustomersManagement() {
           status: 'pending'
         }
       ],
-      events: [],
+
       products: [
         {
           id: '25',
@@ -1751,17 +1741,6 @@ export default function CustomersManagement() {
           status: 'success'
         }
       ],
-      events: [
-        {
-          id: '5',
-          type: 'custom',
-          title: 'Follow-up sau 30 ngày',
-          date: '2024-02-22',
-          recurring: false,
-          reminderDays: 3,
-          customMessage: 'Kiểm tra mức độ hài lòng và nhu cầu mở rộng'
-        }
-      ],
       products: [
         {
           id: '28',
@@ -1862,7 +1841,7 @@ export default function CustomersManagement() {
           status: 'success'
         }
       ],
-      events: [],
+
       products: [
         {
           id: '29',
@@ -1981,17 +1960,6 @@ export default function CustomersManagement() {
           status: 'success'
         }
       ],
-      events: [
-        {
-          id: '6',
-          type: 'custom',
-          title: 'Follow-up Q2 2024',
-          date: '2024-04-01',
-          recurring: false,
-          reminderDays: 14,
-          customMessage: 'Liên hệ đánh giá khả năng quay lại'
-        }
-      ],
       products: [
         {
           id: '32',
@@ -2043,6 +2011,35 @@ export default function CustomersManagement() {
   // Helper functions
   const formatCurrency = (value: string) => {
     return parseInt(value.replace(/,/g, '')).toLocaleString()
+  }
+
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return 'Chưa có'
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return 'Chưa có'
+      return date.toLocaleDateString('vi-VN', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+      })
+    } catch {
+      return 'Chưa có'
+    }
+  }
+
+  const formatBirthday = (dateString?: string): string => {
+    if (!dateString) return 'Chưa có'
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return 'Chưa có'
+      return date.toLocaleDateString('vi-VN', { 
+        day: '2-digit', 
+        month: '2-digit' 
+      })
+    } catch {
+      return 'Chưa có'
+    }
   }
 
   const getRiskColor = (risk: number) => {
@@ -2098,7 +2095,7 @@ export default function CustomersManagement() {
       loyaltyPoints: 0,
       preferredChannel: newCustomerData.preferredChannel as any,
       interactions: [],
-      events: [],
+
       products: [],
       address: newCustomerData.address || '',
       city: newCustomerData.city || '',
@@ -2190,6 +2187,7 @@ export default function CustomersManagement() {
     setFilterIndustry('')
     setFilterTag('')
     setFilterCustomerType('')
+    setFilterPurchasedProduct('')
   }
 
   const handleCustomerTypeFilter = (customerType: string) => {
@@ -2212,6 +2210,10 @@ export default function CustomersManagement() {
       const matchesIndustry = !filterIndustry || customer.industry === filterIndustry
       const matchesTag = !filterTag || customer.tags.some(tag => tag.name === filterTag)
       const matchesCustomerType = !filterCustomerType || customer.customerType === filterCustomerType
+      const matchesPurchasedProduct = !filterPurchasedProduct || 
+        customer.products.some(product => 
+          product.name.toLowerCase().includes(filterPurchasedProduct.toLowerCase())
+        )
 
       let matchesAdvanced = true
 
@@ -2257,7 +2259,7 @@ export default function CustomersManagement() {
       })
 
       return matchesSearch && matchesStatus && matchesIndustry && matchesTag && 
-             matchesCustomerType && matchesAdvanced
+             matchesCustomerType && matchesPurchasedProduct && matchesAdvanced
     }).sort((a, b) => {
       switch (sortBy) {
         case 'name':
@@ -2274,147 +2276,618 @@ export default function CustomersManagement() {
           return 0
       }
     })
-  }, [customers, searchTerm, filterStatus, filterIndustry, filterTag, filterCustomerType, sortBy, advancedFilters])
+  }, [customers, searchTerm, filterStatus, filterIndustry, filterTag, filterCustomerType, filterPurchasedProduct, sortBy, advancedFilters])
 
   const remarketingCustomers = customers.filter(c => 
     c.remarketing.eligible && (c.status === 'at-risk' || c.churnRisk >= 50)
   )
 
+  // AI Action Handlers
+  const handleCallHighRiskCustomers = () => {
+    const highRiskCustomers = filteredCustomers.filter(c => c.churnRisk >= 70 || c.daysSinceLastInteraction > 30)
+    setSelectedCustomersForAction(highRiskCustomers)
+    setShowCallHighRiskModal(true)
+  }
+
+  const handleEmailFollowUp = () => {
+    const followUpCustomers = filteredCustomers.filter(c => c.daysSinceLastInteraction >= 14)
+    setSelectedCustomersForAction(followUpCustomers)
+    setShowEmailFollowUpModal(true)
+  }
+
+  const handleUpsellCampaign = () => {
+    const upsellCustomers = filteredCustomers.filter(c => c.engagementScore >= 70 && c.churnRisk <= 30)
+    setSelectedCustomersForAction(upsellCustomers)
+    setShowUpsellCampaignModal(true)
+  }
+
+  const handleAIReport = () => {
+    setShowAIReportModal(true)
+  }
+
+  // Additional state for new remarketing flow
+  const [remarketingStep, setRemarketingStep] = useState(1)
+  const [selectedRemarketingCustomers, setSelectedRemarketingCustomers] = useState<Customer[]>([])
+  const [remarketingCampaignType, setRemarketingCampaignType] = useState('')
+  const [remarketingFilters, setRemarketingFilters] = useState({
+    riskLevel: '',
+    daysSinceLastContact: '',
+    customerType: '',
+    engagementScore: ''
+  })
+
+  const handleRemarketingCustomerToggle = (customer: Customer) => {
+    setSelectedRemarketingCustomers(prev => {
+      const isSelected = prev.find(c => c.id === customer.id)
+      if (isSelected) {
+        return prev.filter(c => c.id !== customer.id)
+      } else {
+        return [...prev, customer]
+      }
+    })
+  }
+
+  const handleSelectAllRemarketing = () => {
+    const filteredForRemarketing = getFilteredRemarketingCustomers()
+    if (selectedRemarketingCustomers.length === filteredForRemarketing.length) {
+      setSelectedRemarketingCustomers([])
+    } else {
+      setSelectedRemarketingCustomers(filteredForRemarketing)
+    }
+  }
+
+  const getFilteredRemarketingCustomers = () => {
+    return customers.filter(customer => {
+      // Base remarketing criteria
+      let isEligible = customer.churnRisk >= 40 || customer.daysSinceLastInteraction >= 14
+
+      // Apply additional filters
+      if (remarketingFilters.riskLevel) {
+        if (remarketingFilters.riskLevel === 'high' && customer.churnRisk < 70) isEligible = false
+        if (remarketingFilters.riskLevel === 'medium' && (customer.churnRisk < 40 || customer.churnRisk >= 70)) isEligible = false
+        if (remarketingFilters.riskLevel === 'low' && customer.churnRisk >= 40) isEligible = false
+      }
+
+      if (remarketingFilters.daysSinceLastContact) {
+        const days = parseInt(remarketingFilters.daysSinceLastContact)
+        if (customer.daysSinceLastInteraction < days) isEligible = false
+      }
+
+      if (remarketingFilters.customerType && customer.customerType !== remarketingFilters.customerType) {
+        isEligible = false
+      }
+
+      if (remarketingFilters.engagementScore) {
+        if (remarketingFilters.engagementScore === 'high' && customer.engagementScore < 70) isEligible = false
+        if (remarketingFilters.engagementScore === 'medium' && (customer.engagementScore < 40 || customer.engagementScore >= 70)) isEligible = false
+        if (remarketingFilters.engagementScore === 'low' && customer.engagementScore >= 40) isEligible = false
+      }
+
+      return isEligible
+    })
+  }
+
   return (
     <>
-      {/* Remarketing Modal */}
+      {/* Remarketing Campaign Modal - Multi-step Flow */}
       {showRemarketingModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b">
-              <div className="flex items-center space-x-3">
-                <Target className="w-6 h-6 text-orange-600" />
+          <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            {/* Header with Steps */}
+            <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-orange-50 to-amber-50">
+              <div className="flex items-center space-x-4">
+                <Target className="w-8 h-8 text-orange-600" />
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Remarketing Manager</h2>
-                  <p className="text-gray-600">{remarketingCustomers.length} khách hàng cần remarketing</p>
+                  <h2 className="text-xl font-bold text-gray-900">🎯 Tạo chiến dịch Remarketing</h2>
+                  <p className="text-gray-600">Thiết lập chiến dịch tái kích hoạt khách hàng</p>
                 </div>
               </div>
               <button
-                onClick={() => setShowRemarketingModal(false)}
+                onClick={() => {
+                  setShowRemarketingModal(false)
+                  setRemarketingStep(1)
+                  setSelectedRemarketingCustomers([])
+                  setRemarketingCampaignType('')
+                  setRemarketingFilters({
+                    riskLevel: '',
+                    daysSinceLastContact: '',
+                    customerType: '',
+                    engagementScore: ''
+                  })
+                }}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-              {/* Remarketing Actions */}
-              <div className="mb-6 p-4 bg-orange-50 rounded-lg">
-                <h3 className="font-semibold text-orange-800 mb-3">🎯 Hành động Remarketing</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <button className="flex items-center space-x-2 p-3 bg-white border border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 transition-colors">
-                    <Mail className="w-5 h-5 text-orange-600" />
-                    <div className="text-left">
-                      <div className="font-medium">Email Campaign</div>
-                      <div className="text-sm text-gray-600">Gửi email tái kích hoạt</div>
-                    </div>
-                  </button>
-                  <button className="flex items-center space-x-2 p-3 bg-white border border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 transition-colors">
-                    <MessageSquare className="w-5 h-5 text-orange-600" />
-                    <div className="text-left">
-                      <div className="font-medium">SMS Campaign</div>
-                      <div className="text-sm text-gray-600">Tin nhắn ưu đãi đặc biệt</div>
-                    </div>
-                  </button>
-                  <button className="flex items-center space-x-2 p-3 bg-white border border-orange-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 transition-colors">
-                    <Phone className="w-5 h-5 text-orange-600" />
-                    <div className="text-left">
-                      <div className="font-medium">Call List</div>
-                      <div className="text-sm text-gray-600">Tạo danh sách gọi</div>
-                    </div>
-                  </button>
+            {/* Step Progress */}
+            <div className="px-6 py-4 bg-gray-50 border-b">
+              <div className="flex items-center justify-center space-x-8">
+                <div className={`flex items-center space-x-2 ${remarketingStep >= 1 ? 'text-orange-600' : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    remarketingStep >= 1 ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-400'
+                  }`}>1</div>
+                  <span className="font-medium">Lọc khách hàng</span>
                 </div>
-              </div>
-
-              {/* Customer List */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-gray-900">Danh sách khách hàng cần remarketing</h3>
-                {remarketingCustomers.map((customer) => (
-                  <div key={customer.id} className="p-4 border rounded-lg hover:bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                          {customer.name.charAt(0)}
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">{customer.name}</h4>
-                          <p className="text-sm text-gray-600">{customer.email}</p>
-                          <div className="flex items-center space-x-3 mt-1">
-                            <span className="text-sm text-gray-500">
-                              Lần tương tác cuối: {customer.daysSinceLastInteraction} ngày trước
-                            </span>
-                            <span className={`text-sm font-medium ${getRiskColor(customer.churnRisk)}`}>
-                              Rủi ro churn: {customer.churnRisk}%
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          customer.customerType === 'diamond' ? 'bg-purple-100 text-purple-800' :
-                          customer.customerType === 'gold' ? 'bg-yellow-100 text-yellow-800' :
-                          customer.customerType === 'silver' ? 'bg-gray-100 text-gray-800' :
-                          'bg-orange-100 text-orange-800'
-                        }`}>
-                          {customer.customerType === 'diamond' ? 'Kim cương' :
-                           customer.customerType === 'gold' ? 'Vàng' :
-                           customer.customerType === 'silver' ? 'Bạc' : 'Đồng'}
-                        </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          customer.status === 'at-risk' ? 'bg-red-100 text-red-800' :
-                          customer.status === 'churned' ? 'bg-gray-100 text-gray-800' :
-                          'bg-orange-100 text-orange-800'
-                        }`}>
-                          {customer.status === 'at-risk' ? 'Có rủi ro' :
-                           customer.status === 'churned' ? 'Đã rời bỏ' :
-                           customer.status === 'dormant' ? 'Không hoạt động' : 'Khác'}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Remarketing Suggestions */}
-                    <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                      <p className="text-sm font-medium text-blue-800 mb-2">💡 Gợi ý remarketing:</p>
-                      <div className="space-y-1">
-                        {customer.remarketing.suggestedActions?.map((action, index) => (
-                          <div key={index} className="text-sm text-blue-700">
-                            • {action}
-                          </div>
-                        )) || (
-                          <div className="text-sm text-blue-600">
-                            • Gửi email tái kích hoạt với ưu đãi đặc biệt
-                          </div>
-                        )}
-                      </div>
-                      {customer.remarketing.bestTimeToContact && (
-                        <div className="text-sm text-blue-600 mt-2">
-                          ⏰ Thời gian tốt nhất: {customer.remarketing.bestTimeToContact}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                <div className={`w-8 h-0.5 ${remarketingStep >= 2 ? 'bg-orange-600' : 'bg-gray-200'}`}></div>
+                <div className={`flex items-center space-x-2 ${remarketingStep >= 2 ? 'text-orange-600' : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    remarketingStep >= 2 ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-400'
+                  }`}>2</div>
+                  <span className="font-medium">Chọn loại chiến dịch</span>
+                </div>
+                <div className={`w-8 h-0.5 ${remarketingStep >= 3 ? 'bg-orange-600' : 'bg-gray-200'}`}></div>
+                <div className={`flex items-center space-x-2 ${remarketingStep >= 3 ? 'text-orange-600' : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    remarketingStep >= 3 ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-400'
+                  }`}>3</div>
+                  <span className="font-medium">Thiết lập & Chạy</span>
+                </div>
               </div>
             </div>
 
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-300px)]">
+              {/* Step 1: Customer Filtering */}
+              {remarketingStep === 1 && (
+                <div className="space-y-6">
+                  <div className="text-center mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Bước 1: Lọc khách hàng mục tiêu</h3>
+                    <p className="text-gray-600">Chọn các tiêu chí để lọc khách hàng cần remarketing</p>
+                  </div>
+
+                  {/* Filters */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Mức độ rủi ro</label>
+                      <select
+                        value={remarketingFilters.riskLevel}
+                        onChange={(e) => setRemarketingFilters(prev => ({ ...prev, riskLevel: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="">Tất cả</option>
+                        <option value="high">Cao (≥70%)</option>
+                        <option value="medium">Trung bình (40-69%)</option>
+                        <option value="low">Thấp (&lt;40%)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Ngày chưa liên hệ</label>
+                      <select
+                        value={remarketingFilters.daysSinceLastContact}
+                        onChange={(e) => setRemarketingFilters(prev => ({ ...prev, daysSinceLastContact: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="">Tất cả</option>
+                        <option value="7">≥ 7 ngày</option>
+                        <option value="14">≥ 14 ngày</option>
+                        <option value="30">≥ 30 ngày</option>
+                        <option value="60">≥ 60 ngày</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Loại khách hàng</label>
+                      <select
+                        value={remarketingFilters.customerType}
+                        onChange={(e) => setRemarketingFilters(prev => ({ ...prev, customerType: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="">Tất cả</option>
+                        <option value="diamond">Kim cương</option>
+                        <option value="gold">Vàng</option>
+                        <option value="silver">Bạc</option>
+                        <option value="bronze">Đồng</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Điểm tương tác</label>
+                      <select
+                        value={remarketingFilters.engagementScore}
+                        onChange={(e) => setRemarketingFilters(prev => ({ ...prev, engagementScore: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="">Tất cả</option>
+                        <option value="high">Cao (≥70)</option>
+                        <option value="medium">Trung bình (40-69)</option>
+                        <option value="low">Thấp (&lt;40)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Customer List */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-gray-900">
+                        Khách hàng phù hợp ({getFilteredRemarketingCustomers().length})
+                      </h4>
+                      <button
+                        onClick={handleSelectAllRemarketing}
+                        className="text-sm text-orange-600 hover:text-orange-800 font-medium"
+                      >
+                        {selectedRemarketingCustomers.length === getFilteredRemarketingCustomers().length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                      </button>
+                    </div>
+                    
+                    <div className="max-h-80 overflow-y-auto space-y-2">
+                      {getFilteredRemarketingCustomers().map(customer => (
+                        <div key={customer.id} className="flex items-center space-x-3 p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            checked={selectedRemarketingCustomers.find(c => c.id === customer.id) !== undefined}
+                            onChange={() => handleRemarketingCustomerToggle(customer)}
+                            className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                          />
+                          <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-medium">
+                            {customer.name.charAt(0)}
+                          </div>
+                          <div className="flex-1">
+                            <h5 className="font-medium text-gray-900">{customer.name}</h5>
+                            <p className="text-sm text-gray-600">{customer.company}</p>
+                            <div className="flex items-center space-x-4 mt-1">
+                              <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                                {customer.churnRisk}% rủi ro
+                              </span>
+                              <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                                {customer.daysSinceLastInteraction} ngày
+                              </span>
+                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                {customer.engagementScore} điểm
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Campaign Type Selection */}
+              {remarketingStep === 2 && (
+                <div className="space-y-6">
+                  <div className="text-center mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Bước 2: Chọn loại chiến dịch</h3>
+                    <p className="text-gray-600">Chọn hình thức liên hệ phù hợp với khách hàng của bạn</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Email Campaign */}
+                    <div 
+                      onClick={() => setRemarketingCampaignType('email')}
+                      className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                        remarketingCampaignType === 'email' 
+                          ? 'border-orange-500 bg-orange-50' 
+                          : 'border-gray-200 hover:border-orange-300 hover:bg-orange-25'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                          <Mail className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">Email Campaign</h4>
+                          <p className="text-sm text-gray-600">Gửi email tái kích hoạt</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div>• Tỷ lệ mở email: ~25%</div>
+                        <div>• Chi phí: Thấp</div>
+                        <div>• Thời gian thiết lập: 15 phút</div>
+                        <div>• Phù hợp: Khách hàng có email hoạt động</div>
+                      </div>
+                    </div>
+
+                    {/* SMS Campaign */}
+                    <div 
+                      onClick={() => setRemarketingCampaignType('sms')}
+                      className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                        remarketingCampaignType === 'sms' 
+                          ? 'border-orange-500 bg-orange-50' 
+                          : 'border-gray-200 hover:border-orange-300 hover:bg-orange-25'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                          <MessageSquare className="w-6 h-6 text-green-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">SMS Campaign</h4>
+                          <p className="text-sm text-gray-600">Tin nhắn ưu đãi đặc biệt</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div>• Tỷ lệ đọc: ~98%</div>
+                        <div>• Chi phí: Trung bình</div>
+                        <div>• Thời gian thiết lập: 10 phút</div>
+                        <div>• Phù hợp: Ưu đãi khẩn cấp</div>
+                      </div>
+                    </div>
+
+                    {/* Phone Campaign */}
+                    <div 
+                      onClick={() => setRemarketingCampaignType('phone')}
+                      className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                        remarketingCampaignType === 'phone' 
+                          ? 'border-orange-500 bg-orange-50' 
+                          : 'border-gray-200 hover:border-orange-300 hover:bg-orange-25'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                          <Phone className="w-6 h-6 text-purple-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">Phone Campaign</h4>
+                          <p className="text-sm text-gray-600">Danh sách gọi trực tiếp</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div>• Tỷ lệ chuyển đổi: ~45%</div>
+                        <div>• Chi phí: Cao</div>
+                        <div>• Thời gian thiết lập: 30 phút</div>
+                        <div>• Phù hợp: Khách hàng VIP</div>
+                      </div>
+                    </div>
+
+                    {/* Multi-Channel */}
+                    <div 
+                      onClick={() => setRemarketingCampaignType('multi')}
+                      className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                        remarketingCampaignType === 'multi' 
+                          ? 'border-orange-500 bg-orange-50' 
+                          : 'border-gray-200 hover:border-orange-300 hover:bg-orange-25'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                          <Target className="w-6 h-6 text-indigo-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">Multi-Channel</h4>
+                          <p className="text-sm text-gray-600">Kết hợp nhiều kênh</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div>• Tỷ lệ hiệu quả: ~65%</div>
+                        <div>• Chi phí: Cao</div>
+                        <div>• Thời gian thiết lập: 45 phút</div>
+                        <div>• Phù hợp: Khách hàng quan trọng</div>
+                      </div>
+                    </div>
+
+                    {/* Social Media */}
+                    <div 
+                      onClick={() => setRemarketingCampaignType('social')}
+                      className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                        remarketingCampaignType === 'social' 
+                          ? 'border-orange-500 bg-orange-50' 
+                          : 'border-gray-200 hover:border-orange-300 hover:bg-orange-25'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
+                          <Heart className="w-6 h-6 text-pink-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">Social Media</h4>
+                          <p className="text-sm text-gray-600">Quảng cáo mạng xã hội</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div>• Tỷ lệ tương tác: ~35%</div>
+                        <div>• Chi phí: Trung bình</div>
+                        <div>• Thời gian thiết lập: 20 phút</div>
+                        <div>• Phù hợp: Khách hàng trẻ</div>
+                      </div>
+                    </div>
+
+                    {/* Promotion Campaign */}
+                    <div 
+                      onClick={() => setRemarketingCampaignType('promotion')}
+                      className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                        remarketingCampaignType === 'promotion' 
+                          ? 'border-orange-500 bg-orange-50' 
+                          : 'border-gray-200 hover:border-orange-300 hover:bg-orange-25'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                          <Gift className="w-6 h-6 text-yellow-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">Promotion Campaign</h4>
+                          <p className="text-sm text-gray-600">Ưu đãi đặc biệt</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div>• Tỷ lệ chuyển đổi: ~55%</div>
+                        <div>• Chi phí: Trung bình</div>
+                        <div>• Thời gian thiết lập: 25 phút</div>
+                        <div>• Phù hợp: Khách hàng giá rẻ</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Campaign Setup */}
+              {remarketingStep === 3 && (
+                <div className="space-y-6">
+                  <div className="text-center mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Bước 3: Thiết lập chiến dịch</h3>
+                    <p className="text-gray-600">Cấu hình chi tiết cho chiến dịch {
+                      remarketingCampaignType === 'email' ? 'Email' :
+                      remarketingCampaignType === 'sms' ? 'SMS' :
+                      remarketingCampaignType === 'phone' ? 'Phone' :
+                      remarketingCampaignType === 'multi' ? 'Multi-Channel' :
+                      remarketingCampaignType === 'social' ? 'Social Media' : 'Promotion'
+                    }</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Campaign Details */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-gray-900">Chi tiết chiến dịch</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Tên chiến dịch</label>
+                          <input
+                            type="text"
+                            defaultValue={`Remarketing ${remarketingCampaignType.toUpperCase()} - ${new Date().toLocaleDateString('vi-VN')}`}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Thời gian bắt đầu</label>
+                          <input
+                            type="datetime-local"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                          />
+                        </div>
+                        {remarketingCampaignType === 'promotion' && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Mức giảm giá (%)</label>
+                            <input
+                              type="number"
+                              defaultValue="20"
+                              min="5"
+                              max="50"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                            />
+                          </div>
+                        )}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú</label>
+                          <textarea
+                            rows={3}
+                            placeholder="Ghi chú thêm về chiến dịch..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Selected Customers Summary */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-gray-900">Khách hàng đã chọn ({selectedRemarketingCustomers.length})</h4>
+                      <div className="max-h-80 overflow-y-auto space-y-2">
+                        {selectedRemarketingCustomers.map(customer => (
+                          <div key={customer.id} className="flex items-center space-x-3 p-3 bg-orange-50 border border-orange-200 rounded">
+                            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-medium text-sm">
+                              {customer.name.charAt(0)}
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900">{customer.name}</p>
+                              <p className="text-sm text-gray-600">{customer.email}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Campaign Preview */}
+                  <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-6">
+                    <h4 className="font-medium text-orange-800 mb-4">📊 Dự báo hiệu quả chiến dịch</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-orange-600">{selectedRemarketingCustomers.length}</p>
+                        <p className="text-sm text-orange-800">Khách hàng</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-green-600">
+                          {Math.round(selectedRemarketingCustomers.length * (
+                            remarketingCampaignType === 'email' ? 0.25 :
+                            remarketingCampaignType === 'sms' ? 0.98 :
+                            remarketingCampaignType === 'phone' ? 0.45 :
+                            remarketingCampaignType === 'multi' ? 0.65 :
+                            remarketingCampaignType === 'social' ? 0.35 : 0.55
+                          ) * 100) / 100}
+                        </p>
+                        <p className="text-sm text-green-800">Dự kiến phản hồi</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-blue-600">
+                          {Math.round(selectedRemarketingCustomers.length * 0.15)}
+                        </p>
+                        <p className="text-sm text-blue-800">Dự kiến chuyển đổi</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-purple-600">15%</p>
+                        <p className="text-sm text-purple-800">Tỷ lệ thành công</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Actions */}
             <div className="flex items-center justify-between p-6 border-t bg-gray-50">
               <div className="text-sm text-gray-600">
-                Tổng cộng {remarketingCustomers.length} khách hàng được chọn
+                {remarketingStep === 1 && `${selectedRemarketingCustomers.length} khách hàng đã chọn`}
+                {remarketingStep === 2 && remarketingCampaignType && `Loại chiến dịch: ${remarketingCampaignType}`}
+                {remarketingStep === 3 && `Sẵn sàng chạy chiến dịch cho ${selectedRemarketingCustomers.length} khách hàng`}
               </div>
-              <div className="flex items-center space-x-3">
+              <div className="flex space-x-3">
                 <button
-                  onClick={() => setShowRemarketingModal(false)}
+                  onClick={() => {
+                    if (remarketingStep > 1) {
+                      setRemarketingStep(remarketingStep - 1)
+                    } else {
+                      setShowRemarketingModal(false)
+                      setRemarketingStep(1)
+                      setSelectedRemarketingCustomers([])
+                      setRemarketingCampaignType('')
+                      setRemarketingFilters({
+                        riskLevel: '',
+                        daysSinceLastContact: '',
+                        customerType: '',
+                        engagementScore: ''
+                      })
+                    }
+                  }}
                   className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
-                  Đóng
+                  {remarketingStep > 1 ? 'Quay lại' : 'Đóng'}
                 </button>
-                <button className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
-                  Bắt đầu Campaign
+                <button
+                  onClick={() => {
+                    if (remarketingStep < 3) {
+                      if (remarketingStep === 1 && selectedRemarketingCustomers.length === 0) {
+                        alert('Vui lòng chọn ít nhất một khách hàng')
+                        return
+                      }
+                      if (remarketingStep === 2 && !remarketingCampaignType) {
+                        alert('Vui lòng chọn loại chiến dịch')
+                        return
+                      }
+                      setRemarketingStep(remarketingStep + 1)
+                    } else {
+                      // Execute campaign
+                      alert('Chiến dịch đã được tạo và sẽ chạy theo lịch trình!')
+                      setShowRemarketingModal(false)
+                      setRemarketingStep(1)
+                      setSelectedRemarketingCustomers([])
+                      setRemarketingCampaignType('')
+                      setRemarketingFilters({
+                        riskLevel: '',
+                        daysSinceLastContact: '',
+                        customerType: '',
+                        engagementScore: ''
+                      })
+                    }
+                  }}
+                  disabled={
+                    (remarketingStep === 1 && selectedRemarketingCustomers.length === 0) ||
+                    (remarketingStep === 2 && !remarketingCampaignType)
+                  }
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {remarketingStep < 3 ? 'Tiếp tục' : 'Chạy chiến dịch'}
                 </button>
               </div>
             </div>
@@ -3189,6 +3662,126 @@ export default function CustomersManagement() {
         </div>
       </div>
 
+      {/* AI Suggestions - Urgent Actions */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 p-6 mb-6">
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+            <Zap className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">🤖 Gợi ý AI - Cần hành động ngay</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* High Priority - Need Immediate Care */}
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2 mb-3">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              <h4 className="font-medium text-red-800">🚨 Ưu tiên cao</h4>
+            </div>
+            <div className="space-y-2">
+              {(() => {
+                const highRiskCustomers = filteredCustomers
+                  .filter(c => c.churnRisk >= 70 || c.daysSinceLastInteraction > 30)
+                  .slice(0, 3)
+                return highRiskCustomers.map(customer => (
+                  <div key={customer.id} className="flex items-center justify-between text-sm">
+                    <span className="text-red-700 truncate">{customer.name}</span>
+                    <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full whitespace-nowrap">
+                      {customer.daysSinceLastInteraction > 30 ? `${customer.daysSinceLastInteraction} ngày` : `${customer.churnRisk}% rủi ro`}
+                    </span>
+                  </div>
+                ))
+              })()}
+            </div>
+            <button className="mt-3 text-xs text-red-600 hover:text-red-800 underline">
+              Xem tất cả ({filteredCustomers.filter(c => c.churnRisk >= 70 || c.daysSinceLastInteraction > 30).length})
+            </button>
+          </div>
+
+          {/* Medium Priority - Follow up needed */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2 mb-3">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+              <h4 className="font-medium text-yellow-800">⚠️ Cần theo dõi</h4>
+            </div>
+            <div className="space-y-2">
+              {(() => {
+                const followUpCustomers = filteredCustomers
+                  .filter(c => c.daysSinceLastInteraction >= 14 && c.daysSinceLastInteraction <= 30 && c.churnRisk < 70)
+                  .slice(0, 3)
+                return followUpCustomers.map(customer => (
+                  <div key={customer.id} className="flex items-center justify-between text-sm">
+                    <span className="text-yellow-700 truncate">{customer.name}</span>
+                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full whitespace-nowrap">
+                      {customer.daysSinceLastInteraction} ngày
+                    </span>
+                  </div>
+                ))
+              })()}
+            </div>
+            <button className="mt-3 text-xs text-yellow-600 hover:text-yellow-800 underline">
+              Xem tất cả ({filteredCustomers.filter(c => c.daysSinceLastInteraction >= 14 && c.daysSinceLastInteraction <= 30 && c.churnRisk < 70).length})
+            </button>
+          </div>
+
+          {/* Opportunities - Upsell potential */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2 mb-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <h4 className="font-medium text-green-800">💰 Cơ hội bán thêm</h4>
+            </div>
+            <div className="space-y-2">
+              {(() => {
+                const upsellCustomers = filteredCustomers
+                  .filter(c => c.engagementScore >= 70 && c.churnRisk <= 30 && c.customerType !== 'diamond')
+                  .slice(0, 3)
+                return upsellCustomers.map(customer => (
+                  <div key={customer.id} className="flex items-center justify-between text-sm">
+                    <span className="text-green-700 truncate">{customer.name}</span>
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full whitespace-nowrap">
+                      {customer.engagementScore} điểm
+                    </span>
+                  </div>
+                ))
+              })()}
+            </div>
+            <button className="mt-3 text-xs text-green-600 hover:text-green-800 underline">
+              Xem tất cả ({filteredCustomers.filter(c => c.engagementScore >= 70 && c.churnRisk <= 30 && c.customerType !== 'diamond').length})
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="flex flex-wrap gap-2">
+            <button 
+              onClick={handleCallHighRiskCustomers}
+              className="px-3 py-1 bg-red-100 text-red-700 text-xs rounded-full hover:bg-red-200 transition-colors"
+            >
+              📞 Gọi khách hàng rủi ro cao ({filteredCustomers.filter(c => c.churnRisk >= 70).length})
+            </button>
+            <button 
+              onClick={handleEmailFollowUp}
+              className="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full hover:bg-yellow-200 transition-colors"
+            >
+              ✉️ Email theo dõi ({filteredCustomers.filter(c => c.daysSinceLastInteraction >= 14).length})
+            </button>
+            <button 
+              onClick={handleUpsellCampaign}
+              className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full hover:bg-green-200 transition-colors"
+            >
+              🎯 Tạo chiến dịch upsell ({filteredCustomers.filter(c => c.engagementScore >= 70).length})
+            </button>
+            <button 
+              onClick={handleAIReport}
+              className="px-3 py-1 bg-purple-100 text-purple-700 text-xs rounded-full hover:bg-purple-200 transition-colors"
+            >
+              📊 Báo cáo chi tiết
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* View Toggle */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -3209,14 +3802,6 @@ export default function CustomersManagement() {
               📊 Phân tích
             </button>
             <button
-              onClick={() => setSelectedView('events')}
-              className={`px-3 py-1 rounded text-sm font-medium ${
-                selectedView === 'events' ? 'bg-white text-gray-900 shadow' : 'text-gray-600'
-              }`}
-            >
-              🎉 Sự kiện
-            </button>
-            <button
               onClick={() => setSelectedView('insights')}
               className={`px-3 py-1 rounded text-sm font-medium ${
                 selectedView === 'insights' ? 'bg-white text-gray-900 shadow' : 'text-gray-600'
@@ -3225,19 +3810,6 @@ export default function CustomersManagement() {
               🤖 AI Insights
             </button>
           </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <select 
-            value={sortBy} 
-            onChange={(e) => setSortBy(e.target.value)}
-            className="input-field w-auto text-sm"
-          >
-            <option value="name">Sắp xếp theo tên</option>
-            <option value="lastInteraction">Tương tác gần nhất</option>
-            <option value="engagementScore">Điểm tương tác</option>
-            <option value="churnRisk">Rủi ro rời bỏ</option>
-            <option value="totalValue">Giá trị</option>
-          </select>
         </div>
       </div>
 
@@ -3310,162 +3882,379 @@ export default function CustomersManagement() {
                   />
                 </div>
                 <select 
+                  value={sortBy} 
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                >
+                  <option value="name">Sắp xếp theo tên</option>
+                  <option value="lastInteraction">Tương tác gần nhất</option>
+                  <option value="engagementScore">Điểm tương tác</option>
+                  <option value="churnRisk">Rủi ro rời bỏ</option>
+                  <option value="totalValue">Giá trị</option>
+                </select>
+                <select 
                   value={filterStatus} 
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >                  <option value="">Tất cả trạng thái</option>
+                >
+                  <option value="">Tất cả trạng thái</option>
                   <option value="active">Hoạt động</option>
                   <option value="inactive">Không hoạt động</option>
                   <option value="at-risk">Có nguy cơ</option>
-                  <option value="vip">VIP</option>
                   <option value="churned">Đã churn</option>
                   <option value="dormant">Tạm ngưng</option>
                 </select>
+                <select 
+                  value={filterCustomerType} 
+                  onChange={(e) => setFilterCustomerType(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                  <option value="">Tất cả hạng</option>
+                  <option value="diamond">Kim cương</option>
+                  <option value="gold">Vàng</option>
+                  <option value="silver">Bạc</option>
+                  <option value="bronze">Đồng</option>
+                  <option value="new">Mới</option>
+                  <option value="returning">Quay lại</option>
+                </select>
+                <select 
+                  value={filterPurchasedProduct} 
+                  onChange={(e) => setFilterPurchasedProduct(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                  <option value="">Tất cả sản phẩm</option>
+                  {Array.from(new Set(customers.flatMap(c => c.products?.map(p => p.name) || []))).map(productName => (
+                    <option key={productName} value={productName}>
+                      {productName}
+                    </option>
+                  ))}
+                </select>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowColumnSelector(!showColumnSelector)}
+                    className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <Columns className="w-4 h-4" />
+                    <span>Cột</span>
+                  </button>
+                  {showColumnSelector && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                      <div className="p-4">
+                        <h4 className="font-medium text-gray-900 mb-3">Hiển thị cột</h4>
+                        <div className="space-y-2">
+                          {[
+                            { key: 'customer', label: 'Khách hàng' },
+                            { key: 'company', label: 'Công ty' },
+                            { key: 'customerType', label: 'Hạng KH' },
+                            { key: 'status', label: 'Trạng thái' },
+                            { key: 'products', label: 'Sản phẩm' },
+                            { key: 'lastInteraction', label: 'Tương tác cuối' },
+                            { key: 'engagementScore', label: 'Điểm tương tác' },
+                            { key: 'churnRisk', label: 'Nguy cơ rời bỏ' },
+                            { key: 'value', label: 'Giá trị' },
+                            { key: 'birthday', label: 'Sinh nhật' },
+                            { key: 'firstPurchaseDate', label: 'Mua đầu tiên' },
+                            { key: 'lastPurchaseDate', label: 'Mua gần nhất' },
+                            { key: 'phone', label: 'Điện thoại' },
+                            { key: 'address', label: 'Địa chỉ' },
+                            { key: 'actions', label: 'Hành động' }
+                          ].map(column => (
+                            <label key={column.key} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={visibleColumns[column.key as keyof typeof visibleColumns]}
+                                onChange={(e) => setVisibleColumns(prev => ({
+                                  ...prev,
+                                  [column.key]: e.target.checked
+                                }))}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700">{column.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <div className="flex justify-between mt-3 pt-3 border-t border-gray-200">
+                          <button
+                            onClick={() => setVisibleColumns({
+                              customer: true,
+                              company: true,
+                              customerType: true,
+                              status: true,
+                              products: true,
+                              lastInteraction: true,
+                              engagementScore: true,
+                              churnRisk: true,
+                              value: true,
+                              birthday: true,
+                              firstPurchaseDate: true,
+                              lastPurchaseDate: true,
+                              phone: true,
+                              address: true,
+                              actions: true
+                            })}
+                            className="text-xs text-blue-600 hover:text-blue-800"
+                          >
+                            Hiện tất cả
+                          </button>
+                          <button
+                            onClick={() => setShowColumnSelector(false)}
+                            className="text-xs text-gray-600 hover:text-gray-800"
+                          >
+                            Đóng
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full">                <thead>
+              <table className="w-full">
+                <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Khách hàng</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Công ty</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Hạng KH</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Trạng thái</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Sản phẩm đã mua</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Tương tác cuối</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Điểm tương tác</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Rủi ro</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Giá trị</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Hành động</th>
+                    {visibleColumns.customer && (
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Khách hàng</th>
+                    )}
+                    {visibleColumns.company && (
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Công ty</th>
+                    )}
+                    {visibleColumns.customerType && (
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Hạng KH</th>
+                    )}
+                    {visibleColumns.status && (
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Trạng thái</th>
+                    )}
+                    {visibleColumns.products && (
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Sản phẩm đã mua</th>
+                    )}
+                    {visibleColumns.lastInteraction && (
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Tương tác cuối</th>
+                    )}
+                    {visibleColumns.engagementScore && (
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Điểm tương tác</th>
+                    )}
+                    {visibleColumns.churnRisk && (
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Rủi ro</th>
+                    )}
+                    {visibleColumns.value && (
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Giá trị</th>
+                    )}
+                    {visibleColumns.birthday && (
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Sinh nhật</th>
+                    )}
+                    {visibleColumns.firstPurchaseDate && (
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Mua đầu tiên</th>
+                    )}
+                    {visibleColumns.lastPurchaseDate && (
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Mua gần nhất</th>
+                    )}
+                    {visibleColumns.phone && (
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Điện thoại</th>
+                    )}
+                    {visibleColumns.address && (
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Địa chỉ</th>
+                    )}
+                    {visibleColumns.actions && (
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">Hành động</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredCustomers.map((customer) => (
                     <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium ${
-                            customer.status === 'vip' ? 'bg-purple-600' :
-                            customer.status === 'active' ? 'bg-green-600' :
-                            customer.status === 'at-risk' ? 'bg-red-600' : 'bg-gray-600'
-                          }`}>
-                            {customer.name.charAt(0)}
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-900">{customer.name}</div>
-                            <div className="text-sm text-gray-500">{customer.email}</div>
-                          </div>
-                        </div>
-                      </td>                      <td className="py-3 px-4">
-                        <div className="text-sm text-gray-900">{customer.company}</div>
-                        <div className="text-xs text-gray-500">{customer.industry}</div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          customer.customerType === 'diamond' ? 'bg-yellow-100 text-yellow-800' :
-                          customer.customerType === 'gold' ? 'bg-amber-100 text-amber-800' :
-                          customer.customerType === 'silver' ? 'bg-gray-100 text-gray-800' :
-                          customer.customerType === 'bronze' ? 'bg-orange-100 text-orange-800' :
-                          customer.customerType === 'new' ? 'bg-blue-100 text-blue-800' :
-                          customer.customerType === 'returning' ? 'bg-purple-100 text-purple-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {customer.customerType === 'diamond' ? '💎 Kim cương' :
-                           customer.customerType === 'gold' ? '🥇 Vàng' :
-                           customer.customerType === 'silver' ? '🥈 Bạc' :
-                           customer.customerType === 'bronze' ? '🥉 Đồng' :
-                           customer.customerType === 'new' ? '🆕 Mới' :
-                           customer.customerType === 'returning' ? '🔄 Quay lại' : '❌ Không hoạt động'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          customer.status === 'vip' ? 'bg-purple-100 text-purple-800' :
-                          customer.status === 'active' ? 'bg-green-100 text-green-800' :
-                          customer.status === 'at-risk' ? 'bg-red-100 text-red-800' :
-                          customer.status === 'churned' ? 'bg-orange-100 text-orange-800' :
-                          customer.status === 'dormant' ? 'bg-gray-100 text-gray-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {customer.status === 'vip' ? 'VIP' :
-                           customer.status === 'active' ? 'Hoạt động' :
-                           customer.status === 'at-risk' ? 'Có nguy cơ' :
-                           customer.status === 'churned' ? 'Đã churn' :
-                           customer.status === 'dormant' ? 'Tạm ngưng' : 'Không hoạt động'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="max-w-xs">
-                          {customer.products && customer.products.length > 0 ? (
-                            <div className="space-y-1">
-                              {customer.products.slice(0, 2).map((product, index) => (
-                                <div key={product.id} className="flex items-center justify-between">
-                                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                    product.status === 'active' ? 'bg-green-100 text-green-800' :
-                                    product.status === 'expired' ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-red-100 text-red-800'
-                                  }`}>
-                                    {product.name}
-                                  </span>
-                                </div>
-                              ))}
-                              {customer.products.length > 2 && (
-                                <div className="text-xs text-gray-500">
-                                  +{customer.products.length - 2} sản phẩm khác
-                                </div>
-                              )}
+                      {visibleColumns.customer && (
+                        <td className="py-3 px-4">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium ${
+                              customer.status === 'vip' ? 'bg-purple-600' :
+                              customer.status === 'active' ? 'bg-green-600' :
+                              customer.status === 'at-risk' ? 'bg-red-600' : 'bg-gray-600'
+                            }`}>
+                              {customer.name.charAt(0)}
                             </div>
-                          ) : (
-                            <span className="text-xs text-gray-400">Chưa mua sản phẩm</span>
+                            <div>
+                              <div className="font-medium text-gray-900">{customer.name}</div>
+                              <div className="text-sm text-gray-500">{customer.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                      )}
+                      {visibleColumns.company && (
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-900">{customer.company}</div>
+                          <div className="text-xs text-gray-500">{customer.industry}</div>
+                        </td>
+                      )}
+                      {visibleColumns.customerType && (
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                            customer.customerType === 'diamond' ? 'bg-yellow-100 text-yellow-800' :
+                            customer.customerType === 'gold' ? 'bg-amber-100 text-amber-800' :
+                            customer.customerType === 'silver' ? 'bg-gray-100 text-gray-800' :
+                            customer.customerType === 'bronze' ? 'bg-orange-100 text-orange-800' :
+                            customer.customerType === 'new' ? 'bg-blue-100 text-blue-800' :
+                            customer.customerType === 'returning' ? 'bg-purple-100 text-purple-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {customer.customerType === 'diamond' ? '💎 Kim cương' :
+                             customer.customerType === 'gold' ? '🥇 Vàng' :
+                             customer.customerType === 'silver' ? '🥈 Bạc' :
+                             customer.customerType === 'bronze' ? '🥉 Đồng' :
+                             customer.customerType === 'new' ? '🆕 Mới' :
+                             customer.customerType === 'returning' ? '🔄 Quay lại' : '❌ Không hoạt động'}
+                          </span>
+                        </td>
+                      )}
+                      {visibleColumns.status && (
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                            customer.status === 'vip' ? 'bg-purple-100 text-purple-800' :
+                            customer.status === 'active' ? 'bg-green-100 text-green-800' :
+                            customer.status === 'at-risk' ? 'bg-red-100 text-red-800' :
+                            customer.status === 'churned' ? 'bg-orange-100 text-orange-800' :
+                            customer.status === 'dormant' ? 'bg-gray-100 text-gray-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {customer.status === 'vip' ? 'VIP' :
+                             customer.status === 'active' ? 'Hoạt động' :
+                             customer.status === 'at-risk' ? 'Có nguy cơ' :
+                             customer.status === 'churned' ? 'Đã churn' :
+                             customer.status === 'dormant' ? 'Tạm ngưng' : 'Không hoạt động'}
+                          </span>
+                        </td>
+                      )}
+                      {visibleColumns.products && (
+                        <td className="py-3 px-4">
+                          <div className="max-w-xs">
+                            {customer.products && customer.products.length > 0 ? (
+                              <div className="space-y-1">
+                                {customer.products.slice(0, 2).map((product, index) => (
+                                  <div key={product.id} className="flex items-center justify-between">
+                                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                      product.status === 'active' ? 'bg-green-100 text-green-800' :
+                                      product.status === 'expired' ? 'bg-yellow-100 text-yellow-800' :
+                                      'bg-red-100 text-red-800'
+                                    }`}>
+                                      {product.name}
+                                    </span>
+                                  </div>
+                                ))}
+                                {customer.products.length > 2 && (
+                                  <div className="text-xs text-gray-500">
+                                    +{customer.products.length - 2} sản phẩm khác
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400">Chưa mua sản phẩm</span>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                      {visibleColumns.lastInteraction && (
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-900">{customer.lastInteraction || 'Chưa có'}</div>
+                          <div className="text-xs text-gray-500">{customer.daysSinceLastInteraction} ngày</div>
+                        </td>
+                      )}
+                      {visibleColumns.engagementScore && (
+                        <td className="py-3 px-4">
+                          <div className="flex items-center">
+                            <div className={`w-2 h-2 rounded-full mr-2 ${
+                              customer.engagementScore >= 80 ? 'bg-green-500' :
+                              customer.engagementScore >= 60 ? 'bg-yellow-500' :
+                              customer.engagementScore >= 40 ? 'bg-orange-500' : 'bg-red-500'
+                            }`}></div>
+                            <span className="text-sm font-medium">{customer.engagementScore}</span>
+                          </div>
+                        </td>
+                      )}
+                      {visibleColumns.churnRisk && (
+                        <td className="py-3 px-4">
+                          <div className={`text-sm font-medium ${getRiskColor(customer.churnRisk)}`}>
+                            {customer.churnRisk}%
+                          </div>
+                        </td>
+                      )}
+                      {visibleColumns.value && (
+                        <td className="py-3 px-4">
+                          <div className="font-medium text-gray-900">{formatCurrency(customer.totalValue)} VNĐ</div>
+                          <div className="text-xs text-gray-500">LTV: {formatCurrency(customer.lifetimeValue)} VNĐ</div>
+                        </td>
+                      )}
+                      {visibleColumns.birthday && (
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-900">{formatBirthday(customer.dateOfBirth)}</div>
+                          {customer.dateOfBirth && (
+                            <div className="text-xs text-gray-500">
+                              {new Date().getFullYear() - new Date(customer.dateOfBirth).getFullYear()} tuổi
+                            </div>
                           )}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="text-sm text-gray-900">{customer.lastInteraction || 'Chưa có'}</div>
-                        <div className="text-xs text-gray-500">{customer.daysSinceLastInteraction} ngày</div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center">
-                          <div className={`w-2 h-2 rounded-full mr-2 ${
-                            customer.engagementScore >= 80 ? 'bg-green-500' :
-                            customer.engagementScore >= 60 ? 'bg-yellow-500' :
-                            customer.engagementScore >= 40 ? 'bg-orange-500' : 'bg-red-500'
-                          }`}></div>
-                          <span className="text-sm font-medium">{customer.engagementScore}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className={`text-sm font-medium ${getRiskColor(customer.churnRisk)}`}>
-                          {customer.churnRisk}%
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="font-medium text-gray-900">{formatCurrency(customer.totalValue)} VNĐ</div>
-                        <div className="text-xs text-gray-500">LTV: {formatCurrency(customer.lifetimeValue)} VNĐ</div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center space-x-2">
-                          <button 
-                            onClick={() => handleCustomerSelect(customer)}
-                            className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                            title="Xem chi tiết"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button 
-                            className="p-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                            title="Gọi điện"
-                          >
-                            <Phone className="w-4 h-4" />
-                          </button>
-                          <button 
-                            className="p-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
-                            title="Gửi email"
-                          >
-                            <Mail className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
+                        </td>
+                      )}
+                      {visibleColumns.firstPurchaseDate && (
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-900">{formatDate(customer.firstPurchaseDate)}</div>
+                          {customer.firstPurchaseDate && (
+                            <div className="text-xs text-gray-500">
+                              {Math.floor((new Date().getTime() - new Date(customer.firstPurchaseDate).getTime()) / (1000 * 60 * 60 * 24))} ngày trước
+                            </div>
+                          )}
+                        </td>
+                      )}
+                      {visibleColumns.lastPurchaseDate && (
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-900">{formatDate(customer.lastPurchaseDate)}</div>
+                          {customer.lastPurchaseDate && (
+                            <div className="text-xs text-gray-500">
+                              {Math.floor((new Date().getTime() - new Date(customer.lastPurchaseDate).getTime()) / (1000 * 60 * 60 * 24))} ngày trước
+                            </div>
+                          )}
+                        </td>
+                      )}
+                      {visibleColumns.phone && (
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-900">{customer.contact}</div>
+                          {customer.phone2 && (
+                            <div className="text-xs text-gray-500">{customer.phone2}</div>
+                          )}
+                        </td>
+                      )}
+                      {visibleColumns.address && (
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-900 max-w-xs truncate" title={`${customer.address}, ${customer.city}`}>
+                            {customer.address}
+                          </div>
+                          <div className="text-xs text-gray-500">{customer.city}, {customer.country}</div>
+                        </td>
+                      )}
+                      {visibleColumns.actions && (
+                        <td className="py-3 px-4">
+                          <div className="flex items-center space-x-2">
+                            <button 
+                              onClick={() => handleCustomerSelect(customer)}
+                              className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                              title="Xem chi tiết"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button 
+                              className="p-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                              title="Gọi điện"
+                            >
+                              <Phone className="w-4 h-4" />
+                            </button>
+                            <button 
+                              className="p-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                              title="Gửi email"
+                            >
+                              <Mail className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -3550,19 +4339,18 @@ export default function CustomersManagement() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Phân bố theo trạng thái</h3>
               <div className="space-y-3">
                 {[
-                  { status: 'active', label: 'Hoạt động', color: 'bg-green-500', textColor: 'text-green-600' },
-                  { status: 'vip', label: 'VIP', color: 'bg-purple-500', textColor: 'text-purple-600' },
-                  { status: 'at-risk', label: 'Có nguy cơ', color: 'bg-red-500', textColor: 'text-red-600' },
-                  { status: 'inactive', label: 'Không hoạt động', color: 'bg-gray-500', textColor: 'text-gray-600' },
-                  { status: 'churned', label: 'Đã rời bỏ', color: 'bg-orange-500', textColor: 'text-orange-600' },
-                  { status: 'dormant', label: 'Ngủ đông', color: 'bg-yellow-500', textColor: 'text-yellow-600' }
-                ].map(({ status, label, color, textColor }) => {
+                  { status: 'active', label: 'Hoạt động', color: 'bg-green-500', textColor: 'text-green-600', icon: '✅' },
+                  { status: 'at-risk', label: 'Có nguy cơ', color: 'bg-red-500', textColor: 'text-red-600', icon: '⚠️' },
+                  { status: 'inactive', label: 'Không hoạt động', color: 'bg-gray-500', textColor: 'text-gray-600', icon: '⏸️' },
+                  { status: 'churned', label: 'Đã rời bỏ', color: 'bg-orange-500', textColor: 'text-orange-600', icon: '❌' },
+                  { status: 'dormant', label: 'Ngủ đông', color: 'bg-yellow-500', textColor: 'text-yellow-600', icon: '💤' }
+                ].map(({ status, label, color, textColor, icon }) => {
                   const count = filteredCustomers.filter(c => c.status === status).length
                   const percentage = filteredCustomers.length > 0 ? (count / filteredCustomers.length * 100).toFixed(1) : 0
                   return (
                     <div key={status} className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-3 h-3 rounded-full ${color}`}></div>
+                        <span className="text-sm">{icon}</span>
                         <span className="text-sm text-gray-700">{label}</span>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -3846,163 +4634,505 @@ export default function CustomersManagement() {
         </div>
       )}
 
-      {selectedView === 'events' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Quản lý sự kiện khách hàng</h3>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              <Plus className="w-4 h-4 inline mr-2" />
-              Thêm sự kiện
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCustomers.filter(c => c.events.length > 0).map(customer => (
-              <div key={customer.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${
-                    customer.status === 'vip' ? 'bg-purple-600' :
-                    customer.status === 'active' ? 'bg-green-600' :
-                    customer.status === 'at-risk' ? 'bg-red-600' : 'bg-gray-600'
-                  }`}>
-                    {customer.name.charAt(0)}
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">{customer.name}</h4>
-                    <p className="text-xs text-gray-500">{customer.company}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  {customer.events.map(event => (
-                    <div key={event.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="w-4 h-4 text-blue-600" />
-                        <div>
-                          <p className="text-sm font-medium">{event.title}</p>
-                          <p className="text-xs text-gray-500">{event.date}</p>
-                        </div>
-                      </div>
-                      <div className="flex space-x-1">
-                        <button className="p-1 text-blue-600 hover:bg-blue-100 rounded">
-                          <Eye className="w-3 h-3" />
-                        </button>
-                        <button className="p-1 text-red-600 hover:bg-red-100 rounded">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {filteredCustomers.filter(c => c.events.length > 0).length === 0 && (
-            <div className="text-center py-8">
-              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Chưa có sự kiện nào được tạo</p>
-              <button className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                Tạo sự kiện đầu tiên
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
       {selectedView === 'insights' && (
         <div className="space-y-6">
+          {/* AI Insights Overview */}
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg shadow-sm border border-purple-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">AI Insights - Phân tích thông minh</h3>
+                  <p className="text-sm text-gray-600">Tự động phân tích và dự đoán xu hướng khách hàng</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-gray-500">Cập nhật lần cuối</div>
+                <div className="text-sm font-medium text-purple-600">
+                  {new Date().toLocaleDateString('vi-VN', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Key Metrics Dashboard */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white rounded-lg p-4 shadow-sm border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Độ chính xác AI</p>
+                    <p className="text-2xl font-bold text-green-600">94.5%</p>
+                  </div>
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-green-600" />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Độ chính xác dự đoán trong 30 ngày qua</p>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4 shadow-sm border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Khách hàng rủi ro</p>
+                    <p className="text-2xl font-bold text-red-600">
+                      {filteredCustomers.filter(c => c.churnRisk >= 70).length}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                    <AlertTriangle className="w-4 h-4 text-red-600" />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Cần can thiệp ngay</p>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4 shadow-sm border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Cơ hội upsell</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {filteredCustomers.filter(c => c.engagementScore >= 80 && c.status === 'active').length}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Target className="w-4 h-4 text-blue-600" />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Khách hàng tiềm năng</p>
+              </div>
+              
+              <div className="bg-white rounded-lg p-4 shadow-sm border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Doanh thu dự kiến</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      ${filteredCustomers.reduce((sum, c) => sum + calculatePredictedRevenue(c), 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <DollarSign className="w-4 h-4 text-green-600" />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Trong 3 tháng tới</p>
+              </div>
+            </div>
+          </div>
+
+          {/* AI Analysis Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Critical Alerts */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
+                </div>
+                <h4 className="text-lg font-semibold text-gray-900">Cảnh báo khẩn cấp</h4>
+              </div>
+
+              <div className="space-y-4">
+                {/* High-risk customers */}
+                <div className="bg-red-50 border-l-4 border-red-400 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="font-medium text-red-800">🚨 Khách hàng rủi ro cao</h5>
+                    <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                      {filteredCustomers.filter(c => c.churnRisk >= 70).length} khách hàng
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {filteredCustomers
+                      .filter(c => c.churnRisk >= 70)
+                      .slice(0, 3)
+                      .map(customer => (
+                        <div key={customer.id} className="flex items-center justify-between bg-white p-2 rounded">
+                          <div>
+                            <span className="text-sm font-medium text-red-700">{customer.name}</span>
+                            <p className="text-xs text-red-600">
+                              {customer.daysSinceLastInteraction} ngày không tương tác
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                              {customer.churnRisk}% rủi ro
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-red-200">
+                    <p className="text-xs text-red-700 mb-2">
+                      💡 Gợi ý AI: Liên hệ ngay trong 24h để giữ chân khách hàng
+                    </p>
+                    <div className="flex space-x-2">
+                      <button className="text-xs bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
+                        Gọi ngay
+                      </button>
+                      <button className="text-xs border border-red-600 text-red-600 px-3 py-1 rounded hover:bg-red-50">
+                        Tạo chiến dịch
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dormant customers */}
+                <div className="bg-orange-50 border-l-4 border-orange-400 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="font-medium text-orange-800">😴 Khách hàng không hoạt động</h5>
+                    <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                      {filteredCustomers.filter(c => c.daysSinceLastInteraction > 60).length} khách hàng
+                    </span>
+                  </div>
+                  <p className="text-xs text-orange-700 mb-2">
+                    💡 Gợi ý AI: Tạo email tự động để tái kích hoạt
+                  </p>
+                  <button className="text-xs bg-orange-600 text-white px-3 py-1 rounded hover:bg-orange-700">
+                    Thiết lập email tự động
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Growth Opportunities */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-green-600" />
+                </div>
+                <h4 className="text-lg font-semibold text-gray-900">Cơ hội tăng trưởng</h4>
+              </div>
+
+              <div className="space-y-4">
+                {/* Upsell opportunities */}
+                <div className="bg-green-50 border-l-4 border-green-400 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="font-medium text-green-800">📈 Cơ hội nâng cấp</h5>
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                      {filteredCustomers.filter(c => c.engagementScore >= 80 && c.status === 'active').length} khách hàng
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {filteredCustomers
+                      .filter(c => c.engagementScore >= 80 && c.status === 'active')
+                      .slice(0, 3)
+                      .map(customer => (
+                        <div key={customer.id} className="flex items-center justify-between bg-white p-2 rounded">
+                          <div>
+                            <span className="text-sm font-medium text-green-700">{customer.name}</span>
+                            <p className="text-xs text-green-600">
+                              Điểm tương tác: {customer.engagementScore}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                              +${calculatePredictedRevenue(customer).toLocaleString()} tiềm năng
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-green-200">
+                    <p className="text-xs text-green-700 mb-2">
+                      💡 Gợi ý AI: Đề xuất gói premium hoặc dịch vụ bổ sung
+                    </p>
+                    <div className="flex space-x-2">
+                      <button className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">
+                        Tạo đề xuất
+                      </button>
+                      <button className="text-xs border border-green-600 text-green-600 px-3 py-1 rounded hover:bg-green-50">
+                        Lên lịch gọi
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cross-sell opportunities */}
+                <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="font-medium text-blue-800">🎯 Cơ hội bán chéo</h5>
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                      {filteredCustomers.filter(c => c.totalOrders >= 3 && parseFloat(c.averageOrderValue.replace(/[$,]/g, '')) > 500).length} khách hàng
+                    </span>
+                  </div>
+                  <p className="text-xs text-blue-700 mb-2">
+                    💡 Gợi ý AI: Khách hàng này thường mua nhiều lần, có thể quan tâm đến sản phẩm bổ sung
+                  </p>
+                  <button className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+                    Xem sản phẩm liên quan
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Predictive Analytics */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center space-x-3 mb-6">
-              <Zap className="w-6 h-6 text-purple-600" />
-              <h3 className="text-lg font-semibold text-gray-900">AI Insights - Phân tích thông minh</h3>
+              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                <Brain className="w-4 h-4 text-purple-600" />
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900">Dự đoán xu hướng</h4>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Revenue Prediction */}
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                <h5 className="font-medium text-green-800 mb-3">💰 Dự báo doanh thu</h5>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-green-700">Tháng này</span>
+                    <span className="text-sm font-medium">
+                      ${filteredCustomers.reduce((sum, c) => sum + calculatePredictedRevenue(c) * 0.3, 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-green-700">3 tháng tới</span>
+                    <span className="text-sm font-medium">
+                      ${filteredCustomers.reduce((sum, c) => sum + calculatePredictedRevenue(c), 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-green-200 pt-2">
+                    <span className="text-sm font-medium text-green-800">Tăng trưởng dự kiến</span>
+                    <span className="text-sm font-bold text-green-600">+24%</span>
+                  </div>
+                </div>
+                <div className="mt-3 bg-green-100 rounded p-2">
+                  <p className="text-xs text-green-700">
+                    🎯 AI tin tưởng 87% vào dự báo này dựa trên lịch sử giao dịch
+                  </p>
+                </div>
+              </div>
+
+              {/* Churn Prediction */}
+              <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-lg p-4 border border-red-200">
+                <h5 className="font-medium text-red-800 mb-3">📉 Dự báo churn</h5>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-red-700">Rủi ro cao</span>
+                    <span className="text-sm font-medium">
+                      {filteredCustomers.filter(c => c.churnRisk >= 70).length} khách hàng
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-red-700">Rủi ro trung bình</span>
+                    <span className="text-sm font-medium">
+                      {filteredCustomers.filter(c => c.churnRisk >= 40 && c.churnRisk < 70).length} khách hàng
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-red-200 pt-2">
+                    <span className="text-sm font-medium text-red-800">Tỷ lệ churn dự kiến</span>
+                    <span className="text-sm font-bold text-red-600">8.2%</span>
+                  </div>
+                </div>
+                <div className="mt-3 bg-red-100 rounded p-2">
+                  <p className="text-xs text-red-700">
+                    🎯 Can thiệp kịp thời có thể giảm 60% khách hàng rời bỏ
+                  </p>
+                </div>
+              </div>
+
+              {/* Engagement Trend */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                <h5 className="font-medium text-blue-800 mb-3">📊 Xu hướng tương tác</h5>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-blue-700">Điểm TB hiện tại</span>
+                    <span className="text-sm font-medium">
+                      {Math.round(filteredCustomers.reduce((sum, c) => sum + c.engagementScore, 0) / filteredCustomers.length)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-blue-700">Dự báo sau 30 ngày</span>
+                    <span className="text-sm font-medium">
+                      {Math.round(filteredCustomers.reduce((sum, c) => sum + c.engagementScore, 0) / filteredCustomers.length * 1.05)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-blue-200 pt-2">
+                    <span className="text-sm font-medium text-blue-800">Cải thiện dự kiến</span>
+                    <span className="text-sm font-bold text-blue-600">+5%</span>
+                  </div>
+                </div>
+                <div className="mt-3 bg-blue-100 rounded p-2">
+                  <p className="text-xs text-blue-700">
+                    🎯 Chiến dịch remarketing sẽ tăng 15% tương tác
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Industry & Segment Analysis */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                <BarChart className="w-4 h-4 text-indigo-600" />
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900">Phân tích phân khúc</h4>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* High-risk customers insights */}
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <h4 className="font-medium text-red-800 mb-3">🚨 Cảnh báo rủi ro cao</h4>
-                <div className="space-y-2">
-                  {filteredCustomers
-                    .filter(c => c.churnRisk >= 70)
-                    .slice(0, 3)
-                    .map(customer => (
-                      <div key={customer.id} className="flex items-center justify-between">
-                        <span className="text-sm text-red-700">{customer.name}</span>
-                        <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
-                          {customer.churnRisk}% rủi ro
-                        </span>
-                      </div>
-                    ))}
-                </div>
-                <button className="mt-3 text-xs text-red-600 hover:text-red-800 underline">
-                  Xem tất cả khách hàng rủi ro cao
-                </button>
-              </div>
-
-              {/* Growth opportunities */}
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <h4 className="font-medium text-green-800 mb-3">📈 Cơ hội tăng trưởng</h4>
-                <div className="space-y-2">
-                  {filteredCustomers
-                    .filter(c => c.engagementScore >= 80 && c.status === 'active')
-                    .slice(0, 3)
-                    .map(customer => (
-                      <div key={customer.id} className="flex items-center justify-between">
-                        <span className="text-sm text-green-700">{customer.name}</span>
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                          {customer.engagementScore} điểm
-                        </span>
-                      </div>
-                    ))}
-                </div>
-                <button className="mt-3 text-xs text-green-600 hover:text-green-800 underline">
-                  Xem khách hàng tiềm năng nâng cấp
-                </button>
-              </div>
-
-              {/* Remarketing recommendations */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-medium text-blue-800 mb-3">🎯 Gợi ý Remarketing</h4>
-                <div className="space-y-2">
-                  {filteredCustomers
-                    .filter(c => c.daysSinceLastInteraction > 30)
-                    .slice(0, 3)
-                    .map(customer => (
-                      <div key={customer.id} className="flex items-center justify-between">
-                        <span className="text-sm text-blue-700">{customer.name}</span>
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                          {customer.daysSinceLastInteraction} ngày
-                        </span>
-                      </div>
-                    ))}
-                </div>
-                <button className="mt-3 text-xs text-blue-600 hover:text-blue-800 underline">
-                  Tạo chiến dịch remarketing
-                </button>
-              </div>
-
-              {/* Industry insights */}
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <h4 className="font-medium text-purple-800 mb-3">🏢 Phân tích ngành</h4>
-                <div className="space-y-2">
+              {/* Industry Analysis */}
+              <div>
+                <h5 className="font-medium text-gray-800 mb-4">🏢 Phân tích theo ngành</h5>
+                <div className="space-y-3">
                   {Array.from(new Set(filteredCustomers.map(c => c.industry)))
-                    .slice(0, 3)
                     .map(industry => {
-                      const count = filteredCustomers.filter(c => c.industry === industry).length
+                      const customers = filteredCustomers.filter(c => c.industry === industry)
+                      const avgRevenue = customers.reduce((sum, c) => sum + calculatePredictedRevenue(c), 0) / customers.length
+                      const avgEngagement = customers.reduce((sum, c) => sum + c.engagementScore, 0) / customers.length
+                      const highRisk = customers.filter(c => c.churnRisk >= 70).length
+                      
                       return (
-                        <div key={industry} className="flex items-center justify-between">
-                          <span className="text-sm text-purple-700">{industry}</span>
-                          <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
-                            {count} khách hàng
-                          </span>
+                        <div key={industry} className="bg-gray-50 rounded p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-800">{industry}</span>
+                            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">
+                              {customers.length} khách hàng
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div className="text-center">
+                              <div className="text-gray-500">Doanh thu TB</div>
+                              <div className="font-medium">${avgRevenue.toLocaleString()}</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-gray-500">Tương tác TB</div>
+                              <div className="font-medium">{Math.round(avgEngagement)}</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-gray-500">Rủi ro cao</div>
+                              <div className="font-medium text-red-600">{highRisk}</div>
+                            </div>
+                          </div>
+                          {highRisk > 0 && (
+                            <div className="mt-2 p-2 bg-red-50 rounded">
+                              <p className="text-xs text-red-700">
+                                💡 Gợi ý: Ngành {industry} đang có xu hướng churn cao, cần chú ý
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )
                     })}
                 </div>
-                <button className="mt-3 text-xs text-purple-600 hover:text-purple-800 underline">
-                  Xem báo cáo chi tiết theo ngành
-                </button>
+              </div>
+
+              {/* Customer Lifecycle */}
+              <div>
+                <h5 className="font-medium text-gray-800 mb-4">🔄 Phân tích vòng đời khách hàng</h5>
+                <div className="space-y-3">
+                  {['new', 'active', 'vip', 'at-risk', 'churned', 'dormant'].map(status => {
+                    const customers = filteredCustomers.filter(c => c.status === status)
+                    const percentage = (customers.length / filteredCustomers.length * 100).toFixed(1)
+                    
+                    return (
+                      <div key={status} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-3 h-3 rounded-full ${
+                            status === 'vip' ? 'bg-purple-500' :
+                            status === 'active' ? 'bg-green-500' :
+                            status === 'at-risk' ? 'bg-yellow-500' :
+                            status === 'churned' ? 'bg-red-500' :
+                            status === 'dormant' ? 'bg-blue-500' : 'bg-gray-500'
+                          }`}></div>
+                          <span className="text-sm font-medium capitalize">
+                            {status === 'new' ? 'Mới' :
+                             status === 'active' ? 'Hoạt động' :
+                             status === 'vip' ? 'VIP' :
+                             status === 'at-risk' ? 'Rủi ro' :
+                             status === 'churned' ? 'Đã rời' :
+                             status === 'dormant' ? 'Không hoạt động' : status}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium">{customers.length}</div>
+                          <div className="text-xs text-gray-500">{percentage}%</div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                
+                <div className="mt-4 p-3 bg-blue-50 rounded">
+                  <p className="text-xs text-blue-700 mb-2">
+                    🎯 Khuyến nghị AI cho tối ưu vòng đời:
+                  </p>
+                  <ul className="text-xs text-blue-600 space-y-1">
+                    <li>• Chuyển đổi 75% khách hàng &apos;new&apos; thành &apos;active&apos; trong 30 ngày</li>
+                    <li>• Giảm 50% khách hàng &apos;at-risk&apos; thông qua chăm sóc tích cực</li>
+                    <li>• Tái kích hoạt 30% khách hàng &apos;dormant&apos; qua email marketing</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Center */}
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg shadow-sm border border-indigo-200 p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center">
+                <Zap className="w-4 h-4 text-white" />
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900">Trung tâm hành động AI</h4>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <button className="p-4 bg-white rounded-lg border border-indigo-200 hover:border-indigo-300 transition-colors">
+                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
+                </div>
+                <h5 className="font-medium text-gray-900 mb-1">Xử lý khẩn cấp</h5>
+                <p className="text-xs text-gray-600 mb-2">Liên hệ {filteredCustomers.filter(c => c.churnRisk >= 70).length} khách hàng rủi ro cao</p>
+                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">Ưu tiên cao</span>
+              </button>
+
+              <button className="p-4 bg-white rounded-lg border border-indigo-200 hover:border-indigo-300 transition-colors">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <TrendingUp className="w-4 h-4 text-green-600" />
+                </div>
+                <h5 className="font-medium text-gray-900 mb-1">Khai thác cơ hội</h5>
+                <p className="text-xs text-gray-600 mb-2">Tạo đề xuất cho {filteredCustomers.filter(c => c.engagementScore >= 80).length} khách hàng tiềm năng</p>
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Cơ hội tốt</span>
+              </button>
+
+              <button className="p-4 bg-white rounded-lg border border-indigo-200 hover:border-indigo-300 transition-colors">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <Mail className="w-4 h-4 text-blue-600" />
+                </div>
+                <h5 className="font-medium text-gray-900 mb-1">Email tự động</h5>
+                <p className="text-xs text-gray-600 mb-2">Thiết lập cho {filteredCustomers.filter(c => c.daysSinceLastInteraction > 30).length} khách hàng lâu không tương tác</p>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Tự động hóa</span>
+              </button>
+
+              <button className="p-4 bg-white rounded-lg border border-indigo-200 hover:border-indigo-300 transition-colors">
+                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <BarChart className="w-4 h-4 text-purple-600" />
+                </div>
+                <h5 className="font-medium text-gray-900 mb-1">Báo cáo chi tiết</h5>
+                <p className="text-xs text-gray-600 mb-2">Tạo báo cáo phân tích cho management</p>
+                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Báo cáo</span>
+              </button>
+            </div>
+
+            <div className="mt-6 p-4 bg-white rounded-lg border border-indigo-200">
+              <h5 className="font-medium text-gray-900 mb-2">💡 Giá trị AI mang lại:</h5>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-gray-700">Tiết kiệm 75% thời gian phân tích</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-gray-700">Tăng 40% tỷ lệ giữ chân khách hàng</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span className="text-gray-700">Dự đoán chính xác 94.5% xu hướng</span>
+                </div>
               </div>
             </div>
           </div>
@@ -4012,7 +5142,7 @@ export default function CustomersManagement() {
       {/* Customer Detail Modal */}
       {selectedCustomer && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">Chi tiết khách hàng</h3>
               <button 
@@ -4023,20 +5153,21 @@ export default function CustomersManagement() {
               </button>
             </div>
 
-            <div className="space-y-6">
-              <div className="flex items-center space-x-4">
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-medium ${
-                  selectedCustomer.status === 'vip' ? 'bg-purple-600' :
-                  selectedCustomer.status === 'active' ? 'bg-green-600' :
-                  selectedCustomer.status === 'at-risk' ? 'bg-red-600' :
-                  selectedCustomer.status === 'churned' ? 'bg-orange-600' :
-                  selectedCustomer.status === 'dormant' ? 'bg-blue-600' : 'bg-gray-600'
-                }`}>
-                  {selectedCustomer.name.charAt(0)}
-                </div>
-                <div>
-                  <h4 className="text-xl font-semibold">{selectedCustomer.name}</h4>
-                  <p className="text-gray-600">{selectedCustomer.position} tại {selectedCustomer.company}</p>
+            {/* Customer Header */}
+            <div className="flex items-center space-x-4 mb-6 pb-6 border-b">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-medium ${
+                selectedCustomer.status === 'vip' ? 'bg-purple-600' :
+                selectedCustomer.status === 'active' ? 'bg-green-600' :
+                selectedCustomer.status === 'at-risk' ? 'bg-red-600' :
+                selectedCustomer.status === 'churned' ? 'bg-orange-600' :
+                selectedCustomer.status === 'dormant' ? 'bg-blue-600' : 'bg-gray-600'
+              }`}>
+                {selectedCustomer.name.charAt(0)}
+              </div>
+              <div className="flex-1">
+                <h4 className="text-xl font-semibold">{selectedCustomer.name}</h4>
+                <p className="text-gray-600">{selectedCustomer.position} tại {selectedCustomer.company}</p>
+                <div className="flex items-center space-x-3 mt-2">
                   <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                     selectedCustomer.status === 'vip' ? 'bg-purple-100 text-purple-800' :
                     selectedCustomer.status === 'active' ? 'bg-green-100 text-green-800' :
@@ -4051,69 +5182,566 @@ export default function CustomersManagement() {
                      selectedCustomer.status === 'churned' ? 'Đã churn' :
                      selectedCustomer.status === 'dormant' ? 'Tạm ngưng' : 'Không hoạt động'}
                   </span>
+                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                    selectedCustomer.customerType === 'diamond' ? 'bg-purple-100 text-purple-800' :
+                    selectedCustomer.customerType === 'gold' ? 'bg-yellow-100 text-yellow-800' :
+                    selectedCustomer.customerType === 'silver' ? 'bg-gray-100 text-gray-800' :
+                    selectedCustomer.customerType === 'bronze' ? 'bg-orange-100 text-orange-800' :
+                    'bg-blue-100 text-blue-800'
+                  }`}>
+                    {selectedCustomer.customerType === 'diamond' ? '💎 Kim cương' :
+                     selectedCustomer.customerType === 'gold' ? '🥇 Vàng' :
+                     selectedCustomer.customerType === 'silver' ? '🥈 Bạc' :
+                     selectedCustomer.customerType === 'bronze' ? '🥉 Đồng' :
+                     selectedCustomer.customerType === 'new' ? '🌟 Mới' :
+                     selectedCustomer.customerType === 'returning' ? '🔄 Quay lại' : '😴 Không hoạt động'}
+                  </span>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <p className="text-sm text-gray-900">{selectedCustomer.email}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Điện thoại</label>
-                  <p className="text-sm text-gray-900">{selectedCustomer.contact}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Địa chỉ</label>
-                  <p className="text-sm text-gray-900">{selectedCustomer.address}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Ngành</label>
-                  <p className="text-sm text-gray-900">{selectedCustomer.industry}</p>
-                </div>
+              <div className="flex space-x-2">
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+                  <Phone className="w-4 h-4" />
+                  <span>Gọi</span>
+                </button>
+                <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2">
+                  <Mail className="w-4 h-4" />
+                  <span>Email</span>
+                </button>
+                <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2">
+                  <Calendar className="w-4 h-4" />
+                  <span>Lịch</span>
+                </button>
+                <button 
+                  onClick={() => setActiveTab('notes')}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center space-x-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Ghi chú</span>
+                </button>
+                <button 
+                  onClick={() => setActiveTab('interactions')}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center space-x-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Tương tác</span>
+                </button>
               </div>
+            </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{selectedCustomer.engagementScore}</div>
-                  <div className="text-sm text-blue-700">Điểm tương tác</div>
-                </div>
-                <div className="text-center p-4 bg-red-50 rounded-lg">
-                  <div className="text-2xl font-bold text-red-600">{selectedCustomer.churnRisk}%</div>
-                  <div className="text-sm text-red-700">Rủi ro rời bỏ</div>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{formatCurrency(selectedCustomer.totalValue)}</div>
-                  <div className="text-sm text-green-700">Giá trị (VNĐ)</div>
-                </div>
-              </div>
+            {/* Tab Navigation */}
+            <div className="border-b border-gray-200 mb-6">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setActiveTab('details')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                    activeTab === 'details'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <User className="w-4 h-4" />
+                  <span>Chi tiết khách hàng</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('interactions')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                    activeTab === 'interactions'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <History className="w-4 h-4" />
+                  <span>Lịch sử tương tác</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('orders')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                    activeTab === 'orders'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <CreditCard className="w-4 h-4" />
+                  <span>Lịch sử mua hàng</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('notes')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                    activeTab === 'notes'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Ghi chú</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('ai-suggestions')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                    activeTab === 'ai-suggestions'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Zap className="w-4 h-4" />
+                  <span>AI gợi ý</span>
+                </button>
+              </nav>
+            </div>
 
-              {selectedCustomer.notes && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú</label>
-                  <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">{selectedCustomer.notes}</p>
+            {/* Tab Content */}
+            <div className="min-h-[400px]">
+              {activeTab === 'details' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h5 className="font-medium text-gray-900">Thông tin liên hệ</h5>
+                      <div className="grid grid-cols-1 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Email chính</label>
+                          <p className="text-sm text-gray-900">{selectedCustomer.email}</p>
+                        </div>
+                        {selectedCustomer.secondaryEmail && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">Email phụ</label>
+                            <p className="text-sm text-gray-900">{selectedCustomer.secondaryEmail}</p>
+                          </div>
+                        )}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Điện thoại</label>
+                          <p className="text-sm text-gray-900">{selectedCustomer.contact}</p>
+                        </div>
+                        {selectedCustomer.phone2 && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">Điện thoại 2</label>
+                            <p className="text-sm text-gray-900">{selectedCustomer.phone2}</p>
+                          </div>
+                        )}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Địa chỉ</label>
+                          <p className="text-sm text-gray-900">{selectedCustomer.address}</p>
+                          <p className="text-sm text-gray-500">{selectedCustomer.city}, {selectedCustomer.state} {selectedCustomer.postalCode}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h5 className="font-medium text-gray-900">Thông tin công ty</h5>
+                      <div className="grid grid-cols-1 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Công ty</label>
+                          <p className="text-sm text-gray-900">{selectedCustomer.company}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Chức vụ</label>
+                          <p className="text-sm text-gray-900">{selectedCustomer.position}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Phòng ban</label>
+                          <p className="text-sm text-gray-900">{selectedCustomer.department}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Ngành</label>
+                          <p className="text-sm text-gray-900">{selectedCustomer.industry}</p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Quy mô công ty</label>
+                          <p className="text-sm text-gray-900">
+                            {selectedCustomer.companySize === 'small' ? 'Nhỏ (< 50 nhân viên)' :
+                             selectedCustomer.companySize === 'medium' ? 'Trung bình (50-200 nhân viên)' :
+                             selectedCustomer.companySize === 'large' ? 'Lớn (200-1000 nhân viên)' :
+                             'Doanh nghiệp (> 1000 nhân viên)'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 mt-6">
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600">{selectedCustomer.engagementScore}</div>
+                      <div className="text-sm text-blue-700">Điểm tương tác</div>
+                    </div>
+                    <div className="text-center p-4 bg-red-50 rounded-lg">
+                      <div className="text-2xl font-bold text-red-600">{selectedCustomer.churnRisk}%</div>
+                      <div className="text-sm text-red-700">Rủi ro rời bỏ</div>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">{formatCurrency(selectedCustomer.totalValue)}</div>
+                      <div className="text-sm text-green-700">Giá trị (VNĐ)</div>
+                    </div>
+                  </div>
+
+                  {selectedCustomer.dateOfBirth && (
+                    <div className="mt-6">
+                      <h5 className="font-medium text-gray-900 mb-3">Thông tin cá nhân</h5>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Sinh nhật</label>
+                          <p className="text-sm text-gray-900">{formatBirthday(selectedCustomer.dateOfBirth)}</p>
+                        </div>
+                        {selectedCustomer.gender && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700">Giới tính</label>
+                            <p className="text-sm text-gray-900">
+                              {selectedCustomer.gender === 'male' ? 'Nam' :
+                               selectedCustomer.gender === 'female' ? 'Nữ' : 'Khác'}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-6">
+                    <h5 className="font-medium text-gray-900 mb-3">Tags</h5>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCustomer.tags.map(tag => (
+                        <span
+                          key={tag.id}
+                          className={`px-2 py-1 text-xs rounded-full ${tag.color}`}
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
-              <div className="flex space-x-3">
-                <button className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                  <Phone className="w-4 h-4 inline mr-2" />
-                  Gọi điện
-                </button>
-                <button className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                  <Mail className="w-4 h-4 inline mr-2" />
-                  Gửi email
-                </button>
-                <button className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                  <Calendar className="w-4 h-4 inline mr-2" />
-                  Đặt lịch
-                </button>
-              </div>
+              {activeTab === 'interactions' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h5 className="font-medium text-gray-900">Lịch sử tương tác</h5>
+                    <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                      + Thêm tương tác
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {selectedCustomer.interactions.map(interaction => (
+                      <div key={interaction.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              interaction.type === 'email' ? 'bg-blue-100' :
+                              interaction.type === 'call' ? 'bg-green-100' :
+                              interaction.type === 'meeting' ? 'bg-purple-100' :
+                              interaction.type === 'sms' ? 'bg-yellow-100' :
+                              interaction.type === 'chat' ? 'bg-indigo-100' : 'bg-red-100'
+                            }`}>
+                              {interaction.type === 'email' ? <Mail className="w-4 h-4 text-blue-600" /> :
+                               interaction.type === 'call' ? <Phone className="w-4 h-4 text-green-600" /> :
+                               interaction.type === 'meeting' ? <Calendar className="w-4 h-4 text-purple-600" /> :
+                               interaction.type === 'sms' ? <MessageSquare className="w-4 h-4 text-yellow-600" /> :
+                               interaction.type === 'chat' ? <MessageCircle className="w-4 h-4 text-indigo-600" /> :
+                               <Info className="w-4 h-4 text-red-600" />}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <h6 className="font-medium text-gray-900">{interaction.title}</h6>
+                                <span className={`px-2 py-1 text-xs rounded-full ${
+                                  interaction.status === 'success' ? 'bg-green-100 text-green-800' :
+                                  interaction.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                  {interaction.status === 'success' ? 'Thành công' :
+                                   interaction.status === 'pending' ? 'Đang chờ' : 'Thất bại'}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">{interaction.summary}</p>
+                              <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                                <span>{formatDate(interaction.date)}</span>
+                                <span>• {interaction.channel}</span>
+                              </div>
+                              {interaction.aiSummary && (
+                                <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700">
+                                  <strong>AI Tóm tắt:</strong> {interaction.aiSummary}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <button className="text-gray-400 hover:text-gray-600">
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'orders' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h5 className="font-medium text-gray-900">Lịch sử mua hàng</h5>
+                    <div className="text-sm text-gray-600">
+                      Tổng giá trị: <span className="font-medium text-green-600">{formatCurrency(selectedCustomer.lifetimeValue)}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <div className="text-lg font-bold text-green-600">{formatCurrency(selectedCustomer.lifetimeValue)}</div>
+                      <div className="text-xs text-green-700">Giá trị trọn đời</div>
+                    </div>
+                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                      <div className="text-lg font-bold text-blue-600">{formatCurrency(selectedCustomer.averageOrderValue)}</div>
+                      <div className="text-xs text-blue-700">Giá trị đơn hàng TB</div>
+                    </div>
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                      <div className="text-lg font-bold text-purple-600">{selectedCustomer.products.length}</div>
+                      <div className="text-xs text-purple-700">Sản phẩm đã mua</div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {selectedCustomer.products.map(product => (
+                      <div key={product.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <h6 className="font-medium text-gray-900">{product.name}</h6>
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                product.status === 'active' ? 'bg-green-100 text-green-800' :
+                                product.status === 'expired' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {product.status === 'active' ? 'Đang hoạt động' :
+                                 product.status === 'expired' ? 'Hết hạn' : 'Đã hủy'}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600">{product.category}</p>
+                            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                              <span>Mua ngày: {formatDate(product.purchaseDate)}</span>
+                              <span>• Số lượng: {product.quantity}</span>
+                              <span>• <span className="text-green-600 font-medium">{formatCurrency(product.price.toString())}</span></span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'notes' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h5 className="font-medium text-gray-900">Ghi chú khách hàng</h5>
+                    <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                      + Thêm ghi chú
+                    </button>
+                  </div>
+                  
+                  {selectedCustomer.notes ? (
+                    <div className="space-y-3">
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                              <FileText className="w-3 h-3 text-blue-600" />
+                            </div>
+                            <span className="text-sm font-medium text-gray-900">Ghi chú chung</span>
+                          </div>
+                          <span className="text-xs text-gray-500">Cập nhật lần cuối: {formatDate(selectedCustomer.lastInteraction)}</span>
+                        </div>
+                        <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded">{selectedCustomer.notes}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <p>Chưa có ghi chú nào cho khách hàng này</p>
+                      <button className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                        Thêm ghi chú đầu tiên
+                      </button>
+                    </div>
+                  )}
+                  
+                  <div className="mt-6">
+                    <h6 className="text-sm font-medium text-gray-900 mb-3">Tạo ghi chú mới</h6>
+                    <div className="space-y-3">
+                      <textarea
+                        placeholder="Nhập ghi chú về khách hàng..."
+                        className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        rows={4}
+                      />
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <input type="checkbox" className="rounded" />
+                          <label className="text-sm text-gray-600">Đánh dấu quan trọng</label>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button className="px-3 py-1 text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
+                            Hủy
+                          </button>
+                          <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            Lưu ghi chú
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'ai-suggestions' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h5 className="font-medium text-gray-900">AI Gợi ý cho khách hàng</h5>
+                    <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center space-x-1">
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Làm mới gợi ý</span>
+                    </button>
+                  </div>
+
+                  {/* AI Risk Assessment */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Zap className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h6 className="font-medium text-blue-900">Đánh giá tổng thể</h6>
+                        <p className="text-sm text-blue-700 mt-1">
+                          Khách hàng {selectedCustomer.churnRisk > 70 ? 'có rủi ro cao' : selectedCustomer.churnRisk > 40 ? 'có rủi ro trung bình' : 'ổn định'} 
+                          với điểm churn risk {selectedCustomer.churnRisk}%. 
+                          {selectedCustomer.daysSinceLastInteraction > 30 && ' Đã lâu không tương tác.'}
+                          {selectedCustomer.engagementScore < 50 && ' Mức độ tương tác thấp.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Recommendations */}
+                  <div className="space-y-3">
+                    <h6 className="font-medium text-gray-900">Gợi ý hành động</h6>
+                    
+                    {selectedCustomer.churnRisk > 60 && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                            <AlertTriangle className="w-3 h-3 text-red-600" />
+                          </div>
+                          <div className="flex-1">
+                            <h6 className="font-medium text-red-900">Ưu tiên cao - Nguy cơ churn</h6>
+                            <p className="text-sm text-red-700 mt-1">
+                              Liên hệ ngay để giữ chân khách hàng. Đề xuất ưu đãi đặc biệt hoặc lịch tư vấn.
+                            </p>
+                            <div className="flex space-x-2 mt-2">
+                              <button className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700">
+                                Gọi ngay
+                              </button>
+                              <button className="px-3 py-1 bg-red-100 text-red-700 text-xs rounded hover:bg-red-200">
+                                Gửi ưu đãi
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedCustomer.daysSinceLastInteraction > 30 && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <Clock className="w-3 h-3 text-yellow-600" />
+                          </div>
+                          <div className="flex-1">
+                            <h6 className="font-medium text-yellow-900">Ưu tiên trung bình - Tái kết nối</h6>
+                            <p className="text-sm text-yellow-700 mt-1">
+                              Đã {selectedCustomer.daysSinceLastInteraction} ngày không tương tác. Gửi email follow-up hoặc thông tin sản phẩm mới.
+                            </p>
+                            <div className="flex space-x-2 mt-2">
+                              <button className="px-3 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700">
+                                Gửi email
+                              </button>
+                              <button className="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded hover:bg-yellow-200">
+                                Chia sẻ tin tức
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedCustomer.customerType === 'gold' || selectedCustomer.customerType === 'diamond' ? (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                            <TrendingUp className="w-3 h-3 text-green-600" />
+                          </div>
+                          <div className="flex-1">
+                            <h6 className="font-medium text-green-900">Cơ hội upsell - Khách hàng VIP</h6>
+                            <p className="text-sm text-green-700 mt-1">
+                              Khách hàng có giá trị cao, phù hợp để giới thiệu sản phẩm/dịch vụ premium.
+                            </p>
+                            <div className="flex space-x-2 mt-2">
+                              <button className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700">
+                                Tư vấn upsell
+                              </button>
+                              <button className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded hover:bg-green-200">
+                                Gửi catalog VIP
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Target className="w-3 h-3 text-blue-600" />
+                          </div>
+                          <div className="flex-1">
+                            <h6 className="font-medium text-blue-900">Cơ hội phát triển</h6>
+                            <p className="text-sm text-blue-700 mt-1">
+                              Khách hàng có tiềm năng. Đề xuất các gói dịch vụ phù hợp để nâng cấp hạng.
+                            </p>
+                            <div className="flex space-x-2 mt-2">
+                              <button className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                                Đề xuất nâng cấp
+                              </button>
+                              <button className="px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded hover:bg-blue-200">
+                                Chia sẻ case study
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AI Insights */}
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <BarChart3 className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h6 className="font-medium text-purple-900">Phân tích hành vi</h6>
+                        <div className="text-sm text-purple-700 mt-1 space-y-1">
+                          <p>• Kênh tương tác ưa thích: {
+                            selectedCustomer.preferredChannel === 'email' ? 'Email' :
+                            selectedCustomer.preferredChannel === 'phone' ? 'Điện thoại' :
+                            selectedCustomer.preferredChannel === 'chat' ? 'Chat' :
+                            selectedCustomer.preferredChannel === 'in-person' ? 'Trực tiếp' : 'Mạng xã hội'
+                          }</p>
+                          <p>• Thời gian mua hàng gần nhất: {formatDate(selectedCustomer.lastOrderDate)}</p>
+                          <p>• Xu hướng: {selectedCustomer.engagementScore > 70 ? 'Tích cực tương tác' : 
+                                              selectedCustomer.engagementScore > 40 ? 'Tương tác vừa phải' : 'Ít tương tác'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
-      </div>
+    </div>
     </>
   )
 }

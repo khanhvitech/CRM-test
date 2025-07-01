@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export type UserRole = 'admin' | 'ceo' | 'leader' | 'sale';
+export type UserRole = 'admin' | 'ceo' | 'leader' | 'sale' | 'accountant';
 
 export interface Permissions {
   // Dashboard permissions
@@ -28,6 +28,17 @@ export interface Permissions {
   canViewTeamOrders: boolean;
   canViewPersonalOrders: boolean;
   canEditOrders: boolean;
+  
+  // Invoice permissions
+  canViewAllInvoices: boolean;
+  canViewTeamInvoices: boolean;
+  canViewPersonalInvoices: boolean;
+  canCreateInvoices: boolean;
+  canEditInvoices: boolean;
+  canDeleteInvoices: boolean;
+  canRecordPayments: boolean;
+  canSendInvoices: boolean;
+  canExportInvoices: boolean;
   
   // Products permissions
   canViewAllProducts: boolean;
@@ -107,6 +118,17 @@ const getPermissionsByRole = (role: UserRole): Permissions => {
         canViewPersonalOrders: true,
         canEditOrders: true,
         
+        // Invoice - Admin: toàn quyền
+        canViewAllInvoices: true,
+        canViewTeamInvoices: true,
+        canViewPersonalInvoices: true,
+        canCreateInvoices: true,
+        canEditInvoices: true,
+        canDeleteInvoices: true,
+        canRecordPayments: true,
+        canSendInvoices: true,
+        canExportInvoices: true,
+        
         // Products - Admin: toàn quyền
         canViewAllProducts: true,
         canViewProductHistory: true,
@@ -183,6 +205,17 @@ const getPermissionsByRole = (role: UserRole): Permissions => {
         canViewPersonalOrders: true,
         canEditOrders: false,
         
+        // Invoice - CEO: xem toàn bộ, có thể xuất
+        canViewAllInvoices: true,
+        canViewTeamInvoices: true,
+        canViewPersonalInvoices: true,
+        canCreateInvoices: false,
+        canEditInvoices: false,
+        canDeleteInvoices: false,
+        canRecordPayments: false,
+        canSendInvoices: false,
+        canExportInvoices: true,
+        
         // Products - CEO: xem toàn bộ, không nhập xuất
         canViewAllProducts: true,
         canViewProductHistory: true,
@@ -252,11 +285,22 @@ const getPermissionsByRole = (role: UserRole): Permissions => {
         canViewPersonalCustomers: true,
         canImportExportCustomers: false,
         canEditCustomers: true,
-          // Orders - Leader: KHÔNG truy cập
+        // Orders - Leader: có thể xem và quản lý đơn hàng team
         canViewAllOrders: false,
-        canViewTeamOrders: false,
-        canViewPersonalOrders: false,
-        canEditOrders: false,
+        canViewTeamOrders: true,
+        canViewPersonalOrders: true,
+        canEditOrders: true,
+        
+        // Invoice - Leader: có thể tạo và chỉnh sửa invoice team
+        canViewAllInvoices: false,
+        canViewTeamInvoices: true,
+        canViewPersonalInvoices: true,
+        canCreateInvoices: true,
+        canEditInvoices: true,
+        canDeleteInvoices: false,
+        canRecordPayments: true,
+        canSendInvoices: true,
+        canExportInvoices: true,
         
         // Products - Leader: chỉ xem, không chỉnh sửa/lịch sử
         canViewAllProducts: true,
@@ -327,11 +371,22 @@ const getPermissionsByRole = (role: UserRole): Permissions => {
         canViewPersonalCustomers: true,
         canImportExportCustomers: false,
         canEditCustomers: true,
-          // Orders - Sale: KHÔNG truy cập
+        // Orders - Sale: có thể xem và tạo đơn hàng cá nhân
         canViewAllOrders: false,
         canViewTeamOrders: false,
-        canViewPersonalOrders: false,
-        canEditOrders: false,
+        canViewPersonalOrders: true,
+        canEditOrders: true,
+        
+        // Invoice - Sale: có thể tạo và chỉnh sửa invoice cá nhân
+        canViewAllInvoices: false,
+        canViewTeamInvoices: false,
+        canViewPersonalInvoices: true,
+        canCreateInvoices: true,
+        canEditInvoices: true,
+        canDeleteInvoices: false,
+        canRecordPayments: true,
+        canSendInvoices: true,
+        canExportInvoices: true,
         
         // Products - Sale: chỉ xem, không chỉnh sửa/lịch sử
         canViewAllProducts: true,
@@ -375,6 +430,93 @@ const getPermissionsByRole = (role: UserRole): Permissions => {
         canExportReports: false,
         
         // Settings - Sale: không truy cập
+        canViewAllSettings: false,
+        canViewCompanySettings: false,
+        canEditSettings: false,
+        canManageIntegrations: false,
+      };
+
+    case 'accountant':
+      return {
+        // Dashboard - Accountant: có thể xem dashboard riêng
+        canViewAllDashboard: false,
+        canViewTeamDashboard: false,
+        canViewPersonalDashboard: true,
+        
+        // Leads - Accountant: chỉ xem, không chỉnh sửa
+        canViewAllLeads: false,
+        canViewTeamLeads: false,
+        canViewPersonalLeads: false,
+        canAssignLeads: false,
+        canImportExportLeads: false,
+        canEditLeads: false,
+        
+        // Customers - Accountant: xem toàn bộ để quản lý thanh toán
+        canViewAllCustomers: true,
+        canViewTeamCustomers: true,
+        canViewPersonalCustomers: true,
+        canImportExportCustomers: false,
+        canEditCustomers: false,
+        
+        // Orders - Accountant: xem toàn bộ để quản lý hóa đơn
+        canViewAllOrders: true,
+        canViewTeamOrders: true,
+        canViewPersonalOrders: true,
+        canEditOrders: false,
+        
+        // Invoice - Accountant: toàn quyền quản lý hóa đơn và thanh toán
+        canViewAllInvoices: true,
+        canViewTeamInvoices: true,
+        canViewPersonalInvoices: true,
+        canCreateInvoices: true,
+        canEditInvoices: true,
+        canDeleteInvoices: true,
+        canRecordPayments: true,
+        canSendInvoices: true,
+        canExportInvoices: true,
+        
+        // Products - Accountant: chỉ xem để tạo hóa đơn
+        canViewAllProducts: true,
+        canViewProductHistory: false,
+        canImportExportProducts: false,
+        canEditProducts: false,
+        
+        // Tasks - Accountant: chỉ cá nhân
+        canViewAllTasks: false,
+        canViewTeamTasks: false,
+        canViewPersonalTasks: true,
+        canEditTasks: true,
+        
+        // Calendar - Accountant: chỉ cá nhân
+        canViewAllCalendar: false,
+        canViewTeamCalendar: false,
+        canViewPersonalCalendar: true,
+        
+        // Employees - Accountant: không truy cập
+        canViewAllEmployees: false,
+        canViewTeamEmployees: false,
+        canEditEmployees: false,
+        canManagePermissions: false,
+        
+        // KPIs - Accountant: chỉ xem tài chính
+        canViewAllKPIs: false,
+        canViewTeamKPIs: false,
+        canEditKPIs: false,
+        
+        // Marketing - Accountant: không truy cập
+        canViewAllMarketing: false,
+        canViewTeamMarketing: false,
+        canEditMarketing: false,
+        canManageAutomation: false,
+        
+        // Reports - Accountant: xem báo cáo tài chính
+        canViewAllReports: true,
+        canViewTeamReports: true,
+        canViewPersonalReports: true,
+        canCustomizeReports: false,
+        canExportReports: true,
+        
+        // Settings - Accountant: không truy cập
         canViewAllSettings: false,
         canViewCompanySettings: false,
         canEditSettings: false,

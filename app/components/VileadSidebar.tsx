@@ -89,7 +89,7 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       label: "Quản lý Đơn hàng",
       iconText: "🛒",
       tooltip: "Quản lý Đơn hàng: Trạng thái và hóa đơn",
-      roles: ["admin", "ceo", "accountant"]
+      roles: ["admin", "ceo", "leader", "sale", "accountant"]
     },
     {
       id: 'invoices',
@@ -97,7 +97,7 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       label: "Hóa đơn & Thanh toán",
       iconText: "🧾",
       tooltip: "Hóa đơn & Thanh toán: Quản lý hóa đơn và theo dõi thanh toán",
-      roles: ["admin", "ceo", "leader", "accountant"]
+      roles: ["admin", "ceo", "accountant"]
     },
     {
       id: 'tasks',

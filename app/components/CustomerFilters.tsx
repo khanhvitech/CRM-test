@@ -18,11 +18,6 @@ export interface CustomerFilters {
   churnRisk?: { min?: number; max?: number }
   upsellScore?: { min?: number; max?: number }
   
-  // Interaction filters
-  emailOpenRate?: { min?: number; max?: number }
-  clickRate?: { min?: number; max?: number }
-  responseTime?: { min?: number; max?: number }
-  
   // Financial filters
   totalValue?: { min?: number; max?: number }
   avgOrderValue?: { min?: number; max?: number }
@@ -222,109 +217,6 @@ export default function CustomerFilters({ onFilterChange, initialFilters = {} }:
                     value={filters.upsellScore?.max || ''}
                     onChange={(e) => updateFilter('upsellScore', {
                       ...filters.upsellScore,
-                      max: e.target.value ? parseInt(e.target.value) : undefined
-                    })}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Interaction Performance */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <MessageCircle className="w-5 h-5 mr-2" />
-              Hiệu suất tương tác
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tỷ lệ mở email (%)
-                </label>
-                <div className="flex space-x-2">
-                  <input
-                    type="number"
-                    placeholder="Từ"
-                    min="0"
-                    max="100"
-                    className="input-field"
-                    value={filters.emailOpenRate?.min || ''}
-                    onChange={(e) => updateFilter('emailOpenRate', {
-                      ...filters.emailOpenRate,
-                      min: e.target.value ? parseInt(e.target.value) : undefined
-                    })}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Đến"
-                    min="0"
-                    max="100"
-                    className="input-field"
-                    value={filters.emailOpenRate?.max || ''}
-                    onChange={(e) => updateFilter('emailOpenRate', {
-                      ...filters.emailOpenRate,
-                      max: e.target.value ? parseInt(e.target.value) : undefined
-                    })}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tỷ lệ click (%)
-                </label>
-                <div className="flex space-x-2">
-                  <input
-                    type="number"
-                    placeholder="Từ"
-                    min="0"
-                    max="100"
-                    className="input-field"
-                    value={filters.clickRate?.min || ''}
-                    onChange={(e) => updateFilter('clickRate', {
-                      ...filters.clickRate,
-                      min: e.target.value ? parseInt(e.target.value) : undefined
-                    })}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Đến"
-                    min="0"
-                    max="100"
-                    className="input-field"
-                    value={filters.clickRate?.max || ''}
-                    onChange={(e) => updateFilter('clickRate', {
-                      ...filters.clickRate,
-                      max: e.target.value ? parseInt(e.target.value) : undefined
-                    })}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Thời gian phản hồi (giờ)
-                </label>
-                <div className="flex space-x-2">
-                  <input
-                    type="number"
-                    placeholder="Từ"
-                    min="0"
-                    className="input-field"
-                    value={filters.responseTime?.min || ''}
-                    onChange={(e) => updateFilter('responseTime', {
-                      ...filters.responseTime,
-                      min: e.target.value ? parseInt(e.target.value) : undefined
-                    })}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Đến"
-                    min="0"
-                    className="input-field"
-                    value={filters.responseTime?.max || ''}
-                    onChange={(e) => updateFilter('responseTime', {
-                      ...filters.responseTime,
                       max: e.target.value ? parseInt(e.target.value) : undefined
                     })}
                   />

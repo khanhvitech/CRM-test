@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import CreateInvoiceModal from './CreateInvoiceModal'
 import RecordPaymentModal from './RecordPaymentModal'
+import { usePermissions } from '../../hooks/usePermissions'
 import { 
   FileText,
   Plus,
@@ -130,6 +131,7 @@ interface Filters {
 }
 
 export default function InvoicePaymentManagement() {
+  const { permissions } = usePermissions()
   const [activeTab, setActiveTab] = useState<'invoices' | 'payments' | 'reports'>('invoices')
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
@@ -695,13 +697,15 @@ export default function InvoicePaymentManagement() {
           </div>
 
           <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setShowCreateInvoice(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Tạo hóa đơn</span>
-            </button>
+            {permissions.canCreateInvoices && (
+              <button
+                onClick={() => setShowCreateInvoice(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Tạo hóa đơn</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -836,19 +840,23 @@ export default function InvoicePaymentManagement() {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button 
-                        className="p-1 text-gray-400 hover:text-green-600 transition-colors" 
-                        title="Chỉnh sửa"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button 
-                        className="p-1 text-gray-400 hover:text-purple-600 transition-colors" 
-                        title="Tải xuống"
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
-                      {invoice.paymentStatus !== 'paid' && (
+                      {permissions.canEditInvoices && (
+                        <button 
+                          className="p-1 text-gray-400 hover:text-green-600 transition-colors" 
+                          title="Chỉnh sửa"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      )}
+                      {permissions.canExportInvoices && (
+                        <button 
+                          className="p-1 text-gray-400 hover:text-purple-600 transition-colors" 
+                          title="Tải xuống"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      )}
+                      {permissions.canRecordPayments && invoice.paymentStatus !== 'paid' && (
                         <button 
                           onClick={() => {
                             setInvoices(prev => prev.map(inv => 
@@ -926,13 +934,15 @@ export default function InvoicePaymentManagement() {
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Lịch sử thanh toán</h3>
-            <button
-              onClick={() => setShowPaymentModal(true)}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Ghi nhận thanh toán</span>
-            </button>
+            {permissions.canRecordPayments && (
+              <button
+                onClick={() => setShowPaymentModal(true)}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Ghi nhận thanh toán</span>
+              </button>
+            )}
           </div>
         </div>
         <div className="overflow-x-auto">
