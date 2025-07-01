@@ -54,22 +54,6 @@ interface Lead {
   company?: string
 }
 
-interface Deal {
-  id: number
-  name: string
-  customer: string
-  contact: string
-  value: string
-  stage: 'discovery' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost'
-  probability: number
-  expectedClose: string
-  createdAt: string
-  lastActivity: string
-  owner: string
-  leadId?: number // Liên kết với Lead ban đầu
-  orderId?: number // Liên kết với Order đã tạo
-}
-
 interface Order {
   id: number
   orderNumber: string
@@ -96,7 +80,7 @@ interface MetricData {
 }
 
 export default function SalesManagement() {
-  const [activeTab, setActiveTab] = useState<'leads' | 'deals' | 'orders' | 'pipeline' | 'ai-suggestions'>('leads')
+  const [activeTab, setActiveTab] = useState<'pipeline' | 'orders' | 'ai-suggestions'>('pipeline')
   const [showFilters, setShowFilters] = useState(false)
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null)
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null)
@@ -114,7 +98,6 @@ export default function SalesManagement() {
     product: '',
     owner: '',
     leadStatus: '',
-    dealStage: '',
     advancedFilters: false
   })
   // Sample data với liên kết
@@ -247,37 +230,6 @@ export default function SalesManagement() {
     }
   ])
 
-  const [deals] = useState<Deal[]>([
-    {
-      id: 1,
-      name: 'CRM Solution - ABC Corp',
-      customer: 'Nguyễn Văn A',
-      contact: 'nguyenvana@email.com',
-      value: '50,000,000 VND',
-      stage: 'negotiation',
-      probability: 75,
-      expectedClose: '2024-02-15',
-      createdAt: '2024-01-20T14:30:00',
-      lastActivity: '2024-01-22T10:00:00',
-      owner: 'Minh Expert',
-      leadId: 1
-    },
-    {
-      id: 2,
-      name: 'Marketing Automation - DEF Startup',
-      customer: 'Trần Thị B',
-      contact: 'tranthib@email.com',
-      value: '25,000,000 VND',
-      stage: 'proposal',
-      probability: 60,
-      expectedClose: '2024-02-28',
-      createdAt: '2024-01-19T16:45:00',
-      lastActivity: '2024-01-21T14:20:00',
-      owner: 'An Expert',
-      leadId: 2
-    }
-  ])
-
   const [orders] = useState<Order[]>([
     {
       id: 1,
@@ -317,18 +269,6 @@ export default function SalesManagement() {
         }
       })
       
-      // Count deal-related suggestions
-      deals.forEach(deal => {
-        const daysUntilExpectedClose = Math.floor((new Date(deal.expectedClose).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-        
-        if (deal.stage === 'negotiation' && daysUntilExpectedClose < 7 && daysUntilExpectedClose > 0) {
-          suggestionsCount++
-        }
-        if (deal.probability > 70 && deal.stage === 'proposal') {
-          suggestionsCount++
-        }
-      })
-      
       // General insights
       const hotLeads = leads.filter(lead => lead.tags.includes('hot'))
       if (hotLeads.length > 0) {
@@ -341,7 +281,6 @@ export default function SalesManagement() {
     // Simulate previous month data (in real app, this would come from API)
     const previousMonthData = {
       totalLeads: 4, // Tháng trước có 4 leads
-      openDeals: 1,  // Tháng trước có 1 deal đang mở
       totalOrders: 0, // Tháng trước chưa có đơn hàng nào
       conversionRate: 25, // Tỷ lệ chuyển đổi tháng trước 25%
       aiSuggestions: 2 // Tháng trước có 2 gợi ý AI
@@ -349,9 +288,8 @@ export default function SalesManagement() {
     
     const currentData = {
       totalLeads: leads.length,
-      openDeals: deals.filter(d => !d.stage.includes('closed')).length,
       totalOrders: orders.length,
-      conversionRate: leads.length > 0 ? Math.round((deals.length / leads.length) * 100) : 0,
+      conversionRate: leads.length > 0 ? Math.round((leads.filter(l => l.status === 'converted').length / leads.length) * 100) : 0,
       aiSuggestions: calculateAISuggestions()
     }
     
@@ -377,29 +315,10 @@ export default function SalesManagement() {
         color: 'text-blue-600',
         bgColor: 'bg-blue-100',
         trend: calculateTrend(currentData.totalLeads, previousMonthData.totalLeads),        clickAction: () => {
-          setActiveTab('leads')
+          setActiveTab('pipeline')
           setSelectedMetric('leads')
           setNotification({
-            message: `Đang hiển thị chi tiết ${currentData.totalLeads} leads`,
-            type: 'success'
-          })
-          setTimeout(() => setNotification(null), 3000)
-        }
-      },
-      {
-        id: 'deals',
-        title: 'Deals Đang Mở',
-        value: currentData.openDeals,
-        previousValue: previousMonthData.openDeals,
-        percentageChange: calculatePercentageChange(currentData.openDeals, previousMonthData.openDeals),
-        icon: <Target className="w-5 h-5" />,
-        color: 'text-green-600',
-        bgColor: 'bg-green-100',
-        trend: calculateTrend(currentData.openDeals, previousMonthData.openDeals),        clickAction: () => {
-          setActiveTab('deals')
-          setSelectedMetric('deals')
-          setNotification({
-            message: `Đang hiển thị ${currentData.openDeals} deals đang mở`,
+            message: `Đang hiển thị chi tiết ${currentData.totalLeads} leads trong Pipeline`,
             type: 'success'
           })
           setTimeout(() => setNotification(null), 3000)
@@ -467,30 +386,28 @@ export default function SalesManagement() {
   }
   
   const metrics = calculateMetrics()
+  // Convert lead directly to order function
+  const convertLeadToOrder = (leadId: number) => {
+    const lead = leads.find(l => l.id === leadId)
+    if (!lead) return
 
-  // Convert deal to order function
-  const convertDealToOrder = (dealId: number) => {
-    const deal = deals.find(d => d.id === dealId)
-    if (!deal) return
-
-    // Logic tạo đơn hàng từ deal
+    // Logic tạo đơn hàng từ lead
     const newOrder: Order = {
       id: orders.length + 1,
       orderNumber: `ORD-${String(orders.length + 1).padStart(3, '0')}`,
-      customer: deal.customer,
-      contact: deal.contact,
-      totalValue: parseFloat(deal.value.replace(/[,\sVND]/g, '')),
+      customer: lead.name,
+      contact: lead.email,
+      totalValue: lead.value,
       status: 'draft',
       createdAt: new Date().toISOString(),
-      dealId: deal.id,
-      leadId: deal.leadId
+      leadId: lead.id
     }
 
-    // Cập nhật deal thành closed_won
+    // Cập nhật lead thành converted
     // Update logic here
     
     setNotification({
-      message: `Đã chuyển đổi deal "${deal.name}" thành đơn hàng ${newOrder.orderNumber}`,
+      message: `Đã chuyển đổi lead "${lead.name}" thành đơn hàng ${newOrder.orderNumber}`,
       type: 'success'
     })
 
@@ -521,14 +438,13 @@ export default function SalesManagement() {
     setTimeout(() => setNotification(null), 3000)
   }
 
-  const renderLeads = () => {
-    // Filter leads based on search and filters
+  const renderPipeline = () => {
+    // Filtered leads based on search and filters
     const filteredLeads = leads.filter(lead => {
       const matchesSearch = lead.name.toLowerCase().includes(leadSearchTerm.toLowerCase()) ||
                            lead.email.toLowerCase().includes(leadSearchTerm.toLowerCase()) ||
                            lead.phone.includes(leadSearchTerm) ||
-                           lead.product.toLowerCase().includes(leadSearchTerm.toLowerCase()) ||
-                           lead.content.toLowerCase().includes(leadSearchTerm.toLowerCase())
+                           lead.company?.toLowerCase().includes(leadSearchTerm.toLowerCase())
       
       const matchesStatus = leadStatusFilter === 'all' || lead.status === leadStatusFilter
       const matchesRegion = leadRegionFilter === 'all' || lead.region === leadRegionFilter
@@ -537,112 +453,118 @@ export default function SalesManagement() {
       return matchesSearch && matchesStatus && matchesRegion && matchesSource
     })
 
-    // Get unique values for filters
-    const uniqueStatuses = Array.from(new Set(leads.map(lead => lead.status)))
-    const uniqueRegions = Array.from(new Set(leads.map(lead => lead.region)))
-    const uniqueSources = Array.from(new Set(leads.map(lead => lead.source)))
-
     return (
-      <div className="space-y-4">
-        {/* Search and Filters */}
+      <div className="space-y-6">
+        {/* Search and Filter Controls */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="relative flex-1 min-w-80">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm leads..."
-                value={leadSearchTerm}
-                onChange={(e) => setLeadSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              />
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search Bar */}
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Tìm theo tên, email, phone, công ty..."
+                  value={leadSearchTerm}
+                  onChange={(e) => setLeadSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
             </div>
             
-            <select
-              value={leadStatusFilter}
-              onChange={(e) => setLeadStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              {uniqueStatuses.map(status => (
-                <option key={status} value={status}>
-                  {status === 'converted' ? 'Đã chuyển đổi' :
-                   status === 'qualified' ? 'Đã xác định' :
-                   status === 'contacted' ? 'Đã liên hệ' :
-                   status === 'negotiation' ? 'Đàm phán' :
-                   status === 'proposal' ? 'Báo giá' :
-                   status === 'lost' ? 'Thất bại' : 'Mới'}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={leadRegionFilter}
-              onChange={(e) => setLeadRegionFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            >
-              <option value="all">Tất cả khu vực</option>
-              {uniqueRegions.map(region => (
-                <option key={region} value={region}>
-                  {region === 'ha_noi' ? 'Hà Nội' : 
-                   region === 'ho_chi_minh' ? 'Hồ Chí Minh' : 
-                   region === 'da_nang' ? 'Đà Nẵng' : 
-                   region === 'can_tho' ? 'Cần Thơ' : 
-                   region === 'hai_phong' ? 'Hải Phòng' : region}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={leadSourceFilter}
-              onChange={(e) => setLeadSourceFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            >
-              <option value="all">Tất cả nguồn</option>
-              {uniqueSources.map(source => (
-                <option key={source} value={source}>
-                  {source === 'facebook' ? 'Facebook' :
-                   source === 'google' ? 'Google' :
-                   source === 'website' ? 'Website' :
-                   source === 'zalo' ? 'Zalo' :
-                   source === 'referral' ? 'Referral' : source}
-                </option>
-              ))}
-            </select>
-
-            <div className="text-sm text-gray-600">
-              Hiển thị {filteredLeads.length} / {leads.length} leads
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Danh sách Leads</h3>
-              <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                <Plus className="w-4 h-4 inline mr-2" />
+            {/* Filter Controls */}
+            <div className="flex gap-3">
+              <select
+                value={leadStatusFilter}
+                onChange={(e) => setLeadStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="new">Mới</option>
+                <option value="contacted">Đã liên hệ</option>
+                <option value="qualified">Đã xác định</option>
+                <option value="proposal">Báo giá</option>
+                <option value="negotiation">Đàm phán</option>
+                <option value="converted">Đã chuyển đổi</option>
+              </select>
+              
+              <select
+                value={leadRegionFilter}
+                onChange={(e) => setLeadRegionFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">Tất cả khu vực</option>
+                <option value="ha_noi">Hà Nội</option>
+                <option value="ho_chi_minh">TP.HCM</option>
+                <option value="da_nang">Đà Nẵng</option>
+                <option value="can_tho">Cần Thơ</option>
+                <option value="hai_phong">Hải Phòng</option>
+              </select>
+              
+              <select
+                value={leadSourceFilter}
+                onChange={(e) => setLeadSourceFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">Tất cả nguồn</option>
+                <option value="facebook">Facebook</option>
+                <option value="google">Google</option>
+                <option value="website">Website</option>
+                <option value="zalo">Zalo</option>
+                <option value="referral">Referral</option>
+              </select>
+              
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+              >
+                <Filter className="w-4 h-4" />
+                Bộ lọc
+              </button>
+              
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+                <Plus className="w-4 h-4" />
                 Thêm Lead
               </button>
             </div>
           </div>
+          
+          {/* Filter Summary */}
+          {(leadSearchTerm || leadStatusFilter !== 'all' || leadRegionFilter !== 'all' || leadSourceFilter !== 'all') && (
+            <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
+              <span>Hiển thị {filteredLeads.length} / {leads.length} leads</span>
+              <button 
+                onClick={() => {
+                  setLeadSearchTerm('');
+                  setLeadStatusFilter('all');
+                  setLeadRegionFilter('all');
+                  setLeadSourceFilter('all');
+                }}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                Xóa bộ lọc
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Leads Table */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
-                <tr>                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    STT
-                  </th>
+                <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Khách hàng
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Điện thoại
+                    Liên hệ
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Khu vực
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Sản phẩm
+                    Sản phẩm/Dịch vụ
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Nguồn
@@ -663,7 +585,7 @@ export default function SalesManagement() {
                     Tags
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Liên hệ cuối
+                    Lần cuối liên hệ
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Hành động
@@ -671,32 +593,24 @@ export default function SalesManagement() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredLeads.map((lead, index) => (
+                {filteredLeads.map((lead) => (
                   <tr key={lead.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{index + 1}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                            <User className="h-5 w-5 text-gray-600" />
-                          </div>
-                        </div>
-                        <div className="ml-4">
+                        <div>
                           <div className="text-sm font-medium text-gray-900">{lead.name}</div>
-                          <div className="text-sm text-gray-500">{lead.email}</div>
-                          <div className="text-xs text-gray-400">{lead.company}</div>
+                          <div className="text-sm text-gray-500">{lead.company || 'Cá nhân'}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{lead.phone}</div>
+                      <div className="text-sm text-gray-500">{lead.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         {lead.region === 'ha_noi' ? 'Hà Nội' : 
-                         lead.region === 'ho_chi_minh' ? 'Hồ Chí Minh' : 
+                         lead.region === 'ho_chi_minh' ? 'TP.HCM' : 
                          lead.region === 'da_nang' ? 'Đà Nẵng' : 
                          lead.region === 'can_tho' ? 'Cần Thơ' : 
                          lead.region === 'hai_phong' ? 'Hải Phòng' : lead.region}
@@ -801,9 +715,18 @@ export default function SalesManagement() {
                         <button className="text-blue-600 hover:text-blue-900" title="Xem chi tiết">
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button className="text-green-600 hover:text-green-900" title="Chuyển đổi">
-                          <ArrowRight className="w-4 h-4" />
+                        <button className="text-green-600 hover:text-green-900" title="Chuyển thành khách hàng">
+                          <User className="w-4 h-4" />
                         </button>
+                        {lead.status !== 'converted' && (
+                          <button 
+                            onClick={() => convertLeadToOrder(lead.id)}
+                            className="text-purple-600 hover:text-purple-900" 
+                            title="Tạo đơn hàng"
+                          >
+                            <ShoppingCart className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -811,329 +734,46 @@ export default function SalesManagement() {
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
-    )
-  }
-
-  const renderDeals = () => (
-    <div className="space-y-4">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Danh sách Deals</h3>
-            <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-              <Plus className="w-4 h-4 inline mr-2" />
-              Thêm Deal
-            </button>
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Deal
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Khách hàng
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Giá trị
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Giai đoạn
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Xác suất
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Hành động
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {deals.map((deal) => (
-                <tr key={deal.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{deal.name}</div>
-                    <div className="text-sm text-gray-500">Lead ID: #{deal.leadId}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{deal.customer}</div>
-                    <div className="text-sm text-gray-500">{deal.contact}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {deal.value}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      deal.stage === 'negotiation' ? 'bg-orange-100 text-orange-800' :
-                      deal.stage === 'proposal' ? 'bg-blue-100 text-blue-800' :
-                      deal.stage === 'qualified' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {deal.stage === 'negotiation' ? 'Đàm phán' :
-                       deal.stage === 'proposal' ? 'Đề xuất' :
-                       deal.stage === 'qualified' ? 'Đã xác định' : deal.stage}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {deal.probability}%
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button 
-                      onClick={() => convertDealToOrder(deal.id)}
-                      className="text-purple-600 hover:text-purple-900 mr-3"
-                      title="Chuyển thành đơn hàng"
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                    </button>
-                    <button className="text-blue-600 hover:text-blue-900">
-                      <Eye className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>  )
-
-  const renderPipeline = () => {
-    // Kanban columns for lead conversion process
-    const kanbanColumns = [
-      {
-        id: 'new',
-        title: 'Leads Mới',
-        status: 'new',
-        color: 'bg-gray-100 border-gray-300',
-        headerColor: 'bg-gray-50 text-gray-700',
-        icon: <Users className="w-5 h-5" />,
-        leads: leads.filter(lead => lead.status === 'new')
-      },
-      {
-        id: 'contacted',
-        title: 'Đã Liên Hệ',
-        status: 'contacted',
-        color: 'bg-blue-100 border-blue-300',
-        headerColor: 'bg-blue-50 text-blue-700',
-        icon: <Phone className="w-5 h-5" />,
-        leads: leads.filter(lead => lead.status === 'contacted')
-      },
-      {
-        id: 'qualified',
-        title: 'Đã Xác Định',
-        status: 'qualified',
-        color: 'bg-yellow-100 border-yellow-300',
-        headerColor: 'bg-yellow-50 text-yellow-700',
-        icon: <CheckCircle className="w-5 h-5" />,
-        leads: leads.filter(lead => lead.status === 'qualified')
-      },
-      {
-        id: 'proposal',
-        title: 'Đã Đề Xuất',
-        status: 'proposal',
-        color: 'bg-purple-100 border-purple-300',
-        headerColor: 'bg-purple-50 text-purple-700',
-        icon: <Briefcase className="w-5 h-5" />,
-        leads: leads.filter(lead => lead.status === 'proposal')
-      },
-      {
-        id: 'negotiation',
-        title: 'Đang Đàm Phán',
-        status: 'negotiation',
-        color: 'bg-orange-100 border-orange-300',
-        headerColor: 'bg-orange-50 text-orange-700',
-        icon: <Activity className="w-5 h-5" />,
-        leads: leads.filter(lead => lead.status === 'negotiation')
-      },
-      {
-        id: 'converted',
-        title: 'Đã Chuyển Đổi',
-        status: 'converted',
-        color: 'bg-green-100 border-green-300',
-        headerColor: 'bg-green-50 text-green-700',
-        icon: <Target className="w-5 h-5" />,
-        leads: leads.filter(lead => lead.status === 'converted')
-      }
-    ]    // Calculate total value for each column
-    const getColumnValue = (columnLeads: Lead[]) => {
-      return columnLeads.reduce((sum, lead) => sum + lead.value, 0)
-    }
-
-    return (
-      <div className="space-y-6">        {/* Pipeline Analytics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
-            <h4 className="text-sm font-medium mb-2">Tỷ lệ chuyển đổi</h4>
-            <div className="text-2xl font-bold">
-              {leads.length > 0 ? Math.round((leads.filter(l => l.status === 'converted').length / leads.length) * 100) : 0}%
-            </div>
-            <p className="text-xs opacity-75">Lead → Deal</p>
-          </div>
           
-          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
-            <h4 className="text-sm font-medium mb-2">Giá trị Pipeline</h4>
-            <div className="text-lg font-bold">
-              {leads.reduce((sum, lead) => sum + lead.value, 0).toLocaleString('vi-VN')}
+          {/* Pagination */}
+          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Trước
+              </button>
+              <button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Sau
+              </button>
             </div>
-            <p className="text-xs opacity-75">VND</p>
-          </div>
-          
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-4 text-white">
-            <h4 className="text-sm font-medium mb-2">Thời gian TB</h4>
-            <div className="text-2xl font-bold">
-              {Math.round(Math.random() * 15 + 5)}
-            </div>
-            <p className="text-xs opacity-75">ngày/giai đoạn</p>
-          </div>
-          
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-4 text-white">
-            <h4 className="text-sm font-medium mb-2">Doanh thu thực</h4>
-            <div className="text-lg font-bold">
-              {orders.reduce((sum, order) => sum + order.totalValue, 0).toLocaleString('vi-VN')}
-            </div>
-            <p className="text-xs opacity-75">VND</p>
-          </div>
-        </div>        {/* Pipeline Summary */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Sales Pipeline - Kanban Board</h3>
-            <div className="flex items-center space-x-4 text-sm">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span className="text-gray-600">Tổng Leads: {leads.length}</span>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Hiển thị <span className="font-medium">1</span> đến <span className="font-medium">{filteredLeads.length}</span> của{' '}
+                  <span className="font-medium">{filteredLeads.length}</span> kết quả
+                </p>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-gray-600">Đã chuyển đổi: {leads.filter(l => l.status === 'converted').length}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                <span className="text-gray-600">Tỷ lệ: {leads.length > 0 ? Math.round((leads.filter(l => l.status === 'converted').length / leads.length) * 100) : 0}%</span>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                    <span className="sr-only">Trước</span>
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  <button className="bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                    1
+                  </button>
+                  <button className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                    <span className="sr-only">Sau</span>
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </nav>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Kanban Board */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-            {kanbanColumns.map((column) => (
-              <div
-                key={column.id}
-                className={`border-2 border-dashed rounded-lg ${column.color} min-h-[600px]`}
-              >
-                {/* Column Header */}
-                <div className={`p-4 rounded-t-lg ${column.headerColor} border-b`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      {column.icon}
-                      <h4 className="font-medium text-sm">{column.title}</h4>
-                    </div>
-                    <span className="text-xs font-bold bg-white px-2 py-1 rounded-full">
-                      {column.leads.length}
-                    </span>
-                  </div>
-                  <div className="mt-2 text-xs opacity-75">
-                    {getColumnValue(column.leads).toLocaleString('vi-VN')} VND
-                  </div>
-                </div>
-
-                {/* Column Content */}
-                <div className="p-3 space-y-3">
-                  {column.leads.map((lead) => (
-                    <div
-                      key={lead.id}
-                      className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 cursor-move hover:shadow-md transition-shadow"
-                    >
-                      {/* Lead Card Header */}
-                      <div className="flex items-start justify-between mb-2">
-                        <h5 className="font-medium text-sm text-gray-900 truncate">
-                          {lead.name}
-                        </h5>
-                        <div className="flex space-x-1">
-                          {lead.tags.map((tag, index) => (
-                            <span
-                              key={index}
-                              className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded-full ${
-                                tag === 'hot' ? 'bg-red-100 text-red-800' :
-                                tag === 'warm' ? 'bg-orange-100 text-orange-800' :
-                                tag === 'cold' ? 'bg-blue-100 text-blue-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}
-                            >
-                              {tag === 'hot' ? '🔥' : tag === 'warm' ? '🌡️' : tag === 'cold' ? '❄️' : tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Lead Details */}
-                      <div className="space-y-2 text-xs text-gray-600">
-                        <div className="flex items-center">
-                          <Building2 className="w-3 h-3 mr-1" />
-                          <span className="truncate">{lead.company || 'Cá nhân'}</span>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <Package className="w-3 h-3 mr-1" />
-                          <span className="truncate">{lead.product}</span>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <DollarSign className="w-3 h-3 mr-1" />
-                          <span className="font-medium text-green-600">
-                            {lead.value.toLocaleString('vi-VN')} VND
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <User className="w-3 h-3 mr-1" />
-                          <span>{lead.assignedTo}</span>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <Calendar className="w-3 h-3 mr-1" />
-                          <span>{new Date(lead.createdAt).toLocaleDateString('vi-VN')}</span>
-                        </div>
-                      </div>
-
-                      {/* Lead Actions */}
-                      <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-100">
-                        <div className="flex space-x-1">
-                          <button className="p-1 text-gray-400 hover:text-blue-600 transition-colors" title="Xem chi tiết">
-                            <Eye className="w-3 h-3" />
-                          </button>
-                          <button className="p-1 text-gray-400 hover:text-orange-600 transition-colors" title="Chỉnh sửa">
-                            <MoreVertical className="w-3 h-3" />
-                          </button>
-                        </div>
-                        
-                        {lead.status !== 'converted' && (
-                          <button className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors">
-                            Tạo Deal
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Empty State */}
-                  {column.leads.length === 0 && (
-                    <div className="text-center py-8 text-gray-400">
-                      <div className="w-12 h-12 mx-auto mb-2 opacity-50">
-                        {column.icon}
-                      </div>
-                      <p className="text-xs">Chưa có leads</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>        </div>
       </div>
     )
   }
@@ -1213,10 +853,8 @@ export default function SalesManagement() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="border-b border-gray-200">
           <nav className="flex space-x-6 px-4">            {[
-              { id: 'leads', name: 'Leads', count: leads.length, icon: <Users className="w-4 h-4" /> },
-              { id: 'deals', name: 'Deals', count: deals.filter(d => !d.stage.includes('closed')).length, icon: <Target className="w-4 h-4" /> },
+              { id: 'pipeline', name: 'Leads & Pipeline', count: leads.length, icon: <Activity className="w-4 h-4" /> },
               { id: 'orders', name: 'Đơn hàng', count: orders.length, icon: <ShoppingCart className="w-4 h-4" /> },
-              { id: 'pipeline', name: 'Pipeline', count: leads.length + deals.length + orders.length, icon: <Activity className="w-4 h-4" /> },
               { id: 'ai-suggestions', name: 'Gợi ý AI', count: 4, icon: <Bot className="w-4 h-4" /> }
             ].map((tab) => (
               <button
@@ -1246,8 +884,7 @@ export default function SalesManagement() {
             ))}
           </nav>
         </div>        {/* Tab Content */}
-        <div className="p-4">          {activeTab === 'leads' && renderLeads()}
-          {activeTab === 'deals' && renderDeals()}
+        <div className="p-4">          {activeTab === 'pipeline' && renderPipeline()}
           {activeTab === 'orders' && (
             <div className="space-y-6">
               <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
@@ -1265,7 +902,6 @@ export default function SalesManagement() {
               <OrderManagement />
             </div>
           )}
-          {activeTab === 'pipeline' && renderPipeline()}
           {activeTab === 'ai-suggestions' && (
             <div className="space-y-6">
               <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 border border-purple-200">
@@ -1281,7 +917,7 @@ export default function SalesManagement() {
               </div>
               <AISuggestionsTab 
                 leads={leads}
-                deals={deals}
+                deals={[]}
                 onSuggestionAction={handleAISuggestion}
               />
             </div>
