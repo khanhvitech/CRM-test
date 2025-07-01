@@ -93,16 +93,62 @@ interface Task {
   
   // Notes and comments
   internalNotes: string
+  progressNotes: TaskProgressNote[]
   
   // Automation
   isAutoCreated: boolean
   autoTrigger?: string
+  
+  // Reminders
+  reminders: TaskReminder[]
+  customReminders: CustomReminder[]
   
   // Tracking
   createdAt: string
   createdBy: string
   updatedAt: string
   completedAt?: string
+  history: TaskHistory[]
+}
+
+interface TaskProgressNote {
+  id: string
+  progress: number
+  note: string
+  createdAt: string
+  createdBy: string
+}
+
+interface TaskReminder {
+  id: string
+  taskId: string
+  type: 'zalo' | 'email' | 'app'
+  scheduledAt: string
+  content: string
+  status: 'pending' | 'sent' | 'read' | 'failed'
+  sentAt?: string
+  readAt?: string
+  attempt: number
+}
+
+interface CustomReminder {
+  id: string
+  taskId: string
+  scheduleType: 'once' | 'recurring'
+  scheduledAt: string
+  recurringPattern?: string
+  channels: ('zalo' | 'email' | 'app')[]
+  content: string
+  isActive: boolean
+  lastSent?: string
+}
+
+interface TaskHistory {
+  id: string
+  action: string
+  details: string
+  createdAt: string
+  createdBy: string
 }
 
 interface Employee {
@@ -266,10 +312,14 @@ export default function TaskManagement() {
         relatedName: 'Công ty ABC',
         relatedInfo: { phone: '0987654321' },
         internalNotes: 'Khách quan tâm đến tính năng chấm công tự động',
+        progressNotes: [],
         isAutoCreated: false,
+        reminders: [],
+        customReminders: [],
         createdAt: '2025-07-01T09:00:00',
         createdBy: '2',
-        updatedAt: '2025-07-01T09:00:00'
+        updatedAt: '2025-07-01T09:00:00',
+        history: []
       },
       {
         id: '2',
@@ -286,11 +336,15 @@ export default function TaskManagement() {
         relatedName: 'ORD-001',
         relatedInfo: { orderNumber: 'ORD-001', orderStatus: 'confirmed' },
         internalNotes: 'Đã trao đổi với khách về điều khoản thanh toán',
+        progressNotes: [],
         isAutoCreated: true,
         autoTrigger: 'order_confirmed',
+        reminders: [],
+        customReminders: [],
         createdAt: '2025-06-28T16:00:00',
         createdBy: 'system',
-        updatedAt: '2025-07-01T14:00:00'
+        updatedAt: '2025-07-01T14:00:00',
+        history: []
       },
       {
         id: '3',
@@ -307,10 +361,14 @@ export default function TaskManagement() {
         relatedName: 'Công ty ABC',
         relatedInfo: { phone: '0987654321' },
         internalNotes: 'Khách hàng đã mua sản phẩm 6 tháng trước',
+        progressNotes: [],
         isAutoCreated: false,
+        reminders: [],
+        customReminders: [],
         createdAt: '2025-07-01T08:30:00',
         createdBy: '1',
-        updatedAt: '2025-07-01T08:30:00'
+        updatedAt: '2025-07-01T08:30:00',
+        history: []
       }
     ]
 

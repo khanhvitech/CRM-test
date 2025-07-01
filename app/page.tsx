@@ -5,11 +5,9 @@ import VileadSidebar from './components/VileadSidebar'
 import Header from './components/Header'
 import Dashboard from './components/Dashboard'
 import AccountantDashboard from './components/AccountantDashboard'
-import WorkspaceManagement from './components/WorkspaceManagement'
 import SalesManagement from './components/SalesManagement'
 import CustomersManagement from './components/CustomersManagement'
 import OrderManagement from './components/OrderManagement'
-import InvoicePaymentManagement from './components/InvoicePaymentManagement'
 import TaskManagement from './components/TaskManagement'
 import ReportsManagement from './components/ReportsManagement'
 import SettingsManagement from './components/SettingsManagement'
@@ -17,7 +15,7 @@ import ChatbotAssistant from './components/ChatbotAssistantNew'
 // import VileadsChatbot from './components/VileadsChatbot'
 
 export default function Home() {
-  const [currentView, setCurrentView] = useState('workspace') // Đổi mặc định từ 'dashboard' thành 'workspace'
+  const [currentView, setCurrentView] = useState('dashboard') // Đổi về dashboard làm mặc định
   const [userRole, setUserRole] = useState('admin') // Theo dõi vai trò người dùng
 
   const handleViewChange = (view: string) => {
@@ -40,8 +38,6 @@ export default function Home() {
           return <AccountantDashboard />
         }
         return <Dashboard />
-      case 'workspace':
-        return <WorkspaceManagement />
       case 'sales':
         return <SalesManagement />
       case 'customers':
@@ -52,8 +48,6 @@ export default function Home() {
         return <SalesManagement />
       case 'orders':
         return <OrderManagement />
-      case 'invoices':
-        return <InvoicePaymentManagement />
       case 'tasks':
         return <TaskManagement />
       case 'products':  // Redirect to settings for backward compatibility

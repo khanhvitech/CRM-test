@@ -15,8 +15,6 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  Briefcase,
-  Receipt,
   CreditCard
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -54,20 +52,12 @@ function getCurrentTime() {
 const getMenuItemsByRole = (userRole: string = 'sale') => {
   const allMenuItems = [
     {
-      id: 'workspace',
-      icon: Briefcase,
-      label: "Bàn làm việc",
-      iconText: "�",
-      tooltip: "Bàn làm việc: Công việc AI gợi ý hàng ngày",
-      roles: ["admin", "ceo", "leader", "sale", "accountant"]
-    },
-    {
       id: 'dashboard',
       icon: LayoutDashboard,
       label: "Tổng quan",
       iconText: "📊",
       tooltip: "Tổng quan: Dashboard theo vai trò",
-      roles: ["admin", "ceo", "accountant"]
+      roles: ["admin", "ceo", "leader", "sale", "accountant"]
     },
     {
       id: 'sales',
@@ -90,14 +80,6 @@ const getMenuItemsByRole = (userRole: string = 'sale') => {
       iconText: "🛒",
       tooltip: "Quản lý Đơn hàng: Trạng thái và hóa đơn",
       roles: ["admin", "ceo", "leader", "sale", "accountant"]
-    },
-    {
-      id: 'invoices',
-      icon: Receipt,
-      label: "Hóa đơn & Thanh toán",
-      iconText: "🧾",
-      tooltip: "Hóa đơn & Thanh toán: Quản lý hóa đơn và theo dõi thanh toán",
-      roles: ["admin", "ceo", "accountant"]
     },
     {
       id: 'tasks',
