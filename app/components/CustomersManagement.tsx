@@ -9,7 +9,7 @@ import {
   Bell, RefreshCw, Zap, BarChart3, PieChart, CheckCircle, XCircle,
   FileText, History, Send, Settings, Download, Crown, Award, UserPlus,
   Info, ArrowUpRight, ArrowDownRight, X, MessageSquare, Columns,
-  Brain, BarChart
+  Brain, BarChart, Package
 } from 'lucide-react'
 import CustomerFilters, { CustomerFilters as FilterType } from './CustomerFilters'
 import CustomerEventsManager from './CustomerEventsManager'
@@ -192,11 +192,11 @@ export default function CustomersManagement() {
     engagementScore: true,
     churnRisk: true,
     value: true,
-    birthday: false,
-    firstPurchaseDate: false,
-    lastPurchaseDate: false,
-    phone: false,
-    address: false,
+    birthday: true,
+    firstPurchaseDate: true,
+    lastPurchaseDate: true,
+    phone: true,
+    address: true,
     actions: true
   })
   const [sortBy, setSortBy] = useState('name')
@@ -276,7 +276,7 @@ export default function CustomersManagement() {
       churnRisk: 5,
       loyaltyPoints: 2500,
       preferredChannel: 'email',
-      dateOfBirth: '1985-03-15',
+      dateOfBirth: '1985-07-15',
       gender: 'male',
       maritalStatus: 'married',
       address: '123 Đường Nguyễn Huệ',
@@ -527,7 +527,7 @@ export default function CustomersManagement() {
       churnRisk: 75,
       loyaltyPoints: 400,
       preferredChannel: 'phone',
-      dateOfBirth: '1978-12-10',
+      dateOfBirth: '1978-07-25',
       gender: 'male',
       maritalStatus: 'married',
       address: '789 Đường Trần Phú',
@@ -951,7 +951,7 @@ export default function CustomersManagement() {
       churnRisk: 100,
       loyaltyPoints: 0,
       preferredChannel: 'phone',
-      dateOfBirth: '1980-04-18',
+      dateOfBirth: '1980-07-02',
       gender: 'male',
       maritalStatus: 'married',
       address: '147 Đường Nguyễn Trãi',
@@ -2313,7 +2313,9 @@ export default function CustomersManagement() {
     riskLevel: '',
     daysSinceLastContact: '',
     customerType: '',
-    engagementScore: ''
+    engagementScore: '',
+    birthdayPeriod: '',
+    birthdayMonth: ''
   })
 
   const handleRemarketingCustomerToggle = (customer: Customer) => {
@@ -2338,7 +2340,63 @@ export default function CustomersManagement() {
 
   const getFilteredRemarketingCustomers = () => {
     return customers.filter(customer => {
-      // Base remarketing criteria
+      // Special logic for birthday campaign
+      if (remarketingCampaignType === 'birthday') {
+        if (!customer.dateOfBirth) return false
+        
+        const customerBirthday = new Date(customer.dateOfBirth)
+        const currentDate = new Date()
+        const customerMonth = customerBirthday.getMonth()
+        const customerDay = customerBirthday.getDate()
+        
+        // Apply birthday period filter
+        if (remarketingFilters.birthdayPeriod) {
+          const currentMonth = currentDate.getMonth()
+          const currentYear = currentDate.getFullYear()
+          
+          if (remarketingFilters.birthdayPeriod === 'this_month') {
+            return customerMonth === currentMonth
+          } else if (remarketingFilters.birthdayPeriod === 'next_month') {
+            const nextMonth = (currentMonth + 1) % 12
+            return customerMonth === nextMonth
+          } else if (remarketingFilters.birthdayPeriod === 'this_week') {
+            const currentWeekStart = new Date(currentDate)
+            currentWeekStart.setDate(currentDate.getDate() - currentDate.getDay())
+            const currentWeekEnd = new Date(currentWeekStart)
+            currentWeekEnd.setDate(currentWeekStart.getDate() + 6)
+            
+            const thisBirthday = new Date(currentYear, customerMonth, customerDay)
+            return thisBirthday >= currentWeekStart && thisBirthday <= currentWeekEnd
+          } else if (remarketingFilters.birthdayPeriod === 'next_week') {
+            const nextWeekStart = new Date(currentDate)
+            nextWeekStart.setDate(currentDate.getDate() + (7 - currentDate.getDay()))
+            const nextWeekEnd = new Date(nextWeekStart)
+            nextWeekEnd.setDate(nextWeekStart.getDate() + 6)
+            
+            const thisBirthday = new Date(currentYear, customerMonth, customerDay)
+            return thisBirthday >= nextWeekStart && thisBirthday <= nextWeekEnd
+          } else if (remarketingFilters.birthdayPeriod === 'today') {
+            return customerMonth === currentMonth && customerDay === currentDate.getDate()
+          }
+        }
+        
+        // Apply specific month filter
+        if (remarketingFilters.birthdayMonth) {
+          const selectedMonth = parseInt(remarketingFilters.birthdayMonth)
+          return customerMonth === selectedMonth
+        }
+        
+        // Default: current month or next month
+        if (!remarketingFilters.birthdayPeriod && !remarketingFilters.birthdayMonth) {
+          const currentMonth = currentDate.getMonth()
+          const nextMonth = (currentMonth + 1) % 12
+          return customerMonth === currentMonth || customerMonth === nextMonth
+        }
+        
+        return true
+      }
+
+      // Base remarketing criteria for other campaigns
       let isEligible = customer.churnRisk >= 40 || customer.daysSinceLastInteraction >= 14
 
       // Apply additional filters
@@ -2371,7 +2429,7 @@ export default function CustomersManagement() {
     <>
       {/* Remarketing Campaign Modal - Multi-step Flow */}
       {showRemarketingModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
           <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden">
             {/* Header with Steps */}
             <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-orange-50 to-amber-50">
@@ -2392,7 +2450,9 @@ export default function CustomersManagement() {
                     riskLevel: '',
                     daysSinceLastContact: '',
                     customerType: '',
-                    engagementScore: ''
+                    engagementScore: '',
+                    birthdayPeriod: '',
+                    birthdayMonth: ''
                   })
                 }}
                 className="text-gray-400 hover:text-gray-600"
@@ -2408,14 +2468,14 @@ export default function CustomersManagement() {
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                     remarketingStep >= 1 ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-400'
                   }`}>1</div>
-                  <span className="font-medium">Lọc khách hàng</span>
+                  <span className="font-medium">Chọn loại chiến dịch</span>
                 </div>
                 <div className={`w-8 h-0.5 ${remarketingStep >= 2 ? 'bg-orange-600' : 'bg-gray-200'}`}></div>
                 <div className={`flex items-center space-x-2 ${remarketingStep >= 2 ? 'text-orange-600' : 'text-gray-400'}`}>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                     remarketingStep >= 2 ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-400'
                   }`}>2</div>
-                  <span className="font-medium">Chọn loại chiến dịch</span>
+                  <span className="font-medium">Lọc khách hàng</span>
                 </div>
                 <div className={`w-8 h-0.5 ${remarketingStep >= 3 ? 'bg-orange-600' : 'bg-gray-200'}`}></div>
                 <div className={`flex items-center space-x-2 ${remarketingStep >= 3 ? 'text-orange-600' : 'text-gray-400'}`}>
@@ -2428,128 +2488,11 @@ export default function CustomersManagement() {
             </div>
 
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-300px)]">
-              {/* Step 1: Customer Filtering */}
+              {/* Step 1: Campaign Type Selection */}
               {remarketingStep === 1 && (
                 <div className="space-y-6">
                   <div className="text-center mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Bước 1: Lọc khách hàng mục tiêu</h3>
-                    <p className="text-gray-600">Chọn các tiêu chí để lọc khách hàng cần remarketing</p>
-                  </div>
-
-                  {/* Filters */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Mức độ rủi ro</label>
-                      <select
-                        value={remarketingFilters.riskLevel}
-                        onChange={(e) => setRemarketingFilters(prev => ({ ...prev, riskLevel: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      >
-                        <option value="">Tất cả</option>
-                        <option value="high">Cao (≥70%)</option>
-                        <option value="medium">Trung bình (40-69%)</option>
-                        <option value="low">Thấp (&lt;40%)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Ngày chưa liên hệ</label>
-                      <select
-                        value={remarketingFilters.daysSinceLastContact}
-                        onChange={(e) => setRemarketingFilters(prev => ({ ...prev, daysSinceLastContact: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      >
-                        <option value="">Tất cả</option>
-                        <option value="7">≥ 7 ngày</option>
-                        <option value="14">≥ 14 ngày</option>
-                        <option value="30">≥ 30 ngày</option>
-                        <option value="60">≥ 60 ngày</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Loại khách hàng</label>
-                      <select
-                        value={remarketingFilters.customerType}
-                        onChange={(e) => setRemarketingFilters(prev => ({ ...prev, customerType: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      >
-                        <option value="">Tất cả</option>
-                        <option value="diamond">Kim cương</option>
-                        <option value="gold">Vàng</option>
-                        <option value="silver">Bạc</option>
-                        <option value="bronze">Đồng</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Điểm tương tác</label>
-                      <select
-                        value={remarketingFilters.engagementScore}
-                        onChange={(e) => setRemarketingFilters(prev => ({ ...prev, engagementScore: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      >
-                        <option value="">Tất cả</option>
-                        <option value="high">Cao (≥70)</option>
-                        <option value="medium">Trung bình (40-69)</option>
-                        <option value="low">Thấp (&lt;40)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Customer List */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-gray-900">
-                        Khách hàng phù hợp ({getFilteredRemarketingCustomers().length})
-                      </h4>
-                      <button
-                        onClick={handleSelectAllRemarketing}
-                        className="text-sm text-orange-600 hover:text-orange-800 font-medium"
-                      >
-                        {selectedRemarketingCustomers.length === getFilteredRemarketingCustomers().length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
-                      </button>
-                    </div>
-                    
-                    <div className="max-h-80 overflow-y-auto space-y-2">
-                      {getFilteredRemarketingCustomers().map(customer => (
-                        <div key={customer.id} className="flex items-center space-x-3 p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
-                          <input
-                            type="checkbox"
-                            checked={selectedRemarketingCustomers.find(c => c.id === customer.id) !== undefined}
-                            onChange={() => handleRemarketingCustomerToggle(customer)}
-                            className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                          />
-                          <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-medium">
-                            {customer.name.charAt(0)}
-                          </div>
-                          <div className="flex-1">
-                            <h5 className="font-medium text-gray-900">{customer.name}</h5>
-                            <p className="text-sm text-gray-600">{customer.company}</p>
-                            <div className="flex items-center space-x-4 mt-1">
-                              <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
-                                {customer.churnRisk}% rủi ro
-                              </span>
-                              <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
-                                {customer.daysSinceLastInteraction} ngày
-                              </span>
-                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                                {customer.engagementScore} điểm
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: Campaign Type Selection */}
-              {remarketingStep === 2 && (
-                <div className="space-y-6">
-                  <div className="text-center mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Bước 2: Chọn loại chiến dịch</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Bước 1: Chọn loại chiến dịch</h3>
                     <p className="text-gray-600">Chọn hình thức liên hệ phù hợp với khách hàng của bạn</p>
                   </div>
 
@@ -2709,6 +2652,226 @@ export default function CustomersManagement() {
                         <div>• Phù hợp: Khách hàng giá rẻ</div>
                       </div>
                     </div>
+
+                    {/* Birthday Campaign */}
+                    <div 
+                      onClick={() => setRemarketingCampaignType('birthday')}
+                      className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                        remarketingCampaignType === 'birthday' 
+                          ? 'border-pink-500 bg-pink-50' 
+                          : 'border-gray-200 hover:border-pink-300 hover:bg-pink-25'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
+                          <Heart className="w-6 h-6 text-pink-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">🎂 Birthday Campaign</h4>
+                          <p className="text-sm text-gray-600">Chúc mừng sinh nhật khách hàng</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div>• Tỷ lệ mở email: ~85%</div>
+                        <div>• Tỷ lệ chuyển đổi: ~45%</div>
+                        <div>• Chi phí: Thấp</div>
+                        <div>• Thời gian thiết lập: 15 phút</div>
+                        <div>• Phù hợp: Tất cả khách hàng có sinh nhật</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Customer Filtering */}
+              {remarketingStep === 2 && (
+                <div className="space-y-6">
+                  <div className="text-center mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Bước 2: Lọc khách hàng mục tiêu</h3>
+                    <p className="text-gray-600">Chọn các tiêu chí để lọc khách hàng cần remarketing</p>
+                  </div>
+
+                  {/* Filters */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Mức độ rủi ro</label>
+                      <select
+                        value={remarketingFilters.riskLevel}
+                        onChange={(e) => setRemarketingFilters(prev => ({ ...prev, riskLevel: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="">Tất cả</option>
+                        <option value="high">Cao (≥70%)</option>
+                        <option value="medium">Trung bình (40-69%)</option>
+                        <option value="low">Thấp (&lt;40%)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Ngày chưa liên hệ</label>
+                      <select
+                        value={remarketingFilters.daysSinceLastContact}
+                        onChange={(e) => setRemarketingFilters(prev => ({ ...prev, daysSinceLastContact: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="">Tất cả</option>
+                        <option value="7">≥ 7 ngày</option>
+                        <option value="14">≥ 14 ngày</option>
+                        <option value="30">≥ 30 ngày</option>
+                        <option value="60">≥ 60 ngày</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Loại khách hàng</label>
+                      <select
+                        value={remarketingFilters.customerType}
+                        onChange={(e) => setRemarketingFilters(prev => ({ ...prev, customerType: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="">Tất cả</option>
+                        <option value="diamond">Kim cương</option>
+                        <option value="gold">Vàng</option>
+                        <option value="silver">Bạc</option>
+                        <option value="bronze">Đồng</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Điểm tương tác</label>
+                      <select
+                        value={remarketingFilters.engagementScore}
+                        onChange={(e) => setRemarketingFilters(prev => ({ ...prev, engagementScore: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      >
+                        <option value="">Tất cả</option>
+                        <option value="high">Cao (≥70)</option>
+                        <option value="medium">Trung bình (40-69)</option>
+                        <option value="low">Thấp (&lt;40)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Birthday Campaign Specific Filters */}
+                  {remarketingCampaignType === 'birthday' && (
+                    <div className="p-4 bg-pink-50 border border-pink-200 rounded-lg">
+                      <h4 className="font-medium text-pink-800 mb-3 flex items-center">
+                        🎂 Bộ lọc sinh nhật
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Khoảng thời gian</label>
+                          <select
+                            value={remarketingFilters.birthdayPeriod}
+                            onChange={(e) => setRemarketingFilters(prev => ({ ...prev, birthdayPeriod: e.target.value, birthdayMonth: '' }))}
+                            className="w-full px-3 py-2 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-500"
+                          >
+                            <option value="">Tháng này + tháng tới (mặc định)</option>
+                            <option value="today">🎯 Hôm nay</option>
+                            <option value="this_week">📅 Tuần này</option>
+                            <option value="next_week">📅 Tuần tới</option>
+                            <option value="this_month">📅 Tháng này</option>
+                            <option value="next_month">📅 Tháng tới</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Tháng cụ thể</label>
+                          <select
+                            value={remarketingFilters.birthdayMonth}
+                            onChange={(e) => setRemarketingFilters(prev => ({ ...prev, birthdayMonth: e.target.value, birthdayPeriod: '' }))}
+                            className="w-full px-3 py-2 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-500"
+                            disabled={remarketingFilters.birthdayPeriod !== ''}
+                          >
+                            <option value="">Chọn tháng sinh nhật</option>
+                            <option value="0">Tháng 1</option>
+                            <option value="1">Tháng 2</option>
+                            <option value="2">Tháng 3</option>
+                            <option value="3">Tháng 4</option>
+                            <option value="4">Tháng 5</option>
+                            <option value="5">Tháng 6</option>
+                            <option value="6">Tháng 7</option>
+                            <option value="7">Tháng 8</option>
+                            <option value="8">Tháng 9</option>
+                            <option value="9">Tháng 10</option>
+                            <option value="10">Tháng 11</option>
+                            <option value="11">Tháng 12</option>
+                          </select>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-3 text-sm text-pink-700">
+                        💡 <strong>Gợi ý:</strong> 
+                        {remarketingFilters.birthdayPeriod === 'today' && ' Gửi lời chúc vào đúng ngày sinh nhật'}
+                        {remarketingFilters.birthdayPeriod === 'this_week' && ' Gửi trước 1-2 ngày để chuẩn bị quà'}
+                        {remarketingFilters.birthdayPeriod === 'next_week' && ' Lên kế hoạch chiến dịch trước'}
+                        {remarketingFilters.birthdayPeriod === 'this_month' && ' Chiến dịch sinh nhật tháng hiện tại'}
+                        {remarketingFilters.birthdayPeriod === 'next_month' && ' Chuẩn bị chiến dịch tháng sau'}
+                        {remarketingFilters.birthdayMonth && ` Tất cả khách hàng sinh tháng ${parseInt(remarketingFilters.birthdayMonth) + 1}`}
+                        {!remarketingFilters.birthdayPeriod && !remarketingFilters.birthdayMonth && ' Tự động lọc sinh nhật gần nhất (tháng này + tháng tới)'}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Customer List */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-gray-900">
+                        Khách hàng phù hợp ({getFilteredRemarketingCustomers().length})
+                      </h4>
+                      <button
+                        onClick={handleSelectAllRemarketing}
+                        className="text-sm text-orange-600 hover:text-orange-800 font-medium"
+                      >
+                        {selectedRemarketingCustomers.length === getFilteredRemarketingCustomers().length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                      </button>
+                    </div>
+                    
+                    <div className="max-h-80 overflow-y-auto space-y-2">
+                      {getFilteredRemarketingCustomers().map(customer => (
+                        <div key={customer.id} className="flex items-center space-x-3 p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            checked={selectedRemarketingCustomers.find(c => c.id === customer.id) !== undefined}
+                            onChange={() => handleRemarketingCustomerToggle(customer)}
+                            className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                          />
+                          <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-medium">
+                            {customer.name.charAt(0)}
+                          </div>
+                          <div className="flex-1">
+                            <h5 className="font-medium text-gray-900">{customer.name}</h5>
+                            <p className="text-sm text-gray-600">{customer.company}</p>
+                            <div className="flex items-center space-x-4 mt-1">
+                              {remarketingCampaignType === 'birthday' ? (
+                                <>
+                                  <span className="text-xs bg-pink-100 text-pink-800 px-2 py-1 rounded-full">
+                                    🎂 {formatBirthday(customer.dateOfBirth)}
+                                  </span>
+                                  <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                                    {customer.customerType === 'diamond' ? '💎 VIP' : 
+                                     customer.customerType === 'gold' ? '🥇 Vàng' : 
+                                     customer.customerType === 'silver' ? '🥈 Bạc' : '🥉 Đồng'}
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                                    {customer.churnRisk}% rủi ro
+                                  </span>
+                                  <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                                    {customer.daysSinceLastInteraction} ngày
+                                  </span>
+                                </>
+                              )}
+                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                {customer.engagementScore} điểm
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -2723,7 +2886,9 @@ export default function CustomersManagement() {
                       remarketingCampaignType === 'sms' ? 'SMS' :
                       remarketingCampaignType === 'phone' ? 'Phone' :
                       remarketingCampaignType === 'multi' ? 'Multi-Channel' :
-                      remarketingCampaignType === 'social' ? 'Social Media' : 'Promotion'
+                      remarketingCampaignType === 'social' ? 'Social Media' : 
+                      remarketingCampaignType === 'promotion' ? 'Promotion' :
+                      remarketingCampaignType === 'birthday' ? '🎂 Birthday' : 'Remarketing'
                     }</p>
                   </div>
 
@@ -2736,7 +2901,11 @@ export default function CustomersManagement() {
                           <label className="block text-sm font-medium text-gray-700 mb-2">Tên chiến dịch</label>
                           <input
                             type="text"
-                            defaultValue={`Remarketing ${remarketingCampaignType.toUpperCase()} - ${new Date().toLocaleDateString('vi-VN')}`}
+                            defaultValue={
+                              remarketingCampaignType === 'birthday' 
+                                ? `🎂 Chúc mừng sinh nhật - ${new Date().toLocaleDateString('vi-VN')}`
+                                : `Remarketing ${remarketingCampaignType.toUpperCase()} - ${new Date().toLocaleDateString('vi-VN')}`
+                            }
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                           />
                         </div>
@@ -2757,6 +2926,37 @@ export default function CustomersManagement() {
                               max="50"
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                             />
+                          </div>
+                        )}
+                        {remarketingCampaignType === 'birthday' && (
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">🎁 Ưu đãi sinh nhật</label>
+                              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500">
+                                <option value="discount">Giảm giá 15%</option>
+                                <option value="gift">Quà tặng miễn phí</option>
+                                <option value="voucher">Voucher 100k</option>
+                                <option value="combo">Combo ưu đãi</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">📅 Gửi trước sinh nhật</label>
+                              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500">
+                                <option value="0">Vào ngày sinh nhật</option>
+                                <option value="1">1 ngày trước</option>
+                                <option value="3">3 ngày trước</option>
+                                <option value="7">1 tuần trước</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">💌 Template tin nhắn</label>
+                              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500">
+                                <option value="formal">Lời chúc trang trọng</option>
+                                <option value="friendly">Lời chúc thân thiện</option>
+                                <option value="cute">Lời chúc dễ thương</option>
+                                <option value="business">Lời chúc kinh doanh</option>
+                              </select>
+                            </div>
                           </div>
                         )}
                         <div>
@@ -2790,12 +2990,26 @@ export default function CustomersManagement() {
                   </div>
 
                   {/* Campaign Preview */}
-                  <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-6">
-                    <h4 className="font-medium text-orange-800 mb-4">📊 Dự báo hiệu quả chiến dịch</h4>
+                  <div className={`border rounded-lg p-6 ${
+                    remarketingCampaignType === 'birthday' 
+                      ? 'bg-gradient-to-r from-pink-50 to-purple-50 border-pink-200' 
+                      : 'bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200'
+                  }`}>
+                    <h4 className={`font-medium mb-4 ${
+                      remarketingCampaignType === 'birthday' ? 'text-pink-800' : 'text-orange-800'
+                    }`}>
+                      {remarketingCampaignType === 'birthday' ? '🎂 Dự báo hiệu quả chúc mừng sinh nhật' : '📊 Dự báo hiệu quả chiến dịch'}
+                    </h4>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-orange-600">{selectedRemarketingCustomers.length}</p>
-                        <p className="text-sm text-orange-800">Khách hàng</p>
+                        <p className={`text-2xl font-bold ${
+                          remarketingCampaignType === 'birthday' ? 'text-pink-600' : 'text-orange-600'
+                        }`}>{selectedRemarketingCustomers.length}</p>
+                        <p className={`text-sm ${
+                          remarketingCampaignType === 'birthday' ? 'text-pink-800' : 'text-orange-800'
+                        }`}>
+                          {remarketingCampaignType === 'birthday' ? 'Khách có sinh nhật' : 'Khách hàng'}
+                        </p>
                       </div>
                       <div className="text-center">
                         <p className="text-2xl font-bold text-green-600">
@@ -2804,22 +3018,41 @@ export default function CustomersManagement() {
                             remarketingCampaignType === 'sms' ? 0.98 :
                             remarketingCampaignType === 'phone' ? 0.45 :
                             remarketingCampaignType === 'multi' ? 0.65 :
-                            remarketingCampaignType === 'social' ? 0.35 : 0.55
+                            remarketingCampaignType === 'social' ? 0.35 : 
+                            remarketingCampaignType === 'birthday' ? 0.85 : 0.55
                           ) * 100) / 100}
                         </p>
-                        <p className="text-sm text-green-800">Dự kiến phản hồi</p>
+                        <p className="text-sm text-green-800">
+                          {remarketingCampaignType === 'birthday' ? 'Dự kiến mở email' : 'Dự kiến phản hồi'}
+                        </p>
                       </div>
                       <div className="text-center">
                         <p className="text-2xl font-bold text-blue-600">
-                          {Math.round(selectedRemarketingCustomers.length * 0.15)}
+                          {Math.round(selectedRemarketingCustomers.length * (
+                            remarketingCampaignType === 'birthday' ? 0.45 : 0.15
+                          ))}
                         </p>
                         <p className="text-sm text-blue-800">Dự kiến chuyển đổi</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-purple-600">15%</p>
+                        <p className="text-2xl font-bold text-purple-600">
+                          {remarketingCampaignType === 'birthday' ? '45%' : '15%'}
+                        </p>
                         <p className="text-sm text-purple-800">Tỷ lệ thành công</p>
                       </div>
                     </div>
+                    
+                    {/* Birthday specific preview */}
+                    {remarketingCampaignType === 'birthday' && (
+                      <div className="mt-4 p-4 bg-white rounded-lg border border-pink-200">
+                        <h5 className="font-medium text-pink-800 mb-2">💌 Preview tin nhắn sinh nhật:</h5>
+                        <div className="text-sm text-gray-700 italic bg-pink-50 p-3 rounded border-l-4 border-pink-400">
+                          &quot;🎉 Chúc mừng sinh nhật {selectedRemarketingCustomers[0]?.name || '[Tên khách hàng]'}! 🎂<br/>
+                          Nhân dịp sinh nhật đặc biệt này, chúng tôi gửi tặng bạn ưu đãi 15% cho tất cả sản phẩm. 🎁<br/>
+                          Cảm ơn bạn đã luôn đồng hành cùng chúng tôi!&quot;
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -2828,8 +3061,8 @@ export default function CustomersManagement() {
             {/* Footer Actions */}
             <div className="flex items-center justify-between p-6 border-t bg-gray-50">
               <div className="text-sm text-gray-600">
-                {remarketingStep === 1 && `${selectedRemarketingCustomers.length} khách hàng đã chọn`}
-                {remarketingStep === 2 && remarketingCampaignType && `Loại chiến dịch: ${remarketingCampaignType}`}
+                {remarketingStep === 1 && remarketingCampaignType && `Loại chiến dịch: ${remarketingCampaignType}`}
+                {remarketingStep === 2 && `${selectedRemarketingCustomers.length} khách hàng đã chọn`}
                 {remarketingStep === 3 && `Sẵn sàng chạy chiến dịch cho ${selectedRemarketingCustomers.length} khách hàng`}
               </div>
               <div className="flex space-x-3">
@@ -2846,7 +3079,9 @@ export default function CustomersManagement() {
                         riskLevel: '',
                         daysSinceLastContact: '',
                         customerType: '',
-                        engagementScore: ''
+                        engagementScore: '',
+                        birthdayPeriod: '',
+                        birthdayMonth: ''
                       })
                     }
                   }}
@@ -2857,12 +3092,12 @@ export default function CustomersManagement() {
                 <button
                   onClick={() => {
                     if (remarketingStep < 3) {
-                      if (remarketingStep === 1 && selectedRemarketingCustomers.length === 0) {
-                        alert('Vui lòng chọn ít nhất một khách hàng')
+                      if (remarketingStep === 1 && !remarketingCampaignType) {
+                        alert('Vui lòng chọn loại chiến dịch')
                         return
                       }
-                      if (remarketingStep === 2 && !remarketingCampaignType) {
-                        alert('Vui lòng chọn loại chiến dịch')
+                      if (remarketingStep === 2 && selectedRemarketingCustomers.length === 0) {
+                        alert('Vui lòng chọn ít nhất một khách hàng')
                         return
                       }
                       setRemarketingStep(remarketingStep + 1)
@@ -2877,13 +3112,15 @@ export default function CustomersManagement() {
                         riskLevel: '',
                         daysSinceLastContact: '',
                         customerType: '',
-                        engagementScore: ''
+                        engagementScore: '',
+                        birthdayPeriod: '',
+                        birthdayMonth: ''
                       })
                     }
                   }}
                   disabled={
-                    (remarketingStep === 1 && selectedRemarketingCustomers.length === 0) ||
-                    (remarketingStep === 2 && !remarketingCampaignType)
+                    (remarketingStep === 1 && !remarketingCampaignType) ||
+                    (remarketingStep === 2 && selectedRemarketingCustomers.length === 0)
                   }
                   className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
@@ -4010,62 +4247,64 @@ export default function CustomersManagement() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
+            <div className="overflow-x-auto border border-gray-200 rounded-lg">
+              <table className="w-full border-collapse">
+                <thead className="bg-gray-50">
+                  <tr className="border-b border-gray-300">
                     {visibleColumns.customer && (
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Khách hàng</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 border-r border-gray-200 whitespace-nowrap min-w-fit">Khách hàng</th>
                     )}
                     {visibleColumns.company && (
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Công ty</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 border-r border-gray-200 whitespace-nowrap min-w-fit">Công ty</th>
                     )}
                     {visibleColumns.customerType && (
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Hạng KH</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 border-r border-gray-200 whitespace-nowrap min-w-fit">Hạng KH</th>
                     )}
                     {visibleColumns.status && (
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Trạng thái</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 border-r border-gray-200 whitespace-nowrap min-w-fit">Trạng thái</th>
                     )}
                     {visibleColumns.products && (
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Sản phẩm đã mua</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 border-r border-gray-200 whitespace-nowrap min-w-fit">Sản phẩm đã mua</th>
                     )}
                     {visibleColumns.lastInteraction && (
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Tương tác cuối</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 border-r border-gray-200 whitespace-nowrap min-w-fit">Tương tác cuối</th>
                     )}
                     {visibleColumns.engagementScore && (
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Điểm tương tác</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 border-r border-gray-200 whitespace-nowrap min-w-fit">Điểm tương tác</th>
                     )}
                     {visibleColumns.churnRisk && (
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Rủi ro</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 border-r border-gray-200 whitespace-nowrap min-w-fit">Rủi ro</th>
                     )}
                     {visibleColumns.value && (
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Giá trị</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 border-r border-gray-200 whitespace-nowrap min-w-fit">Giá trị</th>
                     )}
                     {visibleColumns.birthday && (
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Sinh nhật</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 border-r border-gray-200 whitespace-nowrap min-w-fit">Sinh nhật</th>
                     )}
                     {visibleColumns.firstPurchaseDate && (
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Mua đầu tiên</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 border-r border-gray-200 whitespace-nowrap min-w-fit">Mua đầu tiên</th>
                     )}
                     {visibleColumns.lastPurchaseDate && (
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Mua gần nhất</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 border-r border-gray-200 whitespace-nowrap min-w-fit">Mua gần nhất</th>
                     )}
                     {visibleColumns.phone && (
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Điện thoại</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 border-r border-gray-200 whitespace-nowrap min-w-fit">Điện thoại</th>
                     )}
                     {visibleColumns.address && (
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Địa chỉ</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 border-r border-gray-200 whitespace-nowrap min-w-fit">Địa chỉ</th>
                     )}
                     {visibleColumns.actions && (
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">Hành động</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700 whitespace-nowrap min-w-fit">Hành động</th>
                     )}
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredCustomers.map((customer) => (
-                    <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  {filteredCustomers.map((customer, index) => (
+                    <tr key={customer.id} className={`border-b border-gray-100 hover:bg-blue-50 transition-colors ${
+                      index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
+                    }`}>
                       {visibleColumns.customer && (
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 border-r border-gray-200">
                           <div className="flex items-center space-x-3">
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium ${
                               customer.status === 'vip' ? 'bg-purple-600' :
@@ -4082,13 +4321,13 @@ export default function CustomersManagement() {
                         </td>
                       )}
                       {visibleColumns.company && (
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 border-r border-gray-200">
                           <div className="text-sm text-gray-900">{customer.company}</div>
                           <div className="text-xs text-gray-500">{customer.industry}</div>
                         </td>
                       )}
                       {visibleColumns.customerType && (
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 border-r border-gray-200">
                           <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                             customer.customerType === 'diamond' ? 'bg-yellow-100 text-yellow-800' :
                             customer.customerType === 'gold' ? 'bg-amber-100 text-amber-800' :
@@ -4108,7 +4347,7 @@ export default function CustomersManagement() {
                         </td>
                       )}
                       {visibleColumns.status && (
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 border-r border-gray-200">
                           <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                             customer.status === 'vip' ? 'bg-purple-100 text-purple-800' :
                             customer.status === 'active' ? 'bg-green-100 text-green-800' :
@@ -4126,7 +4365,7 @@ export default function CustomersManagement() {
                         </td>
                       )}
                       {visibleColumns.products && (
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 border-r border-gray-200">
                           <div className="max-w-xs">
                             {customer.products && customer.products.length > 0 ? (
                               <div className="space-y-1">
@@ -4154,13 +4393,13 @@ export default function CustomersManagement() {
                         </td>
                       )}
                       {visibleColumns.lastInteraction && (
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 border-r border-gray-200">
                           <div className="text-sm text-gray-900">{customer.lastInteraction || 'Chưa có'}</div>
                           <div className="text-xs text-gray-500">{customer.daysSinceLastInteraction} ngày</div>
                         </td>
                       )}
                       {visibleColumns.engagementScore && (
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 border-r border-gray-200">
                           <div className="flex items-center">
                             <div className={`w-2 h-2 rounded-full mr-2 ${
                               customer.engagementScore >= 80 ? 'bg-green-500' :
@@ -4172,20 +4411,20 @@ export default function CustomersManagement() {
                         </td>
                       )}
                       {visibleColumns.churnRisk && (
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 border-r border-gray-200">
                           <div className={`text-sm font-medium ${getRiskColor(customer.churnRisk)}`}>
                             {customer.churnRisk}%
                           </div>
                         </td>
                       )}
                       {visibleColumns.value && (
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 border-r border-gray-200">
                           <div className="font-medium text-gray-900">{formatCurrency(customer.totalValue)} VNĐ</div>
                           <div className="text-xs text-gray-500">LTV: {formatCurrency(customer.lifetimeValue)} VNĐ</div>
                         </td>
                       )}
                       {visibleColumns.birthday && (
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 border-r border-gray-200">
                           <div className="text-sm text-gray-900">{formatBirthday(customer.dateOfBirth)}</div>
                           {customer.dateOfBirth && (
                             <div className="text-xs text-gray-500">
@@ -4195,7 +4434,7 @@ export default function CustomersManagement() {
                         </td>
                       )}
                       {visibleColumns.firstPurchaseDate && (
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 border-r border-gray-200">
                           <div className="text-sm text-gray-900">{formatDate(customer.firstPurchaseDate)}</div>
                           {customer.firstPurchaseDate && (
                             <div className="text-xs text-gray-500">
@@ -4205,7 +4444,7 @@ export default function CustomersManagement() {
                         </td>
                       )}
                       {visibleColumns.lastPurchaseDate && (
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 border-r border-gray-200">
                           <div className="text-sm text-gray-900">{formatDate(customer.lastPurchaseDate)}</div>
                           {customer.lastPurchaseDate && (
                             <div className="text-xs text-gray-500">
@@ -4215,7 +4454,7 @@ export default function CustomersManagement() {
                         </td>
                       )}
                       {visibleColumns.phone && (
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 border-r border-gray-200">
                           <div className="text-sm text-gray-900">{customer.contact}</div>
                           {customer.phone2 && (
                             <div className="text-xs text-gray-500">{customer.phone2}</div>
@@ -4223,7 +4462,7 @@ export default function CustomersManagement() {
                         </td>
                       )}
                       {visibleColumns.address && (
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 border-r border-gray-200">
                           <div className="text-sm text-gray-900 max-w-xs truncate" title={`${customer.address}, ${customer.city}`}>
                             {customer.address}
                           </div>
@@ -5294,58 +5533,60 @@ export default function CustomersManagement() {
               {activeTab === 'details' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <h5 className="font-medium text-gray-900">Thông tin liên hệ</h5>
-                      <div className="grid grid-cols-1 gap-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Email chính</label>
+                    {/* Thông tin liên hệ */}
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <h5 className="font-medium text-gray-900 mb-4 pb-2 border-b border-gray-300">📞 Thông tin liên hệ</h5>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="border-b border-gray-200 pb-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Email chính</label>
                           <p className="text-sm text-gray-900">{selectedCustomer.email}</p>
                         </div>
                         {selectedCustomer.secondaryEmail && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">Email phụ</label>
+                          <div className="border-b border-gray-200 pb-3">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Email phụ</label>
                             <p className="text-sm text-gray-900">{selectedCustomer.secondaryEmail}</p>
                           </div>
                         )}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Điện thoại</label>
+                        <div className="border-b border-gray-200 pb-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Điện thoại</label>
                           <p className="text-sm text-gray-900">{selectedCustomer.contact}</p>
                         </div>
                         {selectedCustomer.phone2 && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">Điện thoại 2</label>
+                          <div className="border-b border-gray-200 pb-3">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Điện thoại 2</label>
                             <p className="text-sm text-gray-900">{selectedCustomer.phone2}</p>
                           </div>
                         )}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">Địa chỉ</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
                           <p className="text-sm text-gray-900">{selectedCustomer.address}</p>
                           <p className="text-sm text-gray-500">{selectedCustomer.city}, {selectedCustomer.state} {selectedCustomer.postalCode}</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <h5 className="font-medium text-gray-900">Thông tin công ty</h5>
-                      <div className="grid grid-cols-1 gap-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Công ty</label>
+                    {/* Thông tin công ty */}
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                      <h5 className="font-medium text-gray-900 mb-4 pb-2 border-b border-blue-300">🏢 Thông tin công ty</h5>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="border-b border-blue-200 pb-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Công ty</label>
                           <p className="text-sm text-gray-900">{selectedCustomer.company}</p>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Chức vụ</label>
+                        <div className="border-b border-blue-200 pb-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Chức vụ</label>
                           <p className="text-sm text-gray-900">{selectedCustomer.position}</p>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Phòng ban</label>
+                        <div className="border-b border-blue-200 pb-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Phòng ban</label>
                           <p className="text-sm text-gray-900">{selectedCustomer.department}</p>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Ngành</label>
+                        <div className="border-b border-blue-200 pb-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Ngành</label>
                           <p className="text-sm text-gray-900">{selectedCustomer.industry}</p>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700">Quy mô công ty</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Quy mô công ty</label>
                           <p className="text-sm text-gray-900">
                             {selectedCustomer.companySize === 'small' ? 'Nhỏ (< 50 nhân viên)' :
                              selectedCustomer.companySize === 'medium' ? 'Trung bình (50-200 nhân viên)' :
@@ -5357,32 +5598,51 @@ export default function CustomersManagement() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4 mt-6">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{selectedCustomer.engagementScore}</div>
-                      <div className="text-sm text-blue-700">Điểm tương tác</div>
-                    </div>
-                    <div className="text-center p-4 bg-red-50 rounded-lg">
-                      <div className="text-2xl font-bold text-red-600">{selectedCustomer.churnRisk}%</div>
-                      <div className="text-sm text-red-700">Rủi ro rời bỏ</div>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">{formatCurrency(selectedCustomer.totalValue)}</div>
-                      <div className="text-sm text-green-700">Giá trị (VNĐ)</div>
+                  {/* Thống kê khách hàng với đường kẻ phân cách */}
+                  <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6 border border-gray-200 mt-6">
+                    <h5 className="font-medium text-gray-900 mb-4 pb-2 border-b border-gray-300">📊 Thống kê khách hàng</h5>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center p-4 bg-white rounded-lg border border-blue-200 shadow-sm">
+                        <div className="text-2xl font-bold text-blue-600">{selectedCustomer.engagementScore}</div>
+                        <div className="text-sm text-blue-700 mt-1">Điểm tương tác</div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full" 
+                            style={{width: `${selectedCustomer.engagementScore}%`}}
+                          ></div>
+                        </div>
+                      </div>
+                      <div className="text-center p-4 bg-white rounded-lg border border-red-200 shadow-sm">
+                        <div className="text-2xl font-bold text-red-600">{selectedCustomer.churnRisk}%</div>
+                        <div className="text-sm text-red-700 mt-1">Rủi ro rời bỏ</div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                          <div 
+                            className="bg-red-600 h-2 rounded-full" 
+                            style={{width: `${selectedCustomer.churnRisk}%`}}
+                          ></div>
+                        </div>
+                      </div>
+                      <div className="text-center p-4 bg-white rounded-lg border border-green-200 shadow-sm">
+                        <div className="text-2xl font-bold text-green-600">{formatCurrency(selectedCustomer.totalValue)}</div>
+                        <div className="text-sm text-green-700 mt-1">Giá trị (VNĐ)</div>
+                        <div className="text-xs text-gray-500 mt-2">
+                          LTV: {formatCurrency(selectedCustomer.lifetimeValue)}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
                   {selectedCustomer.dateOfBirth && (
-                    <div className="mt-6">
-                      <h5 className="font-medium text-gray-900 mb-3">Thông tin cá nhân</h5>
+                    <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200 mt-6">
+                      <h5 className="font-medium text-gray-900 mb-4 pb-2 border-b border-yellow-300">👤 Thông tin cá nhân</h5>
                       <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Sinh nhật</label>
+                        <div className="border-r border-yellow-300 pr-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Sinh nhật</label>
                           <p className="text-sm text-gray-900">{formatBirthday(selectedCustomer.dateOfBirth)}</p>
                         </div>
                         {selectedCustomer.gender && (
                           <div>
-                            <label className="block text-sm font-medium text-gray-700">Giới tính</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Giới tính</label>
                             <p className="text-sm text-gray-900">
                               {selectedCustomer.gender === 'male' ? 'Nam' :
                                selectedCustomer.gender === 'female' ? 'Nữ' : 'Khác'}
@@ -5393,13 +5653,13 @@ export default function CustomersManagement() {
                     </div>
                   )}
 
-                  <div className="mt-6">
-                    <h5 className="font-medium text-gray-900 mb-3">Tags</h5>
+                  <div className="bg-purple-50 rounded-lg p-4 border border-purple-200 mt-6">
+                    <h5 className="font-medium text-gray-900 mb-4 pb-2 border-b border-purple-300">🏷️ Tags khách hàng</h5>
                     <div className="flex flex-wrap gap-2">
                       {selectedCustomer.tags.map(tag => (
                         <span
                           key={tag.id}
-                          className={`px-2 py-1 text-xs rounded-full ${tag.color}`}
+                          className={`px-3 py-1 text-xs rounded-full border ${tag.color} shadow-sm`}
                         >
                           {tag.name}
                         </span>
@@ -5411,60 +5671,82 @@ export default function CustomersManagement() {
 
               {activeTab === 'interactions' && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h5 className="font-medium text-gray-900">Lịch sử tương tác</h5>
-                    <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-                      + Thêm tương tác
+                  <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+                    <h5 className="font-medium text-gray-900 flex items-center">
+                      <History className="w-5 h-5 mr-2 text-blue-600" />
+                      Lịch sử tương tác ({selectedCustomer.interactions.length})
+                    </h5>
+                    <button className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+                      <Plus className="w-4 h-4" />
+                      <span>Thêm tương tác</span>
                     </button>
                   </div>
                   
-                  <div className="space-y-3">
-                    {selectedCustomer.interactions.map(interaction => (
-                      <div key={interaction.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="space-y-4">
+                    {selectedCustomer.interactions.map((interaction, index) => (
+                      <div key={interaction.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-start justify-between">
                           <div className="flex items-start space-x-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              interaction.type === 'email' ? 'bg-blue-100' :
-                              interaction.type === 'call' ? 'bg-green-100' :
-                              interaction.type === 'meeting' ? 'bg-purple-100' :
-                              interaction.type === 'sms' ? 'bg-yellow-100' :
-                              interaction.type === 'chat' ? 'bg-indigo-100' : 'bg-red-100'
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-sm ${
+                              interaction.type === 'email' ? 'bg-blue-100 border border-blue-200' :
+                              interaction.type === 'call' ? 'bg-green-100 border border-green-200' :
+                              interaction.type === 'meeting' ? 'bg-purple-100 border border-purple-200' :
+                              interaction.type === 'sms' ? 'bg-yellow-100 border border-yellow-200' :
+                              interaction.type === 'chat' ? 'bg-indigo-100 border border-indigo-200' : 'bg-red-100 border border-red-200'
                             }`}>
-                              {interaction.type === 'email' ? <Mail className="w-4 h-4 text-blue-600" /> :
-                               interaction.type === 'call' ? <Phone className="w-4 h-4 text-green-600" /> :
-                               interaction.type === 'meeting' ? <Calendar className="w-4 h-4 text-purple-600" /> :
-                               interaction.type === 'sms' ? <MessageSquare className="w-4 h-4 text-yellow-600" /> :
-                               interaction.type === 'chat' ? <MessageCircle className="w-4 h-4 text-indigo-600" /> :
-                               <Info className="w-4 h-4 text-red-600" />}
+                              {interaction.type === 'email' ? <Mail className="w-5 h-5 text-blue-600" /> :
+                               interaction.type === 'call' ? <Phone className="w-5 h-5 text-green-600" /> :
+                               interaction.type === 'meeting' ? <Calendar className="w-5 h-5 text-purple-600" /> :
+                               interaction.type === 'sms' ? <MessageSquare className="w-5 h-5 text-yellow-600" /> :
+                               interaction.type === 'chat' ? <MessageCircle className="w-5 h-5 text-indigo-600" /> :
+                               <Info className="w-5 h-5 text-red-600" />}
                             </div>
                             <div className="flex-1">
-                              <div className="flex items-center space-x-2">
+                              <div className="flex items-center space-x-2 mb-2">
                                 <h6 className="font-medium text-gray-900">{interaction.title}</h6>
-                                <span className={`px-2 py-1 text-xs rounded-full ${
-                                  interaction.status === 'success' ? 'bg-green-100 text-green-800' :
-                                  interaction.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-red-100 text-red-800'
+                                <span className={`px-2 py-1 text-xs rounded-full border ${
+                                  interaction.status === 'success' ? 'bg-green-100 text-green-800 border-green-200' :
+                                  interaction.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                                  'bg-red-100 text-red-800 border-red-200'
                                 }`}>
-                                  {interaction.status === 'success' ? 'Thành công' :
-                                   interaction.status === 'pending' ? 'Đang chờ' : 'Thất bại'}
+                                  {interaction.status === 'success' ? '✅ Thành công' :
+                                   interaction.status === 'pending' ? '⏳ Đang chờ' : '❌ Thất bại'}
                                 </span>
                               </div>
-                              <p className="text-sm text-gray-600 mt-1">{interaction.summary}</p>
-                              <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                                <span>{formatDate(interaction.date)}</span>
-                                <span>• {interaction.channel}</span>
+                              <div className="border-l-2 border-gray-200 pl-3 mb-3">
+                                <p className="text-sm text-gray-600">{interaction.summary}</p>
+                              </div>
+                              <div className="flex items-center space-x-4 text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded border-t border-gray-100">
+                                <span className="flex items-center">
+                                  <Calendar className="w-3 h-3 mr-1" />
+                                  {formatDate(interaction.date)}
+                                </span>
+                                <span className="flex items-center">
+                                  <MessageSquare className="w-3 h-3 mr-1" />
+                                  {interaction.channel}
+                                </span>
                               </div>
                               {interaction.aiSummary && (
-                                <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700">
-                                  <strong>AI Tóm tắt:</strong> {interaction.aiSummary}
+                                <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded border border-blue-200">
+                                  <div className="flex items-start space-x-2">
+                                    <Zap className="w-4 h-4 text-blue-600 mt-0.5" />
+                                    <div>
+                                      <strong className="text-xs text-blue-800">AI Tóm tắt:</strong>
+                                      <p className="text-xs text-blue-700 mt-1">{interaction.aiSummary}</p>
+                                    </div>
+                                  </div>
                                 </div>
                               )}
                             </div>
                           </div>
-                          <button className="text-gray-400 hover:text-gray-600">
+                          <button className="text-gray-400 hover:text-gray-600 p-1">
                             <MoreVertical className="w-4 h-4" />
                           </button>
                         </div>
+                        {/* Đường kẻ phân cách giữa các tương tác */}
+                        {index < selectedCustomer.interactions.length - 1 && (
+                          <div className="mt-4 border-b border-gray-100"></div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -5473,52 +5755,86 @@ export default function CustomersManagement() {
 
               {activeTab === 'orders' && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h5 className="font-medium text-gray-900">Lịch sử mua hàng</h5>
-                    <div className="text-sm text-gray-600">
+                  <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
+                    <h5 className="font-medium text-gray-900 flex items-center">
+                      <CreditCard className="w-5 h-5 mr-2 text-green-600" />
+                      Lịch sử mua hàng
+                    </h5>
+                    <div className="text-sm text-gray-600 bg-white px-3 py-1 rounded-full border border-green-200">
                       Tổng giá trị: <span className="font-medium text-green-600">{formatCurrency(selectedCustomer.lifetimeValue)}</span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="text-center p-3 bg-green-50 rounded-lg">
-                      <div className="text-lg font-bold text-green-600">{formatCurrency(selectedCustomer.lifetimeValue)}</div>
-                      <div className="text-xs text-green-700">Giá trị trọn đời</div>
-                    </div>
-                    <div className="text-center p-3 bg-blue-50 rounded-lg">
-                      <div className="text-lg font-bold text-blue-600">{formatCurrency(selectedCustomer.averageOrderValue)}</div>
-                      <div className="text-xs text-blue-700">Giá trị đơn hàng TB</div>
-                    </div>
-                    <div className="text-center p-3 bg-purple-50 rounded-lg">
-                      <div className="text-lg font-bold text-purple-600">{selectedCustomer.products.length}</div>
-                      <div className="text-xs text-purple-700">Sản phẩm đã mua</div>
+                  {/* Thống kê tổng quan với đường kẻ phân cách */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                    <h6 className="font-medium text-gray-900 mb-3 pb-2 border-b border-gray-200">📈 Thống kê mua hàng</h6>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                        <div className="text-lg font-bold text-green-600">{formatCurrency(selectedCustomer.lifetimeValue)}</div>
+                        <div className="text-xs text-green-700 mt-1">Giá trị trọn đời</div>
+                      </div>
+                      <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="text-lg font-bold text-blue-600">{formatCurrency(selectedCustomer.averageOrderValue)}</div>
+                        <div className="text-xs text-blue-700 mt-1">Giá trị đơn hàng TB</div>
+                      </div>
+                      <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+                        <div className="text-lg font-bold text-purple-600">{selectedCustomer.products.length}</div>
+                        <div className="text-xs text-purple-700 mt-1">Sản phẩm đã mua</div>
+                      </div>
                     </div>
                   </div>
                   
+                  {/* Danh sách sản phẩm với đường kẻ phân cách */}
                   <div className="space-y-3">
-                    {selectedCustomer.products.map(product => (
-                      <div key={product.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <h6 className="font-medium text-gray-900">{product.name}</h6>
-                              <span className={`px-2 py-1 text-xs rounded-full ${
-                                product.status === 'active' ? 'bg-green-100 text-green-800' :
-                                product.status === 'expired' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {product.status === 'active' ? 'Đang hoạt động' :
-                                 product.status === 'expired' ? 'Hết hạn' : 'Đã hủy'}
-                              </span>
+                    <h6 className="font-medium text-gray-900 flex items-center">
+                      <Package className="w-4 h-4 mr-2 text-gray-600" />
+                      Chi tiết sản phẩm đã mua
+                    </h6>
+                    {selectedCustomer.products.map((product, index) => (
+                      <div key={product.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center border border-blue-200">
+                              <Package className="w-5 h-5 text-blue-600" />
                             </div>
-                            <p className="text-sm text-gray-600">{product.category}</p>
-                            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                              <span>Mua ngày: {formatDate(product.purchaseDate)}</span>
-                              <span>• Số lượng: {product.quantity}</span>
-                              <span>• <span className="text-green-600 font-medium">{formatCurrency(product.price.toString())}</span></span>
+                            <div>
+                              <h6 className="font-medium text-gray-900">{product.name}</h6>
+                              <p className="text-sm text-gray-600">{product.category}</p>
                             </div>
                           </div>
+                          <span className={`px-3 py-1 text-xs rounded-full border ${
+                            product.status === 'active' ? 'bg-green-100 text-green-800 border-green-200' :
+                            product.status === 'expired' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                            'bg-red-100 text-red-800 border-red-200'
+                          }`}>
+                            {product.status === 'active' ? '✅ Đang hoạt động' :
+                             product.status === 'expired' ? '⏰ Hết hạn' : '❌ Ngưng sử dụng'}
+                          </span>
                         </div>
+                        
+                        <div className="grid grid-cols-4 gap-4 py-3 border-t border-gray-100">
+                          <div className="text-center">
+                            <div className="text-sm font-medium text-gray-900">{formatCurrency(product.price.toString())}</div>
+                            <div className="text-xs text-gray-500">Giá</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm font-medium text-gray-900">{product.quantity}</div>
+                            <div className="text-xs text-gray-500">Số lượng</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm font-medium text-gray-900">{product.purchaseDate}</div>
+                            <div className="text-xs text-gray-500">Ngày mua</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-sm font-medium text-green-600">{formatCurrency((product.price * product.quantity).toString())}</div>
+                            <div className="text-xs text-gray-500">Tổng tiền</div>
+                          </div>
+                        </div>
+                        
+                        {/* Đường kẻ phân cách giữa các sản phẩm */}
+                        {index < selectedCustomer.products.length - 1 && (
+                          <div className="mt-4 border-b border-gray-100"></div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -5527,57 +5843,85 @@ export default function CustomersManagement() {
 
               {activeTab === 'notes' && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h5 className="font-medium text-gray-900">Ghi chú khách hàng</h5>
-                    <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-                      + Thêm ghi chú
+                  <div className="flex items-center justify-between bg-gradient-to-r from-orange-50 to-yellow-50 p-4 rounded-lg border border-orange-200">
+                    <h5 className="font-medium text-gray-900 flex items-center">
+                      <FileText className="w-5 h-5 mr-2 text-orange-600" />
+                      Ghi chú khách hàng
+                    </h5>
+                    <button className="px-4 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 flex items-center space-x-2">
+                      <Plus className="w-4 h-4" />
+                      <span>Thêm ghi chú</span>
                     </button>
                   </div>
                   
                   {selectedCustomer.notes ? (
-                    <div className="space-y-3">
-                      <div className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center space-x-2">
-                            <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                              <FileText className="w-3 h-3 text-blue-600" />
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                      <div className="p-4 border-b border-gray-200">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center border border-blue-200">
+                              <FileText className="w-4 h-4 text-blue-600" />
                             </div>
-                            <span className="text-sm font-medium text-gray-900">Ghi chú chung</span>
+                            <div>
+                              <span className="text-sm font-medium text-gray-900">Ghi chú chung</span>
+                              <p className="text-xs text-gray-500">Cập nhật lần cuối: {formatDate(selectedCustomer.lastInteraction)}</p>
+                            </div>
                           </div>
-                          <span className="text-xs text-gray-500">Cập nhật lần cuối: {formatDate(selectedCustomer.lastInteraction)}</span>
+                          <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full border border-green-200">
+                            Đã lưu
+                          </span>
                         </div>
-                        <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded">{selectedCustomer.notes}</p>
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                          <p className="text-sm text-gray-700 leading-relaxed">{selectedCustomer.notes}</p>
+                        </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                      <p>Chưa có ghi chú nào cho khách hàng này</p>
-                      <button className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-                        Thêm ghi chú đầu tiên
+                    <div className="text-center py-12 bg-gray-50 border border-gray-200 rounded-lg">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <FileText className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <h6 className="font-medium text-gray-900 mb-2">Chưa có ghi chú</h6>
+                      <p className="text-gray-500 mb-4">Chưa có ghi chú nào cho khách hàng này</p>
+                      <button className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center space-x-2 mx-auto">
+                        <Plus className="w-4 h-4" />
+                        <span>Thêm ghi chú đầu tiên</span>
                       </button>
                     </div>
                   )}
                   
-                  <div className="mt-6">
-                    <h6 className="text-sm font-medium text-gray-900 mb-3">Tạo ghi chú mới</h6>
-                    <div className="space-y-3">
-                      <textarea
-                        placeholder="Nhập ghi chú về khách hàng..."
-                        className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        rows={4}
-                      />
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <input type="checkbox" className="rounded" />
-                          <label className="text-sm text-gray-600">Đánh dấu quan trọng</label>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button className="px-3 py-1 text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
-                            Hủy
-                          </button>
-                          <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
-                            Lưu ghi chú
+                  {/* Form tạo ghi chú mới với đường kẻ phân cách */}
+                  <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <div className="p-4 border-b border-gray-200">
+                      <h6 className="font-medium text-gray-900 flex items-center">
+                        <Plus className="w-4 h-4 mr-2 text-blue-600" />
+                        Tạo ghi chú mới
+                      </h6>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Nội dung ghi chú</label>
+                        <textarea
+                          placeholder="Nhập ghi chú về khách hàng..."
+                          className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          rows={4}
+                        />
+                      </div>
+                      <div className="border-t border-gray-200 pt-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <label className="flex items-center space-x-2">
+                              <input type="checkbox" className="rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
+                              <span className="text-sm text-gray-600">Đánh dấu quan trọng</span>
+                            </label>
+                            <label className="flex items-center space-x-2">
+                              <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                              <span className="text-sm text-gray-600">Thông báo cho team</span>
+                            </label>
+                          </div>
+                          <button className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+                            <Send className="w-4 h-4" />
+                            <span>Lưu ghi chú</span>
                           </button>
                         </div>
                       </div>

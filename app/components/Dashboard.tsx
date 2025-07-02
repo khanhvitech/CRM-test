@@ -13,7 +13,7 @@ import {
   Plus,
   Minus
 } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ComposedChart } from 'recharts'
 import EnhancedDashboardFilters from './EnhancedDashboardFilters'
 // import VileadRevenueChart from './VileadRevenueChart'
 
@@ -159,46 +159,46 @@ export default function Dashboard() {
   ]
 
   const topPerformers = [
-    { name: 'Nguyễn Văn A', revenue: '1.250.000.000 đ', deals: 12, conversion: '65%' },
-    { name: 'Trần Thị B', revenue: '980.000.000 đ', deals: 9, conversion: '48%' },
-    { name: 'Lê Văn C', revenue: '850.000.000 đ', deals: 8, conversion: '42%' },
-    { name: 'Phạm Thị D', revenue: '720.000.000 đ', deals: 7, conversion: '35%' },
-    { name: 'Hoàng Văn E', revenue: '580.000.000 đ', deals: 5, conversion: '28%' },
+    { name: 'Nguyễn Văn A', revenue: '1.250.000.000', deals: 12, conversion: '65%' },
+    { name: 'Trần Thị B', revenue: '980.000.000', deals: 9, conversion: '48%' },
+    { name: 'Lê Văn C', revenue: '850.000.000', deals: 8, conversion: '42%' },
+    { name: 'Phạm Thị D', revenue: '720.000.000', deals: 7, conversion: '35%' },
+    { name: 'Hoàng Văn E', revenue: '580.000.000', deals: 5, conversion: '28%' },
   ]
 
   // Top products data
   const topProducts = [
     { 
       name: 'CRM Professional', 
-      revenue: '2.850.000.000 đ', 
+      revenue: '2.850.000.000', 
       units: 45, 
       growth: '+18%',
       category: 'Software'
     },
     { 
       name: 'Marketing Automation', 
-      revenue: '1.920.000.000 đ', 
+      revenue: '1.920.000.000', 
       units: 28, 
       growth: '+12%',
       category: 'Software'
     },
     { 
       name: 'Sales Analytics', 
-      revenue: '1.480.000.000 đ', 
+      revenue: '1.480.000.000', 
       units: 32, 
       growth: '+25%',
       category: 'Analytics'
     },
     { 
       name: 'Customer Support Plus', 
-      revenue: '980.000.000 đ', 
+      revenue: '980.000.000', 
       units: 18, 
       growth: '-5%',
       category: 'Service'
     },
     { 
       name: 'Integration Suite', 
-      revenue: '720.000.000 đ', 
+      revenue: '720.000.000', 
       units: 12, 
       growth: '+8%',
       category: 'Integration'
@@ -369,24 +369,24 @@ export default function Dashboard() {
           </div>
           <div>
             <div className="flex items-baseline justify-between mb-3">
-              <h2 className="text-2xl font-semibold text-gray-900">2.8 tỷ</h2>
+              <h2 className="text-[#151D48] text-[24px] font-semibold">2.800.000.000</h2>
               <div className="group relative">
                 <div className="flex items-center text-sm font-medium">
                   <span className="text-green-600">
                     <ArrowUpRight className="w-3 h-3 mr-1" />12.0%
                   </span>
                   <span className="text-gray-400 mx-1">|</span>
-                  <span className="text-gray-500 text-xs">2.5 tỷ</span>
+                  <span className="text-gray-500 text-xs">2.500.000.000</span>
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-10 right-0 bg-gray-900 text-white text-xs p-2 rounded whitespace-nowrap">
-                  <div>So với tháng trước:</div>
-                  <div className="flex justify-between gap-3">
+                  <div className="mb-1">So với tháng trước:</div>
+                  <div className="flex items-center gap-2">
                     <span>Tháng này:</span>
-                    <span className="font-medium">2.8 tỷ</span>
+                    <span className="font-medium">2.800.000.000</span>
                   </div>
-                  <div className="flex justify-between gap-3">
+                  <div className="flex items-center gap-2">
                     <span>Tháng trước:</span>
-                    <span className="font-medium">2.5 tỷ</span>
+                    <span className="font-medium">2.500.000.000</span>
                   </div>
                 </div>
               </div>
@@ -422,12 +422,12 @@ export default function Dashboard() {
                   <span className="text-gray-500 text-xs">207</span>
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-10 right-0 bg-gray-900 text-white text-xs p-2 rounded whitespace-nowrap">
-                  <div>So với tháng trước:</div>
-                  <div className="flex justify-between gap-3">
+                  <div className="mb-1">So với tháng trước:</div>
+                  <div className="flex items-center gap-2">
                     <span>Tháng này:</span>
                     <span className="font-medium">245</span>
                   </div>
-                  <div className="flex justify-between gap-3">
+                  <div className="flex items-center gap-2">
                     <span>Tháng trước:</span>
                     <span className="font-medium">207</span>
                   </div>
@@ -465,12 +465,12 @@ export default function Dashboard() {
                   <span className="text-gray-500 text-xs">16.2%</span>
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-10 right-0 bg-gray-900 text-white text-xs p-2 rounded whitespace-nowrap">
-                  <div>So với tháng trước:</div>
-                  <div className="flex justify-between gap-3">
+                  <div className="mb-1">So với tháng trước:</div>
+                  <div className="flex items-center gap-2">
                     <span>Tháng này:</span>
                     <span className="font-medium">18.5%</span>
                   </div>
-                  <div className="flex justify-between gap-3">
+                  <div className="flex items-center gap-2">
                     <span>Tháng trước:</span>
                     <span className="font-medium">16.2%</span>
                   </div>
@@ -508,12 +508,12 @@ export default function Dashboard() {
                   <span className="text-gray-500 text-xs">72</span>
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-10 right-0 bg-gray-900 text-white text-xs p-2 rounded whitespace-nowrap">
-                  <div>So với tháng trước:</div>
-                  <div className="flex justify-between gap-3">
+                  <div className="mb-1">So với tháng trước:</div>
+                  <div className="flex items-center gap-2">
                     <span>Tháng này:</span>
                     <span className="font-medium">68</span>
                   </div>
-                  <div className="flex justify-between gap-3">
+                  <div className="flex items-center gap-2">
                     <span>Tháng trước:</span>
                     <span className="font-medium">72</span>
                   </div>
@@ -608,8 +608,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex items-baseline space-x-2">
-                <span className="text-2xl font-black text-gray-900">{summaryStats.currentRevenue}</span>
-                <span className="text-lg font-semibold text-gray-600">tỷ</span>
+                <span className="text-[#151D48] text-[24px] font-semibold">{(summaryStats.currentRevenue * 1000000000).toLocaleString('vi-VN')}</span>
               </div>
               <div className="flex items-center space-x-1 mt-1">
                 <ArrowUpRight className="w-3 h-3 text-green-600" />
@@ -635,8 +634,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex items-baseline space-x-2">
-                <span className="text-2xl font-black text-gray-900">{summaryStats.currentTarget}</span>
-                <span className="text-lg font-semibold text-gray-600">tỷ</span>
+                <span className="text-[#151D48] text-[24px] font-semibold">{(summaryStats.currentTarget * 1000000000).toLocaleString('vi-VN')}</span>
               </div>
               <div className="flex items-center space-x-1 mt-1">
                 <div className={`w-3 h-3 rounded-full ${parseFloat(summaryStats.achievementRate) >= 100 ? 'bg-green-500' : 'bg-orange-500'}`}></div>
@@ -671,178 +669,114 @@ export default function Dashboard() {
           </div>
 
             <div className="relative">
-            <div className="h-96 bg-gradient-to-br from-white via-blue-50/20 to-blue-100/30 rounded-xl p-6 border border-blue-100/40 shadow-inner">
+            <div className="h-80 bg-gradient-to-br from-white via-blue-50/20 to-blue-100/30 rounded-xl p-6 border border-blue-100/40 shadow-inner">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={revenueData} margin={{ top: 25, right: 35, left: 25, bottom: selectedPeriod === 'thismonth' ? 70 : 35 }}>
+                <ComposedChart data={revenueData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                   <defs>
-                    {/* Enhanced gradients for better visual appeal */}
-                    <linearGradient id="revenueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9} />
-                      <stop offset="50%" stopColor="#60a5fa" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="#93c5fd" stopOpacity={0.1} />
+                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8} />
+                      <stop offset="100%" stopColor="#93c5fd" stopOpacity={0.3} />
                     </linearGradient>
-                    <linearGradient id="targetGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.8} />
-                      <stop offset="50%" stopColor="#34d399" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="#6ee7b7" stopOpacity={0.1} />
-                    </linearGradient>
-                    {/* Shadow filters for depth */}
-                    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
-                      <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#3b82f6" floodOpacity="0.2"/>
-                    </filter>
                   </defs>
                   <CartesianGrid 
-                    strokeDasharray="2 4" 
-                    stroke="#cbd5e1" 
-                    strokeOpacity={0.4}
-                    strokeWidth={1}
+                    strokeDasharray="3 3" 
+                    stroke="#e2e8f0" 
+                    strokeOpacity={0.5}
                   />
                   <XAxis 
                     dataKey="month" 
-                    stroke="#475569" 
-                    fontSize={selectedPeriod === 'thismonth' ? 10 : 12}
-                    fontWeight="500"
-                    tickLine={false}
-                    axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
-                    interval={selectedPeriod === 'thismonth' ? Math.floor(revenueData.length / 10) : 'preserveStartEnd'}
-                    angle={selectedPeriod === 'thismonth' ? -45 : 0}
-                    textAnchor={selectedPeriod === 'thismonth' ? 'end' : 'middle'}
-                    height={selectedPeriod === 'thismonth' ? 70 : 35}
-                    tick={{ fill: '#475569' }}
-                  />
-                  <YAxis 
-                    stroke="#475569" 
+                    stroke="#64748b" 
                     fontSize={12}
                     fontWeight="500"
                     tickLine={false}
                     axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
-                    tickFormatter={(value) => `${value} tỷ`}
-                    domain={['dataMin - 0.02', 'dataMax + 0.02']}
-                    tick={{ fill: '#475569' }}
-                    width={50}
+                  />
+                  <YAxis 
+                    stroke="#64748b" 
+                    fontSize={12}
+                    fontWeight="500"
+                    tickLine={false}
+                    axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
+                    tickFormatter={(value) => `${(Number(value) * 1000000000).toLocaleString('vi-VN')}`}
+                    width={120}
                   />
                   <Tooltip 
                     contentStyle={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.98)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
                       border: 'none',
-                      borderRadius: '16px',
-                      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                      padding: '16px',
-                      backdropFilter: 'blur(10px)'
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+                      padding: '12px'
                     }}
                     labelStyle={{ 
                       color: '#1f2937', 
-                      fontWeight: '700', 
+                      fontWeight: '600', 
                       fontSize: '14px',
-                      marginBottom: '8px'
+                      marginBottom: '4px'
                     }}
-                    itemStyle={{
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      padding: '2px 0'
+                    formatter={(value, name) => {
+                      if (name === 'revenue') {
+                        const kpiValue = revenueData[0]?.target || 0.15;
+                        return [
+                          <div key="tooltip-content" className="space-y-1">
+                            <div>
+                              <span className="text-[#151D48] text-[16px] font-semibold">
+                                {`${(Number(value) * 1000000000).toLocaleString('vi-VN')} VND`}
+                              </span>
+                              <span className="block font-medium text-blue-600">💰 Doanh thu</span>
+                            </div>
+                            <div className="pt-1 border-t border-gray-200">
+                              <span className="text-[14px] font-medium text-green-600">
+                                🎯 KPI: {`${(kpiValue * 1000000000).toLocaleString('vi-VN')} VND`}
+                              </span>
+                            </div>
+                          </div>,
+                          ""
+                        ];
+                      }
+                      return [
+                        <span key="value" className="text-[14px] font-medium text-green-600">
+                          {`${(Number(value) * 1000000000).toLocaleString('vi-VN')} VND`}
+                        </span>,
+                        <span key="label" className="font-medium text-green-600">
+                          🎯 KPI
+                        </span>
+                      ];
                     }}
-                    formatter={(value, name) => [
-                      <span key="value" className="font-bold text-lg">{`${value} tỷ VND`}</span>,
-                      <span key="label" className={`font-semibold ${name === 'revenue' ? 'text-blue-600' : 'text-green-600'}`}>
-                        {name === 'revenue' ? '💰 Doanh thu' : '🎯 Mục tiêu'}
-                      </span>
-                    ]}
-                    labelFormatter={(label) => 
-                      selectedPeriod === 'thismonth' ? `📅 Ngày ${label}` : `📊 ${label}`
-                    }
-                    cursor={{ 
-                      stroke: '#3b82f6', 
-                      strokeWidth: 2, 
-                      strokeOpacity: 0.3,
-                      strokeDasharray: '5 5'
-                    }}
+                    labelFormatter={(label) => `📅 ${label}`}
                   />
+                  {/* KPI Reference Line */}
                   <Line 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stroke="url(#revenueGradient)" 
-                    strokeWidth={selectedPeriod === 'thismonth' ? 3 : 4}
-                    dot={{ 
-                      fill: '#ffffff', 
-                      strokeWidth: 3, 
-                      r: selectedPeriod === 'thismonth' ? 4 : 7,
-                      stroke: '#3b82f6',
-                      filter: 'url(#dropShadow)'
-                    }}
-                    activeDot={{ 
-                      r: selectedPeriod === 'thismonth' ? 7 : 10, 
-                      fill: '#3b82f6',
-                      stroke: '#ffffff',
-                      strokeWidth: 3,
-                      filter: 'url(#dropShadow)',
-                      style: { cursor: 'pointer' }
-                    }}
-                    name="revenue"
-                    connectNulls={false}
-                  />
-                  <Line 
-                    type="monotone" 
+                    type="monotone"
                     dataKey="target" 
-                    stroke="url(#targetGradient)" 
-                    strokeWidth={selectedPeriod === 'thismonth' ? 2.5 : 3.5}
-                    strokeDasharray="6 3"
-                    dot={{ 
-                      fill: '#ffffff', 
-                      strokeWidth: 2, 
-                      r: selectedPeriod === 'thismonth' ? 3 : 5,
-                      stroke: '#10b981'
-                    }}
-                    activeDot={{ 
-                      r: selectedPeriod === 'thismonth' ? 5 : 7, 
-                      fill: '#10b981',
-                      stroke: '#ffffff',
-                      strokeWidth: 2,
-                      style: { cursor: 'pointer' }
-                    }}
+                    stroke="#10b981" 
+                    strokeWidth={3}
+                    strokeDasharray="8 4"
+                    dot={false}
+                    activeDot={{ r: 6, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
                     name="target"
-                    opacity={0.8}
                   />
-                </LineChart>
+                  <Bar 
+                    dataKey="revenue" 
+                    fill="url(#barGradient)"
+                    radius={[4, 4, 0, 0]}
+                    stroke="#3b82f6"
+                    strokeWidth={1}
+                    name="revenue"
+                  />
+                </ComposedChart>
               </ResponsiveContainer>
               
-              {/* Chart Legend */}
+              {/* Enhanced Legend */}
               <div className="absolute bottom-4 left-6 flex items-center space-x-6 bg-white/90 px-4 py-2 rounded-full shadow-md backdrop-blur-sm">
                 <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span className="text-xs font-semibold text-gray-700">Doanh thu thực tế</span>
+                  <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                  <span className="text-xs font-semibold text-gray-700">Doanh thu</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-3 h-0.5 bg-green-500 rounded" style={{borderStyle: 'dashed'}}></div>
-                  <span className="text-xs font-semibold text-gray-700">Mục tiêu</span>
+                  <div className="w-6 h-0.5 bg-green-500 rounded" style={{borderStyle: 'dashed', borderTop: '2px dashed #10b981', backgroundColor: 'transparent'}}></div>
+                  <span className="text-xs font-semibold text-gray-700">KPI</span>
                 </div>
-              </div>
-            </div>
-            
-            {/* Enhanced Achievement indicator */}
-            <div className="absolute top-6 right-6 bg-white/95 px-4 py-3 rounded-xl shadow-lg border border-gray-100 backdrop-blur-sm">
-              <div className="flex items-center space-x-3">
-                <div className={`w-3 h-3 rounded-full animate-pulse shadow-md ${
-                  parseFloat(summaryStats.achievementRate) >= 100 ? 'bg-green-500' : 
-                  parseFloat(summaryStats.achievementRate) >= 80 ? 'bg-yellow-500' : 'bg-red-500'
-                }`}></div>
-                <div>
-                  <span className="text-xs font-bold text-gray-600 uppercase tracking-wide">Hiệu suất</span>
-                  <div className="text-sm font-black text-gray-900">{summaryStats.achievementRate}%</div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Performance Trend Indicator */}
-            <div className="absolute top-20 right-6 bg-white/95 px-4 py-2 rounded-xl shadow-lg border border-gray-100 backdrop-blur-sm">
-              <div className="flex items-center space-x-2">
-                {parseFloat(summaryStats.avgGrowth) > 0 ? (
-                  <ArrowUpRight className="w-4 h-4 text-green-600" />
-                ) : (
-                  <ArrowDownRight className="w-4 h-4 text-red-600" />
-                )}
-                <span className={`text-xs font-bold ${parseFloat(summaryStats.avgGrowth) > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {parseFloat(summaryStats.avgGrowth) > 0 ? '+' : ''}{summaryStats.avgGrowth}%
-                </span>
               </div>
             </div>
           </div>
